@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Забороняємо службові файли (якщо є)
+Disallow: /admin/
+Disallow: /cart/
+Disallow: /checkout/
+
+# Sitemap
+Sitemap: https://instruforge.web.app/sitemap.xml

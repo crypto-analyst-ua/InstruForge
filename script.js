@@ -18,7 +18,8 @@ const PRODUCT_FILES = [
     'products1.json',
     'products2.json', 
     'products3.json',
-    'products4.json'
+    'products4.json',
+    'products5.json'
 ];
 
 // Ініціалізація Firebase
@@ -2823,10 +2824,11 @@ function switchSource(source, element) {
     // Обновляем заголовок
     const titles = {
         'all': 'Всі товари',
-        'products1.json': 'Електроінструменти',
-        'products2.json': 'Ручний інструмент', 
-        'products3.json': 'Сантехніка',
-        'products4.json': 'Будматеріали'
+        'products1.json': 'Обладнання та інструменти',
+        'products2.json': 'Миючі засоби', 
+        'products3.json': 'Маслобаза',
+        'products4.json': 'Дрібниці для дому',
+        'products5.json': 'Мамин посуд'
     };
     
     document.getElementById('products-title').textContent = titles[source] || 'Товари';

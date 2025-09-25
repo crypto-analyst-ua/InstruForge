@@ -13,6 +13,14 @@ const EMAILJS_SERVICE_ID = "boltmaster-2025";
 const EMAILJS_TEMPLATE_ID = "template_2csi2fp";
 const EMAILJS_USER_ID = "hYmYimcQ5x5Mu_skB";
 
+// Массив файлов с товарами
+const PRODUCT_FILES = [
+    'products1.json',
+    'products2.json', 
+    'products3.json',
+    'products4.json'
+];
+
 // Ініціалізація Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -46,7 +54,8 @@ let currentFilters = {
   maxPrice: null,
   sort: 'default',
   search: '',
-  availability: ''
+  availability: '',
+  source: ''
 };
 
 // Глобальная переменная для рейтинга
@@ -113,30 +122,77 @@ function sendOrderEmail(orderId, order) {
     });
 }
 
-// Додаємо нову функцію для завантаження товарів з JSON файлу
+// Функція для завантаження товарів з JSON файлу
 function loadProductsFromJson() {
-  return fetch('products.json')
-    .then(response => {
-      if (!response.ok) {
-        // Пробуємо завантажити з локального сховища
-        const backup = localStorage.getItem('products_backup');
-        if (backup) {
-          return JSON.parse(backup);
+    const promises = PRODUCT_FILES.map(file => 
+        fetch(file)
+            .then(response => {
+                if (!response.ok) {
+                    console.warn(`Файл ${file} не найден, пропускаем`);
+                    return []; // Возвращаем пустой массив если файл не найден
+                }
+                return response.json();
+            })
+            .then(productsArray => {
+                // Добавляем информацию о источнике к каждому товару
+                return productsArray.map(product => ({
+                    ...product,
+                    source: file, // Добавляем источник
+                    isPopular: product.isPopular || false // значение по умолчанию
+                }));
+            })
+            .catch(error => {
+                console.warn(`Ошибка загрузки файла ${file}:`, error);
+                return []; // Возвращаем пустой массив при ошибке
+            })
+    );
+
+    return Promise.all(promises)
+        .then(results => {
+            // Объединяем все массивы товаров в один
+            let allProducts = [];
+            results.forEach(productsArray => {
+                if (Array.isArray(productsArray)) {
+                    allProducts = allProducts.concat(productsArray);
+                }
+            });
+            
+            if (allProducts.length === 0) {
+                // Пробуем завантажити з локального сховища
+                const backup = localStorage.getItem('products_backup');
+                if (backup) {
+                    return JSON.parse(backup);
+                }
+                throw new Error('Не вдалося завантажити товари з жодного файлу');
+            }
+            
+            return allProducts;
+        });
+}
+
+// Функция проверки доступности JSON файлов
+async function checkFilesAvailability() {
+    const availability = {};
+    
+    for (const file of PRODUCT_FILES) {
+        try {
+            const response = await fetch(file, { method: 'HEAD' });
+            availability[file] = response.ok;
+        } catch (error) {
+            availability[file] = false;
         }
-        throw new Error('Файл products.json не знайдено');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (Array.isArray(data)) {
-        // Добавляем поддержку флага isPopular если его нет
-        return data.map(product => ({
-          isPopular: false, // значение по умолчанию
-          ...product
-        }));
-      } else {
-        throw new Error('Невірний формат файлу products.json');
-      }
+    }
+    
+    // Скрываем недоступные вкладки
+    document.querySelectorAll('.source-tab').forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick');
+        const match = onclickAttr.match(/switchSource\('([^']+)'/);
+        if (match && match[1] !== 'all') {
+            const file = match[1];
+            if (!availability[file]) {
+                tab.style.display = 'none';
+            }
+        }
     });
 }
 
@@ -180,15 +236,18 @@ function initApp() {
         renderFeaturedProducts();
         renderCategories();
         renderBrands();
-        showNotification("Товари завантажено з локального файлу");
+        showNotification(`Товари завантажено з ${PRODUCT_FILES.length} файлів`);
         
         // Зберігаємо продукти в localStorage як резервну копію
         localStorage.setItem('products_backup', JSON.stringify(products));
       })
       .catch(jsonError => {
         console.error("Помилка завантаження з JSON:", jsonError);
-        showNotification("", "error");
+        showNotification("Помилка завантаження товарів", "error");
       });
+  }).finally(() => {
+      // Проверяем доступность файлов
+      checkFilesAvailability();
   });
   
   // Завантажуємо обране та кошик з localStorage
@@ -568,6 +627,13 @@ function getFilteredProducts() {
   if (currentFilters.availability) {
     filteredProducts = filteredProducts.filter(product => 
       currentFilters.availability === 'in-stock' ? product.inStock : !product.inStock
+    );
+  }
+  
+  // Фильтрация по источнику (JSON файлу)
+  if (currentFilters.source) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.source === currentFilters.source
     );
   }
   
@@ -1042,7 +1108,8 @@ function resetFilters() {
     maxPrice: null,
     sort: 'default',
     search: '',
-    availability: ''
+    availability: '',
+    source: ''
   };
   
   applyFilters();
@@ -2655,6 +2722,67 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+// Функція для додавання вкладки модерації відгуків
+function addReviewsTabIfNotExists() {
+  const existingTab = document.querySelector('.tab[onclick*="reviews-tab-content"]');
+  if (!existingTab) {
+    const tabsContainer = document.querySelector('.admin-tabs');
+    if (tabsContainer) {
+      const reviewsTab = document.createElement('div');
+      reviewsTab.className = 'tab';
+      reviewsTab.setAttribute('onclick', 'switchTab(\'reviews-tab-content\')');
+      reviewsTab.textContent = 'Модерація відгуків';
+      tabsContainer.appendChild(reviewsTab);
+      
+      const tabContent = document.createElement('div');
+      tabContent.id = 'reviews-tab-content';
+      tabContent.className = 'tab-content';
+      tabContent.innerHTML = `
+        <h3>Модерація відгуків</h3>
+        <div id="reviews-moderation-container"></div>
+      `;
+      document.querySelector('.admin-content').appendChild(tabContent);
+    }
+  }
+}
+
+// Функція перемикання джерела товарів
+function switchSource(source, element) {
+    // Обновляем активные вкладки
+    document.querySelectorAll('.source-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Если функция вызвана из HTML, element будет передан
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // Если вызвано программно, находим соответствующую кнопку
+        const tabButton = document.querySelector(`.source-tab[onclick*="${source}"]`);
+        if (tabButton) {
+            tabButton.classList.add('active');
+        }
+    }
+    
+    // Устанавливаем фильтр источника
+    currentFilters.source = source === 'all' ? '' : source;
+    currentPage = 1;
+    
+    // Обновляем заголовок
+    const titles = {
+        'all': 'Всі товари',
+        'products1.json': 'Електроінструменти',
+        'products2.json': 'Ручний інструмент', 
+        'products3.json': 'Сантехніка',
+        'products4.json': 'Будматеріали'
+    };
+    
+    document.getElementById('products-title').textContent = titles[source] || 'Товари';
+    
+    // Применяем фильтры
+    applyFilters();
 }
 
 // Ініціалізація додатка після завантаження DOM

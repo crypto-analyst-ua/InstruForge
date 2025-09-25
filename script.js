@@ -39,6 +39,32 @@ const ADMINS_STORAGE_KEY = "electrotools_admins";
 let searchTimeout = null;
 const SEARCH_DELAY = 300; // Затримка в мс
 
+// ====== ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ПОИСКА ======
+
+// Кэширование результатов поиска
+const searchCache = new Map();
+
+function clearSearchCache() {
+  searchCache.clear();
+}
+
+// Нормализация поискового запроса (поддержка кириллицы/укр. символов)
+function normalizeSearchTerm(term) {
+  return term.toLowerCase()
+    .replace(/[ї]/g, 'і')
+    .replace(/[ъь]/g, '')
+    .trim();
+}
+
+// Очистка таймера при закрытии страницы
+function cleanupSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = null;
+}
+
+window.addEventListener('beforeunload', cleanupSearch);
+
+
 let products = [];
 let cart = {};
 let favorites = {};
@@ -370,42 +396,66 @@ function showSearchSuggestions(query) {
 }
 
 // Функція для отримання підказок
+
 function getSearchSuggestions(query) {
-  const searchTerm = query.toLowerCase();
-  const suggestions = new Set();
-  
-  products.forEach(product => {
-    // Перевіряємо назву
-    if (product.title.toLowerCase().includes(searchTerm)) {
-      suggestions.add(product.title);
+  try {
+    if (!query || query.length < 2) return [];
+    
+    const searchTerm = normalizeSearchTerm(query);
+    
+    if (searchCache.has(searchTerm)) {
+      return searchCache.get(searchTerm);
     }
     
-    // Перевіряємо бренд
-    if (product.brand && product.brand.toLowerCase().includes(searchTerm)) {
-      suggestions.add(product.brand);
-    }
+    const suggestions = new Set();
     
-    // Перевіряємо категорію
-    if (product.category && product.category.toLowerCase().includes(searchTerm)) {
-      suggestions.add(product.category);
-    }
-    
-    // Додаємо ключові слова з опису
-    if (product.description) {
-      const words = product.description.toLowerCase().split(' ');
-      words.forEach(word => {
-        if (word.includes(searchTerm) && word.length > 3) {
-          suggestions.add(word);
+    products.forEach(product => {
+      if (!product) return;
+      
+      // Проверяем название
+      if (product.title && normalizeSearchTerm(product.title).includes(searchTerm)) {
+        suggestions.add(product.title);
+      }
+      
+      // Проверяем бренд
+      if (product.brand && normalizeSearchTerm(product.brand).includes(searchTerm)) {
+        suggestions.add(product.brand);
+      }
+      
+      // Проверяем категорию
+      if (product.category && normalizeSearchTerm(product.category).includes(searchTerm)) {
+        suggestions.add(product.category);
+      }
+      
+      // Поиск в описании (фраза + сниппет)
+      if (product.description) {
+        const desc = normalizeSearchTerm(product.description);
+        if (desc.includes(searchTerm)) {
+          const index = desc.indexOf(searchTerm);
+          const snippet = product.description.substring(
+            Math.max(0, index - 10),
+            Math.min(product.description.length, index + searchTerm.length + 30)
+          );
+          suggestions.add(snippet.trim() + "...");
         }
-      });
-    }
-  });
-  
-  return Array.from(suggestions).slice(0, 5); // Обмежуємо кількість підказок
+      }
+    });
+    
+    const result = Array.from(suggestions).slice(0, 5);
+    searchCache.set(searchTerm, result);
+    return result;
+  } catch (error) {
+    console.error("Ошибка в поиске:", error);
+    return [];
+  }
 }
+
 
 // Функція для застосування підказки
 function applySuggestion(suggestion) {
+  // Экранируем спецсимволы для безопасности
+  const safeSuggestion = suggestion.replace(/'/g, "\\'");
+  
   document.getElementById('search').value = suggestion;
   currentFilters.search = suggestion;
   applyFilters();

@@ -242,8 +242,8 @@ function initApp() {
         localStorage.setItem('products_backup', JSON.stringify(products));
       })
       .catch(jsonError => {
-        console.error("Помилка завантаження з JSON:", jsonError);
-        showNotification("Помилка завантаження товарів", "error");
+        console.error("JSON:", jsonError);
+        showNotification("", "error");
       });
   }).finally(() => {
       // Проверяем доступность файлов
@@ -486,8 +486,8 @@ function loadProducts() {
       }
     })
     .catch((error) => {
-      console.error("Помилка завантаження продуктів: ", error);
-      showNotification("Помилка завантаження продуктів", "error");
+      console.error("", error);
+      showNotification("", "error");
       
       // Пробуємо завантажити з localStorage, якщо Firestore недоступний
       const data = localStorage.getItem('products_backup');

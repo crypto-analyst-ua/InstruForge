@@ -6,8 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- Enhanced SEO -->
-<meta name="description" content="⚡ InstruForge — №1 інтернет-магазин професійних інструментів в Україні ✓ Понад 5000 товарів ✓ Доставка по всій країні ✓ Гарантія якості ✓ Найкращі ціни на інструменти SIGMA, AQUATICA, LEO, GRAD">
-<meta name="keywords" content="купити інструменти україна, професійні інструменти київ, інтернет магазин інструментів, будівельні інструменти україна, насоси україна, гідроакумулятори купити, метизи україна, абразивні інструменти, малярний інструмент, шпателі купити, заклепки алюмінієві, скоби для степлера, циркуляційні насоси, реле тиску, розширювальні баки, торцеві головки, ключі трещотки, щітки металеві, SIGMA інструменти, AQUATICA насоси, LEO обладнання, GRAD інструмент">
+<meta name="description" content="⚡ InstruForge — інтернет-магазин професійних інструментів в Україні ✓ Понад 5000 товарів ✓ Доставка по всій країні ✓ Гарантія якості ✓ Найкращі ціни на інструменти SIGMA, AQUATICA, LEO, GRAD">
 <meta name="author" content="InstruForge - Костянтин Коровін">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <link rel="canonical" href="https://instruforge.web.app/">
@@ -73,11 +72,12 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "OnlineStore",
+  "@type": "Store",
   "name": "InstruForge",
   "alternateName": ["ІнструФордж", "InstruForge Ukraine"],
   "description": "Провідний інтернет-магазин професійних та побутових інструментів в Україні. Понад 5000 товарів від перевірених брендів з доставкою по всій країні.",
   "url": "https://instruforge.web.app/",
+  "hasPOS": "https://instruforge.web.app/",
   "logo": {
     "@type": "ImageObject",
     "url": "https://instruforge.web.app/images/logo-large.png",
@@ -97,15 +97,18 @@
     "telephone": "+380684296978",
     "contactType": "customer service",
     "areaServed": "UA",
-    "availableLanguage": ["Ukrainian", "Russian"]
+    "availableLanguage": ["uk", "ru"]
   },
   "address": {
     "@type": "PostalAddress",
+    "streetAddress": "вул. Примеровская, 1",
+    "addressLocality": "Киев",
+    "postalCode": "01001",
     "addressCountry": "UA",
     "addressRegion": "Ukraine"
   },
   "openingHours": "Mo-Su 09:00-18:00",
-  "priceRange": "₴₴",
+  "priceRange": "$$",
   "founder": {
     "@type": "Person",
     "name": "Костянтин Коровін"
@@ -125,24 +128,27 @@
     "name": "Каталог інструментів InstruForge",
     "itemListElement": [
       {
-        "@type": "Offer",
-        "itemOffered": {
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
           "@type": "Product",
           "name": "Професійні інструменти",
           "category": "Tools & Equipment"
         }
       },
       {
-        "@type": "Offer",
-        "itemOffered": {
+        "@type": "ListItem",
+        "position": 2,
+        "item": {
           "@type": "Product",
           "name": "Насосне обладнання",
           "category": "Pumps & Water Equipment"
         }
       },
       {
-        "@type": "Offer",
-        "itemOffered": {
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
           "@type": "Product",
           "name": "Метизи та кріплення",
           "category": "Fasteners & Hardware"

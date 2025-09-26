@@ -909,7 +909,7 @@ function renderProducts() {
   let filteredProducts = getFilteredProducts();
   
   // Оновлюємо заголовок і лічильник
-  document.getElementById('products-title').textContent = showingFavorites ? 'Обрані товари' : 'Усі товари можна знайти через пошук — скористайтеся ним, будь ласка.';
+  document.getElementById('products-title').textContent = showingFavorites ? 'Обрані товари' : '';
   document.getElementById('products-count').textContent = `Знайдено: ${filteredProducts.length}`;
   
   // Застосовуємо пагінацію

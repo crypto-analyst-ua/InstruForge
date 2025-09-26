@@ -65,6 +65,104 @@ function cleanupSearch() {
 
 window.addEventListener('beforeunload', cleanupSearch);
 
+// Улучшенная функция для получения поисковых подсказок
+function getSearchSuggestions(query) {
+  try {
+    if (!query || query.length < 2) return [];
+    
+    const searchTerm = normalizeSearchTerm(query);
+    
+    if (searchCache.has(searchTerm)) {
+      return searchCache.get(searchTerm);
+    }
+    
+    const suggestions = new Set();
+    
+    products.forEach(product => {
+      // Защита от неопределенного продукта
+      if (!product || typeof product !== 'object') return;
+      
+      // Безопасное получение полей с значениями по умолчанию
+      const title = product.title || '';
+      const brand = product.brand || '';
+      const category = product.category || '';
+      const description = product.description || '';
+      
+      // Проверяем название
+      if (title && normalizeSearchTerm(title).includes(searchTerm)) {
+        suggestions.add(title);
+      }
+      
+      // Проверяем бренд
+      if (brand && normalizeSearchTerm(brand).includes(searchTerm)) {
+        suggestions.add(brand);
+      }
+      
+      // Проверяем категорию
+      if (category && normalizeSearchTerm(category).includes(searchTerm)) {
+        suggestions.add(category);
+      }
+      
+      // Поиск в описании (фраза + сниппет)
+      if (description) {
+        const desc = normalizeSearchTerm(description);
+        if (desc.includes(searchTerm)) {
+          const index = desc.indexOf(searchTerm);
+          // Используем оригинальное описание (description) для получения сниппета
+          const snippet = description.substring(
+            Math.max(0, index - 10),
+            Math.min(description.length, index + searchTerm.length + 30)
+          );
+          suggestions.add(snippet.trim() + "...");
+        }
+      }
+    });
+    
+    const result = Array.from(suggestions).slice(0, 5);
+    searchCache.set(searchTerm, result);
+    return result;
+  } catch (error) {
+    console.error("Ошибка в поиске:", error);
+    return [];
+  }
+}
+
+// Улучшенная функция для применения подсказки
+function applySuggestion(suggestion) {
+  // Более безопасное экранирование
+  const safeSuggestion = suggestion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  document.getElementById('search').value = suggestion;
+  currentFilters.search = suggestion;
+  applyFilters();
+  hideSearchSuggestions();
+}
+
+// Оптимизация: предварительная нормализация данных при загрузке
+function preprocessProducts(productsArray) {
+  return productsArray.map(product => {
+    if (!product || typeof product !== 'object') return product;
+    
+    // Создаем поисковый индекс для быстрого поиска
+    const searchIndex = `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''}`
+      .toLowerCase()
+      .replace(/[ї]/g, 'і')
+      .replace(/[ъь]/g, '');
+    
+    return {
+      ...product,
+      searchIndex,
+      // Безопасные значения по умолчанию для всех полей
+      title: product.title || '',
+      brand: product.brand || '',
+      category: product.category || '',
+      description: product.description || '',
+      price: product.price || 0,
+      image: product.image || '',
+      inStock: product.inStock !== undefined ? product.inStock : true
+    };
+  });
+}
 
 let products = [];
 let cart = {};
@@ -258,7 +356,7 @@ function initApp() {
     // Якщо не вдалося завантажити з Firestore, пробуємо завантажити з JSON
     loadProductsFromJson()
       .then(jsonProducts => {
-        products = jsonProducts;
+        products = preprocessProducts(jsonProducts); // Добавляем предобработку
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -369,7 +467,7 @@ function adjustHeaderTitle() {
   }
 }
 
-// Функція для показу підказок пошуку
+// Улучшенная функция для показа поисковых подсказок
 function showSearchSuggestions(query) {
   if (!query || query.length < 2) return;
   
@@ -386,82 +484,19 @@ function showSearchSuggestions(query) {
   }
   
   if (suggestions.length > 0) {
-    suggestionsContainer.innerHTML = suggestions.map(suggestion => `
-      <div class="search-suggestion" onclick="applySuggestion('${suggestion.replace(/'/g, "\\'")}')">
-        <i class="fas fa-search"></i> ${suggestion}
-      </div>
-    `).join('');
+    // Безопасное создание элементов через DOM
+    suggestionsContainer.innerHTML = ''; // Очищаем
+    suggestions.forEach(suggestion => {
+      const div = document.createElement('div');
+      div.className = 'search-suggestion';
+      div.innerHTML = `<i class="fas fa-search"></i> ${suggestion}`;
+      div.addEventListener('click', () => applySuggestion(suggestion));
+      suggestionsContainer.appendChild(div);
+    });
     suggestionsContainer.style.display = 'block';
   } else {
     suggestionsContainer.style.display = 'none';
   }
-}
-
-// Функція для отримання підказок
-
-function getSearchSuggestions(query) {
-  try {
-    if (!query || query.length < 2) return [];
-    
-    const searchTerm = normalizeSearchTerm(query);
-    
-    if (searchCache.has(searchTerm)) {
-      return searchCache.get(searchTerm);
-    }
-    
-    const suggestions = new Set();
-    
-    products.forEach(product => {
-      if (!product) return;
-      
-      // Проверяем название
-      if (product.title && normalizeSearchTerm(product.title).includes(searchTerm)) {
-        suggestions.add(product.title);
-      }
-      
-      // Проверяем бренд
-      if (product.brand && normalizeSearchTerm(product.brand).includes(searchTerm)) {
-        suggestions.add(product.brand);
-      }
-      
-      // Проверяем категорию
-      if (product.category && normalizeSearchTerm(product.category).includes(searchTerm)) {
-        suggestions.add(product.category);
-      }
-      
-      // Поиск в описании (фраза + сниппет)
-      if (product.description) {
-        const desc = normalizeSearchTerm(product.description);
-        if (desc.includes(searchTerm)) {
-          const index = desc.indexOf(searchTerm);
-          const snippet = product.description.substring(
-            Math.max(0, index - 10),
-            Math.min(product.description.length, index + searchTerm.length + 30)
-          );
-          suggestions.add(snippet.trim() + "...");
-        }
-      }
-    });
-    
-    const result = Array.from(suggestions).slice(0, 5);
-    searchCache.set(searchTerm, result);
-    return result;
-  } catch (error) {
-    console.error("Ошибка в поиске:", error);
-    return [];
-  }
-}
-
-
-// Функція для застосування підказки
-function applySuggestion(suggestion) {
-  // Экранируем спецсимволы для безопасности
-  const safeSuggestion = suggestion.replace(/'/g, "\\'");
-  
-  document.getElementById('search').value = suggestion;
-  currentFilters.search = suggestion;
-  applyFilters();
-  hideSearchSuggestions();
 }
 
 // Функція для приховування підказок
@@ -479,7 +514,7 @@ function loadProducts() {
   const cacheTime = localStorage.getItem('products_cache_time');
   
   if (cachedProducts && cacheTime && Date.now() - cacheTime < 300000) { // 5 хвилин
-    products = JSON.parse(cachedProducts);
+    products = preprocessProducts(JSON.parse(cachedProducts)); // Добавляем предобработку
     // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари після завантаження з кешу
     products = shuffleArray(products);
     renderProducts();
@@ -496,7 +531,7 @@ function loadProducts() {
         // Якщо в Firestore немає товарів, пробуємо завантажити з localStorage
         const data = localStorage.getItem('products_backup');
         if (data) {
-          products = JSON.parse(data);
+          products = preprocessProducts(JSON.parse(data)); // Добавляем предобработку
           // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
           products = shuffleArray(products);
           updateCartCount();
@@ -509,7 +544,7 @@ function loadProducts() {
           // Якщо в localStorage теж немає, пробуємо завантажити з JSON
           return loadProductsFromJson()
             .then(jsonProducts => {
-              products = jsonProducts;
+              products = preprocessProducts(jsonProducts); // Добавляем предобработку
               // Перемішуємо товари (це вже було і залишаємо)
               products = shuffleArray(products);
               updateCartCount();
@@ -529,6 +564,8 @@ function loadProducts() {
                     products.push({ id: doc.id, ...doc.data() });
                 });
                 
+                // Добавляем предобработку продуктов
+                products = preprocessProducts(products);
                 // Перемішуємо товари (це вже було)
                 products = shuffleArray(products);
         
@@ -551,7 +588,7 @@ function loadProducts() {
       // Пробуємо завантажити з localStorage, якщо Firestore недоступний
       const data = localStorage.getItem('products_backup');
       if (data) {
-        products = JSON.parse(data);
+        products = preprocessProducts(JSON.parse(data)); // Добавляем предобработку
         // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
         products = shuffleArray(products);
         updateCartCount();
@@ -647,17 +684,10 @@ function getFilteredProducts() {
   if (currentFilters.search) {
     const searchTerm = currentFilters.search.toLowerCase();
     
-    // Розширений пошук по різним полям
+    // Используем предварительно созданный searchIndex для быстрого поиска
     filteredProducts = filteredProducts.filter(product => {
-      const searchFields = [
-        product.title,
-        product.description,
-        product.brand,
-        product.category
-      ].filter(Boolean).map(field => field.toLowerCase());
-      
-      // Шукаємо збіг в будь-якому з полів
-      return searchFields.some(field => field.includes(searchTerm));
+      if (!product.searchIndex) return false;
+      return product.searchIndex.includes(searchTerm);
     });
   }
   

@@ -193,7 +193,8 @@ function loadProductsFromJson() {
                 throw new Error('Не вдалося завантажити товари з жодного файлу');
             }
             
-            return allProducts;
+            // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари перед поверненням
+            return shuffleArray(allProducts);
         });
 }
 
@@ -479,21 +480,25 @@ function loadProducts() {
   
   if (cachedProducts && cacheTime && Date.now() - cacheTime < 300000) { // 5 хвилин
     products = JSON.parse(cachedProducts);
+    // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари після завантаження з кешу
+    products = shuffleArray(products);
     renderProducts();
     return Promise.resolve();
   }
   
   showLoadingSkeleton();
   
+  // ЗМІНА: прибираємо сортування з Firestore запиту
   return db.collection("products")
-        .orderBy("createdAt", "desc")
-        .get()
+        .get() // було: .orderBy("createdAt", "desc").get()
         .then((querySnapshot) => {
             if (querySnapshot.empty) {
         // Якщо в Firestore немає товарів, пробуємо завантажити з localStorage
         const data = localStorage.getItem('products_backup');
         if (data) {
           products = JSON.parse(data);
+          // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
+          products = shuffleArray(products);
           updateCartCount();
           renderProducts();
           renderFeaturedProducts();
@@ -505,6 +510,8 @@ function loadProducts() {
           return loadProductsFromJson()
             .then(jsonProducts => {
               products = jsonProducts;
+              // Перемішуємо товари (це вже було і залишаємо)
+              products = shuffleArray(products);
               updateCartCount();
               renderProducts();
               renderFeaturedProducts();
@@ -522,6 +529,7 @@ function loadProducts() {
                     products.push({ id: doc.id, ...doc.data() });
                 });
                 
+                // Перемішуємо товари (це вже було)
                 products = shuffleArray(products);
         
         // Зберігаємо в кеш
@@ -544,6 +552,8 @@ function loadProducts() {
       const data = localStorage.getItem('products_backup');
       if (data) {
         products = JSON.parse(data);
+        // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
+        products = shuffleArray(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -912,7 +922,7 @@ function renderProducts() {
       <div class="empty-cart">
         <i class="fas fa-search"></i>
         <h3>Товари не знайдено</h3>
-        <p>Спробуйте змінити параметри фільтрації</p>
+        <p>Спробуйте змінити параметри фільтрации</p>
       </div>
     `;
     updatePagination();

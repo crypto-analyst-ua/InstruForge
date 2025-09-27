@@ -40,7 +40,7 @@ const ADMINS_STORAGE_KEY = "electrotools_admins";
 let searchTimeout = null;
 const SEARCH_DELAY = 300; // Затримка в мс
 
-// ====== ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ПОИСКА ======
+// ====== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА С МОРФОЛОГИЕЙ И РЕЛЕВАНТНОСТЬЮ ======
 
 // Кэширование результатов поиска
 const searchCache = new Map();
@@ -49,12 +49,29 @@ function clearSearchCache() {
   searchCache.clear();
 }
 
-// Нормализация поискового запроса (поддержка кириллицы/укр. символов)
+// Стемминг для украинского языка (упрощенный)
+function stemWord(word) {
+    const replacements = {
+        'ї': 'і', 'є': 'е', 'ий': 'ій', 'их': 'іх', 'ії': 'і', 'іє': 'іе'
+    };
+    let stemmed = word;
+    Object.keys(replacements).forEach(key => {
+        stemmed = stemmed.replace(new RegExp(key, 'g'), replacements[key]);
+    });
+    return stemmed;
+}
+
+// Нормализация поискового запроса с поддержкой морфологии
 function normalizeSearchTerm(term) {
-  return term.toLowerCase()
-    .replace(/[ї]/g, 'і')
-    .replace(/[ъь]/g, '')
-    .trim();
+    let normalized = term.toLowerCase()
+        .replace(/[ї]/g, 'і')
+        .replace(/[ъь]/g, '')
+        .trim();
+
+    // Применяем стемминг к каждому слову
+    const words = normalized.split(/\s+/);
+    const stemmedWords = words.map(word => stemWord(word));
+    return stemmedWords.join(' ');
 }
 
 // Очистка таймера при закрытии страницы
@@ -64,6 +81,45 @@ function cleanupSearch() {
 }
 
 window.addEventListener('beforeunload', cleanupSearch);
+
+// Расчет релевантности товара для поиска
+function calculateRelevance(product, searchTerm) {
+    let score = 0;
+    const normalizedSearchTerm = normalizeSearchTerm(searchTerm);
+    const searchWords = normalizedSearchTerm.split(/\s+/);
+
+    // Поиск по каждому слову в разных полях с разным весом
+    searchWords.forEach(word => {
+        if (product.searchIndex.includes(word)) {
+            // Название имеет наибольший вес
+            if (product.title && normalizeSearchTerm(product.title).includes(word)) score += 10;
+            
+            // Бренд - средний вес
+            if (product.brand && normalizeSearchTerm(product.brand).includes(word)) score += 5;
+            
+            // Категория - меньший вес
+            if (product.category && normalizeSearchTerm(product.category).includes(word)) score += 3;
+            
+            // Описание и характеристики
+            if (product.description && normalizeSearchTerm(product.description).includes(word)) score += 1;
+            
+            // Бонус за полное совпадение слова
+            if (product.title && normalizeSearchTerm(product.title) === word) score += 5;
+        }
+    });
+
+    // Бонус за полное совпадение фразы
+    if (product.searchIndex.includes(normalizedSearchTerm)) {
+        score += 15;
+    }
+
+    // Бонус за популярные товары
+    if (product.isPopular) {
+        score += 2;
+    }
+
+    return score;
+}
 
 // Улучшенная функция для получения поисковых подсказок
 function getSearchSuggestions(query) {
@@ -79,15 +135,22 @@ function getSearchSuggestions(query) {
     const suggestions = [];
     const seen = new Set();
     
-    products.forEach(product => {
+    // Создаем временный массив для расчета релевантности
+    const scoredProducts = products.map(product => ({
+        product,
+        relevance: calculateRelevance(product, query)
+    })).filter(item => item.relevance > 0)
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, 10); // Берем топ-10 самых релевантных
+
+    scoredProducts.forEach(({product}) => {
       if (!product || typeof product !== 'object') return;
-      if (!product.searchIndex.includes(searchTerm)) return;
 
       if (product.title) {
         const normalized = normalizeSearchTerm(product.title);
         if (normalized.includes(searchTerm) && !seen.has(product.title)) {
           seen.add(product.title);
-          suggestions.push({ value: product.title, type: 'Назва', icon: '📦' });
+          suggestions.push({ value: product.title, type: 'Назва', icon: '📦', relevance: calculateRelevance(product, query) });
         }
       }
 
@@ -95,7 +158,7 @@ function getSearchSuggestions(query) {
         const normalized = normalizeSearchTerm(product.brand);
         if (normalized.includes(searchTerm) && !seen.has(product.brand)) {
           seen.add(product.brand);
-          suggestions.push({ value: product.brand, type: 'Бренд', icon: '🏷️' });
+          suggestions.push({ value: product.brand, type: 'Бренд', icon: '🏷️', relevance: calculateRelevance(product, query) });
         }
       }
 
@@ -103,11 +166,14 @@ function getSearchSuggestions(query) {
         const normalized = normalizeSearchTerm(product.category);
         if (normalized.includes(searchTerm) && !seen.has(product.category)) {
           seen.add(product.category);
-          suggestions.push({ value: product.category, type: 'Категорія', icon: '📂' });
+          suggestions.push({ value: product.category, type: 'Категорія', icon: '📂', relevance: calculateRelevance(product, query) });
         }
       }
     });
 
+    // Сортируем по релевантности
+    suggestions.sort((a, b) => b.relevance - a.relevance);
+    
     const result = suggestions.slice(0, 5);
     searchCache.set(searchTerm, result);
     return result;
@@ -130,9 +196,9 @@ function preprocessProducts(productsArray) {
   return productsArray.map(product => {
     if (!product || typeof product !== 'object') return product;
     
-    // Создаем поисковый индекс для быстрого поиска
+    // Создаем расширенный поисковый индекс с характеристиками
     const searchIndex = normalizeSearchTerm(
-      `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''}`
+      `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''} ${product.specifications || ''}`
     );
     
     return {
@@ -145,7 +211,8 @@ function preprocessProducts(productsArray) {
       description: product.description || '',
       price: product.price || 0,
       image: product.image || '',
-      inStock: product.inStock !== undefined ? product.inStock : true
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      specifications: product.specifications || '' // Добавляем характеристики
     };
   });
 }
@@ -211,7 +278,7 @@ function sendOrderEmail(orderId, order) {
   }
   
   const templateParams = {
-    to_email: "korovinkonstantin0@gmail.com", // Замените на нужный email
+    to_email: "korovinkonstantin0@gmail.com",
     order_id: orderId,
     customer_name: order.userName,
     customer_email: order.userEmail,
@@ -240,27 +307,25 @@ function loadProductsFromJson() {
             .then(response => {
                 if (!response.ok) {
                     console.warn(`Файл ${file} не найден, пропускаем`);
-                    return []; // Возвращаем пустой массив если файл не найден
+                    return [];
                 }
                 return response.json();
             })
             .then(productsArray => {
-                // Добавляем информацию о источнике к каждому товару
                 return productsArray.map(product => ({
                     ...product,
-                    source: file, // Добавляем источник
-                    isPopular: product.isPopular || false // значение по умолчанию
+                    source: file,
+                    isPopular: product.isPopular || false
                 }));
             })
             .catch(error => {
                 console.warn(`Ошибка загрузки файла ${file}:`, error);
-                return []; // Возвращаем пустой массив при ошибке
+                return [];
             })
     );
 
     return Promise.all(promises)
         .then(results => {
-            // Объединяем все массивы товаров в один
             let allProducts = [];
             results.forEach(productsArray => {
                 if (Array.isArray(productsArray)) {
@@ -269,7 +334,6 @@ function loadProductsFromJson() {
             });
             
             if (allProducts.length === 0) {
-                // Пробуем завантажити з локального сховища
                 const backup = localStorage.getItem('products_backup');
                 if (backup) {
                     return JSON.parse(backup);
@@ -277,7 +341,6 @@ function loadProductsFromJson() {
                 throw new Error('Не вдалося завантажити товари з жодного файлу');
             }
             
-            // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари перед поверненням
             return shuffleArray(allProducts);
         });
 }
@@ -295,7 +358,6 @@ async function checkFilesAvailability() {
         }
     }
     
-    // Скрываем недоступные вкладки
     document.querySelectorAll('.source-tab').forEach(tab => {
         const onclickAttr = tab.getAttribute('onclick');
         const match = onclickAttr.match(/switchSource\('([^']+)'/);
@@ -310,10 +372,8 @@ async function checkFilesAvailability() {
 
 // Ініціалізація додатка
 function initApp() {
-  // Ініціалізація EmailJS
   emailjs.init(EMAILJS_USER_ID);
 
-  // Перевіряємо статус аутентифікації
   auth.onAuthStateChanged(user => {
     if (user) {
       currentUser = user;
@@ -322,7 +382,6 @@ function initApp() {
       document.getElementById('admin-access-btn').style.display = 'inline-block';
       document.getElementById('user-name').textContent = user.displayName || user.email;
       
-      // Перевіряємо, чи є користувач адміністратором
       checkAdminStatus(user.uid);
     } else {
       currentUser = null;
@@ -335,14 +394,12 @@ function initApp() {
     }
   });
   
-  // Намагаємося завантажити продукти з Firestore
   loadProducts().catch(error => {
     console.error("Помилка завантаження з Firestore, пробуємо завантажити з JSON:", error);
     
-    // Якщо не вдалося завантажити з Firestore, пробуємо завантажити з JSON
     loadProductsFromJson()
       .then(jsonProducts => {
-        products = preprocessProducts(jsonProducts); // Добавляем предобработку
+        products = preprocessProducts(jsonProducts);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -350,7 +407,6 @@ function initApp() {
         renderBrands();
         showNotification(`Товари завантажено з ${PRODUCT_FILES.length} файлів`);
         
-        // Зберігаємо продукти в localStorage як резервну копію
         localStorage.setItem('products_backup', JSON.stringify(products));
       })
       .catch(jsonError => {
@@ -358,42 +414,34 @@ function initApp() {
         showNotification("", "error");
       });
   }).finally(() => {
-      // Проверяем доступность файлов
       checkFilesAvailability();
   });
   
-  // Завантажуємо обране та кошик з localStorage
   const cartData = localStorage.getItem(CART_STORAGE_KEY);
   if(cartData) cart = JSON.parse(cartData);
   
   const favoritesData = localStorage.getItem(FAVORITES_STORAGE_KEY);
   if(favoritesData) favorites = JSON.parse(favoritesData);
   
-  // Завантажуємо налаштування виду
   const viewMode = localStorage.getItem(VIEW_MODE_KEY) || 'grid';
   setViewMode(viewMode);
   
   updateCartCount();
   
-  // Завантажуємо збережений URL фіду
   const feedUrl = localStorage.getItem(FEED_URL_KEY);
   if (feedUrl) {
     document.getElementById("feed-url").value = feedUrl;
   }
   
-  // Встановлюємо поточний рій у футері
   document.getElementById("year").innerText = new Date().getFullYear();
   
-  // Додаємо обробники подій
   // Оновлюємо обробник пошуку
   document.getElementById('search').addEventListener('input', function() {
-    // Додаємо дебаунс для оптимізації
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       currentFilters.search = this.value.trim();
       applyFilters();
       
-      // Показуємо/ховаємо підказки
       if (this.value.length > 2) {
         showSearchSuggestions(this.value);
       } else {
@@ -422,7 +470,6 @@ function initApp() {
     applyFilters();
   });
   
-  // Додаємо обробники для фільтрів ціни
   document.getElementById('price-min').addEventListener('change', function() {
     currentFilters.minPrice = this.value ? parseInt(this.value) : null;
     applyFilters();
@@ -433,18 +480,15 @@ function initApp() {
     applyFilters();
   });
   
-  // Обработчик изменения размера окна для адаптации заголовка
   window.addEventListener('resize', adjustHeaderTitle);
-  adjustHeaderTitle(); // Вызываем при загрузке
+  adjustHeaderTitle();
   
-  // Додаємо обробник для закриття підказок при кліку поза полем пошуку
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.search-container')) {
       hideSearchSuggestions();
     }
   });
 
-  // Додаємо обробник для закриття підказок при натисканні Escape
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       hideSearchSuggestions();
@@ -467,7 +511,6 @@ function showSearchSuggestions(query) {
   const suggestions = getSearchSuggestions(query);
   const searchContainer = document.querySelector('.search-container');
   
-  // Створюємо або оновлюємо контейнер підказок
   let suggestionsContainer = document.getElementById('search-suggestions');
   if (!suggestionsContainer) {
     suggestionsContainer = document.createElement('div');
@@ -477,8 +520,7 @@ function showSearchSuggestions(query) {
   }
   
   if (suggestions.length > 0) {
-    // Безопасное создание элементов через DOM
-    suggestionsContainer.innerHTML = ''; // Очищаем
+    suggestionsContainer.innerHTML = '';
     
     const highlight = (text, query) => {
       const regex = new RegExp(`(${query})`, 'ig');
@@ -508,13 +550,11 @@ function hideSearchSuggestions() {
 
 // Оновлюємо функцію loadProducts для обробки випадку, коли в Firestore немає товарів
 function loadProducts() {
-  // Перевіряємо кеш перед завантаженням
   const cachedProducts = localStorage.getItem('products_cache');
   const cacheTime = localStorage.getItem('products_cache_time');
   
-  if (cachedProducts && cacheTime && Date.now() - cacheTime < 300000) { // 5 хвилин
-    products = preprocessProducts(JSON.parse(cachedProducts)); // Добавляем предобработку
-    // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари після завантаження з кешу
+  if (cachedProducts && cacheTime && Date.now() - cacheTime < 300000) {
+    products = preprocessProducts(JSON.parse(cachedProducts));
     products = shuffleArray(products);
     renderProducts();
     return Promise.resolve();
@@ -522,16 +562,13 @@ function loadProducts() {
   
   showLoadingSkeleton();
   
-  // ЗМІНА: прибираємо сортування з Firestore запиту
   return db.collection("products")
-        .get() // було: .orderBy("createdAt", "desc").get()
+        .get()
         .then((querySnapshot) => {
             if (querySnapshot.empty) {
-        // Якщо в Firestore немає товарів, пробуємо завантажити з localStorage
         const data = localStorage.getItem('products_backup');
         if (data) {
-          products = preprocessProducts(JSON.parse(data)); // Добавляем предобработку
-          // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
+          products = preprocessProducts(JSON.parse(data));
           products = shuffleArray(products);
           updateCartCount();
           renderProducts();
@@ -540,11 +577,9 @@ function loadProducts() {
           renderBrands();
           return Promise.resolve();
         } else {
-          // Якщо в localStorage теж немає, пробуємо завантажити з JSON
           return loadProductsFromJson()
             .then(jsonProducts => {
-              products = preprocessProducts(jsonProducts); // Добавляем предобработку
-              // Перемішуємо товари (це вже було і залишаємо)
+              products = preprocessProducts(jsonProducts);
               products = shuffleArray(products);
               updateCartCount();
               renderProducts();
@@ -553,7 +588,6 @@ function loadProducts() {
               renderBrands();
               showNotification("Товари завантажено з локального файлу");
               
-              // Зберігаємо продукти в localStorage як резервну копію
               localStorage.setItem('products_backup', JSON.stringify(products));
             });
         }
@@ -563,12 +597,9 @@ function loadProducts() {
                     products.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Добавляем предобработку продуктов
                 products = preprocessProducts(products);
-                // Перемішуємо товари (це вже було)
                 products = shuffleArray(products);
         
-        // Зберігаємо в кеш
         localStorage.setItem('products_cache', JSON.stringify(products));
         localStorage.setItem('products_cache_time', Date.now());
         
@@ -584,11 +615,9 @@ function loadProducts() {
       console.error("", error);
       showNotification("", "error");
       
-      // Пробуємо завантажити з localStorage, якщо Firestore недоступний
       const data = localStorage.getItem('products_backup');
       if (data) {
-        products = preprocessProducts(JSON.parse(data)); // Добавляем предобработку
-        // ДОДАЄМО ПЕРЕМІШУВАННЯ: перемішуємо товари
+        products = preprocessProducts(JSON.parse(data));
         products = shuffleArray(products);
         updateCartCount();
         renderProducts();
@@ -597,13 +626,177 @@ function loadProducts() {
         renderBrands();
         return Promise.resolve();
       } else {
-        // Передаємо помилку далі для обробки в initApp
         return Promise.reject(error);
       }
     });
 }
 
 // ===== ФУНКЦІЇ ПАГІНАЦІЇ =====
+
+function changePage(page) {
+  currentPage = page;
+  showLoadingSkeleton();
+  
+  setTimeout(() => {
+    renderProducts();
+    updatePagination();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 100);
+}
+
+function updatePagination() {
+  const paginationContainer = document.getElementById("pagination");
+  if (!paginationContainer) return;
+  
+  let filteredProducts = getFilteredProducts();
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  
+  if (totalPages <= 1) {
+    paginationContainer.style.display = 'none';
+    return;
+  }
+  
+  paginationContainer.style.display = 'flex';
+  paginationContainer.innerHTML = '';
+  
+  const prevButton = document.createElement('button');
+  prevButton.innerHTML = '&laquo;';
+  prevButton.disabled = currentPage === 1;
+  prevButton.onclick = () => changePage(currentPage - 1);
+  paginationContainer.appendChild(prevButton);
+  
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  
+  if (endPage - startPage < 4) {
+    startPage = Math.max(1, endPage - 4);
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    const button = document.createElement('button');
+    button.textContent = i;
+    button.classList.toggle('active', i === currentPage);
+    button.onclick = () => changePage(i);
+    paginationContainer.appendChild(button);
+  }
+  
+  const nextButton = document.createElement('button');
+  nextButton.innerHTML = '&raquo;';
+  nextButton.disabled = currentPage === totalPages;
+  nextButton.onclick = () => changePage(currentPage + 1);
+  paginationContainer.appendChild(nextButton);
+}
+
+// Улучшенная функция фильтрации с учетом релевантности
+function getFilteredProducts() {
+  let filteredProducts = [...products];
+  
+  if (showingFavorites) {
+    filteredProducts = filteredProducts.filter(product => favorites[product.id]);
+  }
+  
+  if (currentFilters.search) {
+    const searchTerm = normalizeSearchTerm(currentFilters.search);
+    
+    // Фильтрация с расчетом релевантности
+    filteredProducts = filteredProducts.filter(product => {
+      if (!product.searchIndex) return false;
+      return product.searchIndex.includes(searchTerm);
+    });
+    
+    // Сортировка по релевантности при поиске
+    if (currentFilters.search) {
+      filteredProducts.forEach(product => {
+        product.relevance = calculateRelevance(product, currentFilters.search);
+      });
+      
+      filteredProducts.sort((a, b) => {
+        // Сначала по релевантности (убывание)
+        if (b.relevance !== a.relevance) {
+          return b.relevance - a.relevance;
+        }
+        // Затем по выбранной сортировке
+        return applySorting(a, b, currentFilters.sort);
+      });
+    }
+  }
+  
+  if (currentFilters.category) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.category === currentFilters.category
+    );
+  }
+  
+  if (currentFilters.brand) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.brand === currentFilters.brand
+    );
+  }
+  
+  if (currentFilters.minPrice) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.price >= currentFilters.minPrice
+    );
+  }
+  
+  if (currentFilters.maxPrice) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.price <= currentFilters.maxPrice
+    );
+  }
+  
+  if (currentFilters.availability) {
+    filteredProducts = filteredProducts.filter(product => 
+      currentFilters.availability === 'in-stock' ? product.inStock : !product.inStock
+    );
+  }
+  
+  if (currentFilters.source) {
+    filteredProducts = filteredProducts.filter(product => 
+      product.source === currentFilters.source
+    );
+  }
+  
+  // Применяем сортировку только если не было поиска (при поиске уже отсортировано)
+  if (!currentFilters.search) {
+    switch (currentFilters.sort) {
+      case 'price-asc':
+        filteredProducts.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        filteredProducts.sort((a, b) => b.price - a.price);
+        break;
+      case 'name-asc':
+        filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'name-desc':
+        filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      default:
+        break;
+    }
+  }
+  
+  return filteredProducts;
+}
+
+// Вспомогательная функция для сортировки
+function applySorting(a, b, sortType) {
+  switch (sortType) {
+    case 'price-asc':
+      return a.price - b.price;
+    case 'price-desc':
+      return b.price - a.price;
+    case 'name-asc':
+      return a.title.localeCompare(b.title);
+    case 'name-desc':
+      return b.title.localeCompare(a.title);
+    default:
+      return 0;
+  }
+}
+
+// ===== КІНЕЦЬ ФУНКЦІЇ ПАГІНАЦІЇ =====
 
 // Функція для зміни сторінки в пагінації
 function changePage(page) {
@@ -2949,29 +3142,24 @@ function addReviewsTabIfNotExists() {
   }
 }
 
-// Функція перемикання джерела товарів
+// Функция переключения источника товаров
 function switchSource(source, element) {
-    // Обновляем активные вкладки
     document.querySelectorAll('.source-tab').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Если функция вызвана из HTML, element будет передан
     if (element) {
         element.classList.add('active');
     } else {
-        // Если вызвано программно, находим соответствующую кнопку
         const tabButton = document.querySelector(`.source-tab[onclick*="${source}"]`);
         if (tabButton) {
             tabButton.classList.add('active');
         }
     }
     
-    // Устанавливаем фильтр источника
     currentFilters.source = source === 'all' ? '' : source;
     currentPage = 1;
     
-    // Обновляем заголовок
     const titles = {
         'all': 'Всі товари',
         'products1.json': 'Обладнання та інструменти',
@@ -2982,55 +3170,16 @@ function switchSource(source, element) {
     };
     
     document.getElementById('products-title').textContent = titles[source] || 'Товари';
-    
-    // Применяем фильтры
     applyFilters();
 }
 
-// ===== ФУНКЦІЯ МАСОВОГО ДОДАВАННЯ ТТН =====
-function bulkAddTTN() {
-  const ordersToUpdate = [];
-  
-  // Собираем заказы, которым нужно добавить ТТН
-  document.querySelectorAll('.admin-order-item').forEach(item => {
-    const orderId = item.querySelector('h4').textContent.replace('Замовлення #', '');
-    const ttnInput = item.querySelector('.ttn-input');
-    
-    if (ttnInput && ttnInput.value.trim() !== '') {
-      ordersToUpdate.push({
-        id: orderId,
-        ttn: ttnInput.value.trim()
-      });
+// Функция перемешивания массива
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-  });
-  
-  if (ordersToUpdate.length === 0) {
-    showNotification("Не вибрано жодного замовлення для додавання ТТН", "warning");
-    return;
-  }
-  
-  if (confirm(`Додати ТТН до ${ordersToUpdate.length} замовлень?`)) {
-    const batch = db.batch();
-    
-    ordersToUpdate.forEach(order => {
-      const orderRef = db.collection("orders").doc(order.id);
-      batch.update(orderRef, {
-        ttn: order.ttn,
-        ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    });
-    
-    batch.commit()
-      .then(() => {
-        showNotification(`ТТН додано до ${ordersToUpdate.length} замовлень`);
-        loadAdminOrders();
-      })
-      .catch((error) => {
-        console.error("Помилка масового додавання ТТН: ", error);
-        showNotification("Помилка додавання ТТН", "error");
-      });
-  }
+    return array;
 }
 
 // Ініціалізація додатка після завантаження DOM

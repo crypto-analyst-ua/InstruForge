@@ -76,49 +76,39 @@ function getSearchSuggestions(query) {
       return searchCache.get(searchTerm);
     }
     
-    const suggestions = new Set();
+    const suggestions = [];
+    const seen = new Set();
     
     products.forEach(product => {
-      // Защита от неопределенного продукта
       if (!product || typeof product !== 'object') return;
-      
-      // Безопасное получение полей с значениями по умолчанию
-      const title = product.title || '';
-      const brand = product.brand || '';
-      const category = product.category || '';
-      const description = product.description || '';
-      
-      // Проверяем название
-      if (title && normalizeSearchTerm(title).includes(searchTerm)) {
-        suggestions.add(title);
+      if (!product.searchIndex.includes(searchTerm)) return;
+
+      if (product.title) {
+        const normalized = normalizeSearchTerm(product.title);
+        if (normalized.includes(searchTerm) && !seen.has(product.title)) {
+          seen.add(product.title);
+          suggestions.push({ value: product.title, type: 'Назва', icon: '📦' });
+        }
       }
-      
-      // Проверяем бренд
-      if (brand && normalizeSearchTerm(brand).includes(searchTerm)) {
-        suggestions.add(brand);
+
+      if (product.brand) {
+        const normalized = normalizeSearchTerm(product.brand);
+        if (normalized.includes(searchTerm) && !seen.has(product.brand)) {
+          seen.add(product.brand);
+          suggestions.push({ value: product.brand, type: 'Бренд', icon: '🏷️' });
+        }
       }
-      
-      // Проверяем категорию
-      if (category && normalizeSearchTerm(category).includes(searchTerm)) {
-        suggestions.add(category);
-      }
-      
-      // Поиск в описании (фраза + сниппет)
-      if (description) {
-        const desc = normalizeSearchTerm(description);
-        if (desc.includes(searchTerm)) {
-          const index = desc.indexOf(searchTerm);
-          // Используем оригинальное описание (description) для получения сниппета
-          const snippet = description.substring(
-            Math.max(0, index - 10),
-            Math.min(description.length, index + searchTerm.length + 30)
-          );
-          suggestions.add(snippet.trim() + "...");
+
+      if (product.category) {
+        const normalized = normalizeSearchTerm(product.category);
+        if (normalized.includes(searchTerm) && !seen.has(product.category)) {
+          seen.add(product.category);
+          suggestions.push({ value: product.category, type: 'Категорія', icon: '📂' });
         }
       }
     });
-    
-    const result = Array.from(suggestions).slice(0, 5);
+
+    const result = suggestions.slice(0, 5);
     searchCache.set(searchTerm, result);
     return result;
   } catch (error) {
@@ -129,9 +119,6 @@ function getSearchSuggestions(query) {
 
 // Улучшенная функция для применения подсказки
 function applySuggestion(suggestion) {
-  // Более безопасное экранирование
-  const safeSuggestion = suggestion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
   document.getElementById('search').value = suggestion;
   currentFilters.search = suggestion;
   applyFilters();
@@ -144,10 +131,9 @@ function preprocessProducts(productsArray) {
     if (!product || typeof product !== 'object') return product;
     
     // Создаем поисковый индекс для быстрого поиска
-    const searchIndex = `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''}`
-      .toLowerCase()
-      .replace(/[ї]/g, 'і')
-      .replace(/[ъь]/g, '');
+    const searchIndex = normalizeSearchTerm(
+      `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''}`
+    );
     
     return {
       ...product,
@@ -457,6 +443,13 @@ function initApp() {
       hideSearchSuggestions();
     }
   });
+
+  // Додаємо обробник для закриття підказок при натисканні Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hideSearchSuggestions();
+    }
+  });
 }
 
 // Функция для адаптации заголовка
@@ -486,11 +479,17 @@ function showSearchSuggestions(query) {
   if (suggestions.length > 0) {
     // Безопасное создание элементов через DOM
     suggestionsContainer.innerHTML = ''; // Очищаем
+    
+    const highlight = (text, query) => {
+      const regex = new RegExp(`(${query})`, 'ig');
+      return text.replace(regex, '<span class="highlight">$1</span>');
+    };
+    
     suggestions.forEach(suggestion => {
       const div = document.createElement('div');
       div.className = 'search-suggestion';
-      div.innerHTML = `<i class="fas fa-search"></i> ${suggestion}`;
-      div.addEventListener('click', () => applySuggestion(suggestion));
+      div.innerHTML = `${suggestion.icon} ${highlight(suggestion.value, query)} <span class="suggestion-type">(${suggestion.type})</span>`;
+      div.addEventListener('click', () => applySuggestion(suggestion.value));
       suggestionsContainer.appendChild(div);
     });
     suggestionsContainer.style.display = 'block';
@@ -682,7 +681,7 @@ function getFilteredProducts() {
   }
   
   if (currentFilters.search) {
-    const searchTerm = currentFilters.search.toLowerCase();
+    const searchTerm = normalizeSearchTerm(currentFilters.search);
     
     // Используем предварительно созданный searchIndex для быстрого поиска
     filteredProducts = filteredProducts.filter(product => {
@@ -1842,7 +1841,7 @@ function openAuthModal() {
   openModal();
 }
 
-// Переключення вкладок авторизації
+// Переключення вкладок авторизации
 function switchAuthTab(tab) {
   const loginForm = document.getElementById("login-form");
   const registerForm = document.getElementById("register-form");

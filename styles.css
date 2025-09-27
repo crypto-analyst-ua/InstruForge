@@ -2395,3 +2395,55 @@ button:focus, input:focus, select:focus, textarea:focus {
         font-size: 9px;
     }
 }
+
+/* Стили для секции ТТН */
+.ttn-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid;
+}
+
+.ttn-section h4 {
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+.ttn-info {
+  background: #f0f8ff;
+  border-left-color: #007bff;
+}
+
+.ttn-warning {
+  background: #fff3cd;
+  border-left-color: #ffc107;
+}
+
+/* Стили для кнопки ТТН */
+.btn-ttn {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+}
+
+.btn-ttn:hover {
+  background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+}
+
+/* Стили для ссылки отслеживания */
+.tracking-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #007bff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid #007bff;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.tracking-link:hover {
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+}

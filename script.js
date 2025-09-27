@@ -2097,6 +2097,7 @@ function loadAdminOrders() {
             <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
             <p><strong>Доставка:</strong> ${order.delivery.service}</p>
             <p><strong>Статус:</strong> <span class="order-status ${statusClass}">${statusText}</span></p>
+            ${order.ttn ? `<p><strong>ТТН:</strong> ${order.ttn}</p>` : ''}
           </div>
           <div class="admin-order-actions">
             <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі</button>
@@ -2107,6 +2108,7 @@ function loadAdminOrders() {
               <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Доставлено</option>
               <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Скасовано</option>
             </select>
+            <button class="btn" onclick="addTTNToOrder('${order.id}')">ТТН</button>
             <button class="btn btn-danger" onclick="deleteOrder('${order.id}')">Видалити</button>
           </div>
         `;
@@ -2117,6 +2119,85 @@ function loadAdminOrders() {
       console.error("Помилка завантаження замовлень: ", error);
       ordersList.innerHTML = '<p>Помилка завантаження замовлень</p>';
     });
+}
+
+// ===== ФУНКЦІЯ ДОДАВАННЯ ТТН ДО ЗАМОВЛЕННЯ =====
+function addTTNToOrder(orderId) {
+  const ttn = prompt('Введіть ТТН (трек-номер) для цього замовлення:');
+  
+  if (ttn && ttn.trim() !== '') {
+    db.collection("orders").doc(orderId).update({
+      ttn: ttn.trim(),
+      ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+      showNotification("ТТН успішно додано до замовлення");
+      
+      // Отправляем email с уведомлением о ТТН
+      db.collection("orders").doc(orderId).get()
+        .then((doc) => {
+          if (doc.exists) {
+            const order = { id: doc.id, ...doc.data() };
+            sendTTNEmail(orderId, order);
+          }
+        });
+      
+      // Обновляем список заказов
+      loadAdminOrders();
+    })
+    .catch((error) => {
+      console.error("Помилка додавання ТТН: ", error);
+      showNotification("Помилка додавання ТТН", "error");
+    });
+  }
+}
+
+// ===== ФУНКЦІЯ ВІДПРАВКИ EMAIL ПРО ТТН =====
+function sendTTNEmail(orderId, order) {
+  if (!order.ttn) return;
+  
+  const templateParams = {
+    to_email: order.userEmail,
+    order_id: orderId,
+    customer_name: order.userName,
+    ttn_number: order.ttn,
+    delivery_service: order.delivery.service,
+    delivery_city: order.delivery.city,
+    delivery_warehouse: order.delivery.warehouse,
+    tracking_url: `https://tracking.novaposhta.ua/#/uk/search/${order.ttn}`
+  };
+
+  // Используем другой шаблон для уведомления о ТТН
+  emailjs.send(EMAILJS_SERVICE_ID, "template_ttn_notification", templateParams)
+    .then(function(response) {
+      console.log('Email с ТТН успешно отправлен!', response.status, response.text);
+    }, function(error) {
+      console.error('Ошибка отправки email с ТТН:', error);
+    });
+}
+
+// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СТАТУСОВ =====
+function getStatusClass(status) {
+  const statusClasses = {
+    'new': 'status-new',
+    'processing': 'status-processing',
+    'shipped': 'status-shipped',
+    'delivered': 'status-delivered',
+    'cancelled': 'status-cancelled'
+  };
+  return statusClasses[status] || 'status-new';
+}
+
+function getStatusText(status) {
+  const statusTexts = {
+    'new': 'Новий',
+    'processing': 'В обробці',
+    'shipped': 'Відправлено',
+    'delivered': 'Доставлено',
+    'cancelled': 'Скасовано'
+  };
+  return statusTexts[status] || 'Новий';
 }
 
 // ===== ЗМІНА СТАТУСУ ЗАМОВЛЕННЯ =====
@@ -2148,7 +2229,7 @@ function deleteOrder(orderId) {
   }
 }
 
-// ===== ПЕРЕГЛЯД ДЕТАЛЕЙ ЗАМОВЛЕННЯ =====
+// ===== ПЕРЕГЛЯД ДЕТАЛЕЙ ЗАМОВЛЕННЯ (ОБНОВЛЕНА ВЕРСИЯ) =====
 function viewOrderDetails(orderId) {
   db.collection("orders").doc(orderId).get()
     .then((doc) => {
@@ -2176,14 +2257,44 @@ function viewOrderDetails(orderId) {
         }
       }
       
-      // Форматуємо дату
+      // Форматируем даты
       const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
       const updatedDate = order.updatedAt ? order.updatedAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
+      const ttnDate = order.ttnAddedAt ? order.ttnAddedAt.toDate().toLocaleString('uk-UA') : '';
+      
+      // Добавляем секцию ТТН
+      const ttnSection = order.ttn ? `
+        <div class="ttn-section" style="margin: 1rem 0; padding: 1rem; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #007bff;">
+          <h4>Інформація про відправлення</h4>
+          <p><strong>ТТН (трек-номер):</strong> ${order.ttn}</p>
+          <p><strong>Дата додавання ТТН:</strong> ${ttnDate}</p>
+          <p><strong>Служба доставки:</strong> Нова Пошта</p>
+          <p><a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" style="color: #007bff; text-decoration: none;">
+            <i class="fas fa-external-link-alt"></i> Відстежити посилку
+          </a></p>
+        </div>
+      ` : `
+        <div class="ttn-section" style="margin: 1rem 0; padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+          <p><i class="fas fa-info-circle"></i> ТТН ще не додано до цього замовлення</p>
+        </div>
+      `;
+      
+      // Кнопка для админа для добавления/изменения ТТН
+      const ttnButton = adminMode ? `
+        <div style="margin: 1rem 0;">
+          <button class="btn btn-detail" onclick="addTTNToOrder('${order.id}')">
+            <i class="fas fa-truck"></i> ${order.ttn ? 'Змінити ТТН' : 'Додати ТТН'}
+          </button>
+        </div>
+      ` : '';
       
       modalContent.innerHTML = `
         <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
         <h3>Деталі замовлення #${order.id}</h3>
         <div class="order-details">
+          ${ttnSection}
+          ${ttnButton}
+          
           <div class="customer-info">
             <h4>Інформація про клієнта</h4>
             <p><strong>Ім'я:</strong> ${order.userName}</p>
@@ -2196,7 +2307,7 @@ function viewOrderDetails(orderId) {
             <p><strong>Дата створення:</strong> ${orderDate}</p>
             <p><strong>Дата оновлення:</strong> ${updatedDate}</p>
             <p><strong>Спосіб оплати:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
-            <p><strong>Статус:</strong> ${order.status}</p>
+            <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
           </div>
           
           <div class="delivery-info">
@@ -2875,6 +2986,52 @@ function switchSource(source, element) {
     
     // Применяем фильтры
     applyFilters();
+}
+
+// ===== ФУНКЦІЯ МАСОВОГО ДОДАВАННЯ ТТН =====
+function bulkAddTTN() {
+  const ordersToUpdate = [];
+  
+  // Собираем заказы, которым нужно добавить ТТН
+  document.querySelectorAll('.admin-order-item').forEach(item => {
+    const orderId = item.querySelector('h4').textContent.replace('Замовлення #', '');
+    const ttnInput = item.querySelector('.ttn-input');
+    
+    if (ttnInput && ttnInput.value.trim() !== '') {
+      ordersToUpdate.push({
+        id: orderId,
+        ttn: ttnInput.value.trim()
+      });
+    }
+  });
+  
+  if (ordersToUpdate.length === 0) {
+    showNotification("Не вибрано жодного замовлення для додавання ТТН", "warning");
+    return;
+  }
+  
+  if (confirm(`Додати ТТН до ${ordersToUpdate.length} замовлень?`)) {
+    const batch = db.batch();
+    
+    ordersToUpdate.forEach(order => {
+      const orderRef = db.collection("orders").doc(order.id);
+      batch.update(orderRef, {
+        ttn: order.ttn,
+        ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    
+    batch.commit()
+      .then(() => {
+        showNotification(`ТТН додано до ${ordersToUpdate.length} замовлень`);
+        loadAdminOrders();
+      })
+      .catch((error) => {
+        console.error("Помилка масового додавання ТТН: ", error);
+        showNotification("Помилка додавання ТТН", "error");
+      });
+  }
 }
 
 // Ініціалізація додатка після завантаження DOM

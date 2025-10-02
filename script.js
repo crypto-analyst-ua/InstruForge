@@ -40,38 +40,368 @@ const ADMINS_STORAGE_KEY = "electrotools_admins";
 let searchTimeout = null;
 const SEARCH_DELAY = 300; // Затримка в мс
 
-// ====== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА С МОРФОЛОГИЕЙ И РЕЛЕВАНТНОСТЬЮ ======
+// ====== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ======
 
 // Кэширование результатов поиска
 const searchCache = new Map();
+const MAX_CACHE_SIZE = 100;
 
 function clearSearchCache() {
   searchCache.clear();
 }
 
-// Стемминг для украинского языка (упрощенный)
-function stemWord(word) {
-    const replacements = {
-        'ї': 'і', 'є': 'е', 'ий': 'ій', 'их': 'іх', 'ії': 'і', 'іє': 'іе'
-    };
-    let stemmed = word;
-    Object.keys(replacements).forEach(key => {
-        stemmed = stemmed.replace(new RegExp(key, 'g'), replacements[key]);
-    });
-    return stemmed;
+// Простая нормализация текста
+function normalizeSearchTerm(term) {
+  return term.toLowerCase()
+    .replace(/[ї]/g, 'і')
+    .replace(/[є]/g, 'е')
+    .replace(/[ъь]/g, '')
+    .replace(/[^а-яієґ\s]/g, '')
+    .trim();
 }
 
-// Нормализация поискового запроса с поддержкой морфологии
-function normalizeSearchTerm(term) {
-    let normalized = term.toLowerCase()
-        .replace(/[ї]/g, 'і')
-        .replace(/[ъь]/g, '')
-        .trim();
+// Функция для экранирования HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
-    // Применяем стемминг к каждому слову
-    const words = normalized.split(/\s+/);
-    const stemmedWords = words.map(word => stemWord(word));
-    return stemmedWords.join(' ');
+// Улучшенная функция для получения поисковых подсказок
+function getSearchSuggestions(query) {
+  try {
+    if (!query || query.length < 2) return [];
+    
+    const normalizedQuery = normalizeSearchTerm(query);
+    
+    // Проверяем кэш
+    if (searchCache.has(normalizedQuery)) {
+      return searchCache.get(normalizedQuery);
+    }
+    
+    const suggestions = [];
+    const seen = new Set();
+    
+    // Ограничиваем количество проверяемых товаров для производительности
+    const maxProductsToCheck = Math.min(products.length, 500);
+    
+    for (let i = 0; i < maxProductsToCheck; i++) {
+      const product = products[i];
+      if (!product || typeof product !== 'object') continue;
+      
+      // Проверяем название
+      if (product.title) {
+        const normalizedTitle = normalizeSearchTerm(product.title);
+        if (normalizedTitle.includes(normalizedQuery) && !seen.has(product.title)) {
+          seen.add(product.title);
+          suggestions.push({ 
+            value: product.title, 
+            type: 'Назва', 
+            icon: '📦',
+            productId: product.id
+          });
+        }
+      }
+      
+      // Проверяем бренд
+      if (product.brand && !seen.has(product.brand)) {
+        const normalizedBrand = normalizeSearchTerm(product.brand);
+        if (normalizedBrand.includes(normalizedQuery)) {
+          seen.add(product.brand);
+          suggestions.push({ 
+            value: product.brand, 
+            type: 'Бренд', 
+            icon: '🏷️' 
+          });
+        }
+      }
+      
+      // Проверяем категорию
+      if (product.category && !seen.has(product.category)) {
+        const normalizedCategory = normalizeSearchTerm(product.category);
+        if (normalizedCategory.includes(normalizedQuery)) {
+          seen.add(product.category);
+          suggestions.push({ 
+            value: product.category, 
+            type: 'Категорія', 
+            icon: '📂' 
+          });
+        }
+      }
+      
+      // Ограничиваем количество подсказок
+      if (suggestions.length >= 8) break;
+    }
+    
+    // Очищаем кэш если он слишком большой
+    if (searchCache.size > MAX_CACHE_SIZE) {
+      const firstKey = searchCache.keys().next().value;
+      searchCache.delete(firstKey);
+    }
+    
+    searchCache.set(normalizedQuery, suggestions.slice(0, 5));
+    return suggestions.slice(0, 5);
+  } catch (error) {
+    console.error("Ошибка в поиске подсказок:", error);
+    return [];
+  }
+}
+
+// Улучшенная функция фильтрации товаров
+function searchProducts(searchTerm) {
+  if (!searchTerm || searchTerm.length < 2) {
+    return products;
+  }
+  
+  const normalizedSearch = normalizeSearchTerm(searchTerm);
+  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length > 1);
+  
+  if (searchWords.length === 0) {
+    return products;
+  }
+  
+  return products.filter(product => {
+    if (!product.searchIndex) return false;
+    
+    // Проверяем соответствие всем словам поиска
+    return searchWords.every(word => 
+      product.searchIndex.includes(word)
+    );
+  });
+}
+
+// Улучшенный обработчик ввода в поиске
+function setupSearchHandler() {
+  const searchInput = document.getElementById('search');
+  let lastSearchValue = '';
+  
+  searchInput.addEventListener('input', function() {
+    const currentValue = this.value.trim();
+    
+    // Пропускаем частые вызовы
+    if (currentValue === lastSearchValue) return;
+    
+    clearTimeout(searchTimeout);
+    
+    searchTimeout = setTimeout(() => {
+      lastSearchValue = currentValue;
+      currentFilters.search = currentValue;
+      
+      // Показываем/скрываем подсказки
+      if (currentValue.length > 1) {
+        showSearchSuggestions(currentValue);
+      } else {
+        hideSearchSuggestions();
+      }
+      
+      // Применяем фильтры
+      applyFilters();
+    }, SEARCH_DELAY);
+  });
+  
+  // Обработчик клавиш для подсказок
+  searchInput.addEventListener('keydown', function(e) {
+    const suggestionsContainer = document.getElementById('search-suggestions');
+    if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+    
+    const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
+    let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!activeSuggestion) {
+          suggestions[0]?.classList.add('active');
+        } else {
+          activeSuggestion.classList.remove('active');
+          const next = activeSuggestion.nextElementSibling || suggestions[0];
+          next.classList.add('active');
+        }
+        break;
+        
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!activeSuggestion) {
+          suggestions[suggestions.length - 1]?.classList.add('active');
+        } else {
+          activeSuggestion.classList.remove('active');
+          const prev = activeSuggestion.previousElementSibling || suggestions[suggestions.length - 1];
+          prev.classList.add('active');
+        }
+        break;
+        
+      case 'Enter':
+        e.preventDefault();
+        if (activeSuggestion) {
+          activeSuggestion.click();
+        }
+        break;
+        
+      case 'Escape':
+        hideSearchSuggestions();
+        break;
+    }
+  });
+}
+
+// Улучшенная функция показа подсказок
+function showSearchSuggestions(query) {
+  if (!query || query.length < 2) {
+    hideSearchSuggestions();
+    return;
+  }
+  
+  const suggestions = getSearchSuggestions(query);
+  const searchContainer = document.querySelector('.search-container');
+  
+  let suggestionsContainer = document.getElementById('search-suggestions');
+  if (!suggestionsContainer) {
+    suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = 'search-suggestions';
+    suggestionsContainer.className = 'search-suggestions';
+    searchContainer.appendChild(suggestionsContainer);
+  }
+  
+  if (suggestions.length > 0) {
+    suggestionsContainer.innerHTML = '';
+    
+    suggestions.forEach((suggestion, index) => {
+      const div = document.createElement('div');
+      div.className = `search-suggestion ${index === 0 ? 'active' : ''}`;
+      div.innerHTML = `
+        ${suggestion.icon} 
+        <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+        <span class="suggestion-type">${suggestion.type}</span>
+      `;
+      
+      div.addEventListener('click', () => {
+        document.getElementById('search').value = suggestion.value;
+        currentFilters.search = suggestion.value;
+        applyFilters();
+        hideSearchSuggestions();
+        
+        // Если это подсказка по товару, показываем его
+        if (suggestion.productId) {
+          showProductDetail(suggestion.productId);
+        }
+      });
+      
+      // Добавляем обработчики для hover
+      div.addEventListener('mouseenter', () => {
+        suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
+          s.classList.remove('active')
+        );
+        div.classList.add('active');
+      });
+      
+      suggestionsContainer.appendChild(div);
+    });
+    
+    suggestionsContainer.style.display = 'block';
+  } else {
+    suggestionsContainer.style.display = 'none';
+  }
+}
+
+// Функция для скрытия подсказок
+function hideSearchSuggestions() {
+  const suggestionsContainer = document.getElementById('search-suggestions');
+  if (suggestionsContainer) {
+    suggestionsContainer.style.display = 'none';
+    suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
+      s.classList.remove('active')
+    );
+  }
+}
+
+// Улучшенная предобработка товаров
+function preprocessProducts(productsArray) {
+  return productsArray.map(product => {
+    if (!product || typeof product !== 'object') return product;
+    
+    // Создаем расширенный поисковый индекс
+    const searchText = [
+      product.title || '',
+      product.brand || '',
+      product.category || '',
+      product.description || '',
+      product.specifications || ''
+    ].join(' ').toLowerCase();
+    
+    const searchIndex = normalizeSearchTerm(searchText);
+    
+    return {
+      ...product,
+      searchIndex,
+      // Безопасные значения по умолчанию
+      title: product.title || 'Без названия',
+      brand: product.brand || '',
+      category: product.category || '',
+      description: product.description || '',
+      price: Number(product.price) || 0,
+      image: product.image || '',
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      specifications: product.specifications || ''
+    };
+  });
+}
+
+// Добавляем CSS для улучшенных подсказок
+function addSearchStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .search-suggestion {
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+    
+    .search-suggestion:hover,
+    .search-suggestion.active {
+      background-color: #f8f9fa;
+    }
+    
+    .search-suggestion:last-child {
+      border-bottom: none;
+    }
+    
+    .suggestion-text {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .suggestion-type {
+      font-size: 0.8em;
+      color: #6c757d;
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    .search-container {
+      position: relative;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // Очистка таймера при закрытии страницы
@@ -81,141 +411,6 @@ function cleanupSearch() {
 }
 
 window.addEventListener('beforeunload', cleanupSearch);
-
-// Расчет релевантности товара для поиска
-function calculateRelevance(product, searchTerm) {
-    let score = 0;
-    const normalizedSearchTerm = normalizeSearchTerm(searchTerm);
-    const searchWords = normalizedSearchTerm.split(/\s+/);
-
-    // Поиск по каждому слову в разных полях с разным весом
-    searchWords.forEach(word => {
-        if (product.searchIndex.includes(word)) {
-            // Название имеет наибольший вес
-            if (product.title && normalizeSearchTerm(product.title).includes(word)) score += 10;
-            
-            // Бренд - средний вес
-            if (product.brand && normalizeSearchTerm(product.brand).includes(word)) score += 5;
-            
-            // Категория - меньший вес
-            if (product.category && normalizeSearchTerm(product.category).includes(word)) score += 3;
-            
-            // Описание и характеристики
-            if (product.description && normalizeSearchTerm(product.description).includes(word)) score += 1;
-            
-            // Бонус за полное совпадение слова
-            if (product.title && normalizeSearchTerm(product.title) === word) score += 5;
-        }
-    });
-
-    // Бонус за полное совпадение фразы
-    if (product.searchIndex.includes(normalizedSearchTerm)) {
-        score += 15;
-    }
-
-    // Бонус за популярные товары
-    if (product.isPopular) {
-        score += 2;
-    }
-
-    return score;
-}
-
-// Улучшенная функция для получения поисковых подсказок
-function getSearchSuggestions(query) {
-  try {
-    if (!query || query.length < 2) return [];
-    
-    const searchTerm = normalizeSearchTerm(query);
-    
-    if (searchCache.has(searchTerm)) {
-      return searchCache.get(searchTerm);
-    }
-    
-    const suggestions = [];
-    const seen = new Set();
-    
-    // Создаем временный массив для расчета релевантности
-    const scoredProducts = products.map(product => ({
-        product,
-        relevance: calculateRelevance(product, query)
-    })).filter(item => item.relevance > 0)
-      .sort((a, b) => b.relevance - a.relevance)
-      .slice(0, 10); // Берем топ-10 самых релевантных
-
-    scoredProducts.forEach(({product}) => {
-      if (!product || typeof product !== 'object') return;
-
-      if (product.title) {
-        const normalized = normalizeSearchTerm(product.title);
-        if (normalized.includes(searchTerm) && !seen.has(product.title)) {
-          seen.add(product.title);
-          suggestions.push({ value: product.title, type: 'Назва', icon: '📦', relevance: calculateRelevance(product, query) });
-        }
-      }
-
-      if (product.brand) {
-        const normalized = normalizeSearchTerm(product.brand);
-        if (normalized.includes(searchTerm) && !seen.has(product.brand)) {
-          seen.add(product.brand);
-          suggestions.push({ value: product.brand, type: 'Бренд', icon: '🏷️', relevance: calculateRelevance(product, query) });
-        }
-      }
-
-      if (product.category) {
-        const normalized = normalizeSearchTerm(product.category);
-        if (normalized.includes(searchTerm) && !seen.has(product.category)) {
-          seen.add(product.category);
-          suggestions.push({ value: product.category, type: 'Категорія', icon: '📂', relevance: calculateRelevance(product, query) });
-        }
-      }
-    });
-
-    // Сортируем по релевантности
-    suggestions.sort((a, b) => b.relevance - a.relevance);
-    
-    const result = suggestions.slice(0, 5);
-    searchCache.set(searchTerm, result);
-    return result;
-  } catch (error) {
-    console.error("Ошибка в поиске:", error);
-    return [];
-  }
-}
-
-// Улучшенная функция для применения подсказки
-function applySuggestion(suggestion) {
-  document.getElementById('search').value = suggestion;
-  currentFilters.search = suggestion;
-  applyFilters();
-  hideSearchSuggestions();
-}
-
-// Оптимизация: предварительная нормализация данных при загрузке
-function preprocessProducts(productsArray) {
-  return productsArray.map(product => {
-    if (!product || typeof product !== 'object') return product;
-    
-    // Создаем расширенный поисковый индекс с характеристиками
-    const searchIndex = normalizeSearchTerm(
-      `${product.title || ''} ${product.brand || ''} ${product.category || ''} ${product.description || ''} ${product.specifications || ''}`
-    );
-    
-    return {
-      ...product,
-      searchIndex,
-      // Безопасные значения по умолчанию для всех полей
-      title: product.title || '',
-      brand: product.brand || '',
-      category: product.category || '',
-      description: product.description || '',
-      price: product.price || 0,
-      image: product.image || '',
-      inStock: product.inStock !== undefined ? product.inStock : true,
-      specifications: product.specifications || '' // Добавляем характеристики
-    };
-  });
-}
 
 let products = [];
 let cart = {};
@@ -373,6 +568,9 @@ async function checkFilesAvailability() {
 // Ініціалізація додатка
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
+  
+  // Добавляем стили для поиска
+  addSearchStyles();
 
   auth.onAuthStateChanged(user => {
     if (user) {
@@ -411,7 +609,7 @@ function initApp() {
       })
       .catch(jsonError => {
         console.error("JSON:", jsonError);
-        showNotification("", "error");
+        showNotification("Не вдалося завантажити товари", "error");
       });
   }).finally(() => {
       checkFilesAvailability();
@@ -435,20 +633,8 @@ function initApp() {
   
   document.getElementById("year").innerText = new Date().getFullYear();
   
-  // Оновлюємо обробник пошуку
-  document.getElementById('search').addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      currentFilters.search = this.value.trim();
-      applyFilters();
-      
-      if (this.value.length > 2) {
-        showSearchSuggestions(this.value);
-      } else {
-        hideSearchSuggestions();
-      }
-    }, SEARCH_DELAY);
-  });
+  // Настраиваем улучшенный поиск
+  setupSearchHandler();
   
   document.getElementById('category').addEventListener('change', function() {
     currentFilters.category = this.value;
@@ -483,14 +669,9 @@ function initApp() {
   window.addEventListener('resize', adjustHeaderTitle);
   adjustHeaderTitle();
   
+  // Закрываем подсказки при клике вне поиска
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.search-container')) {
-      hideSearchSuggestions();
-    }
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
       hideSearchSuggestions();
     }
   });
@@ -501,50 +682,6 @@ function adjustHeaderTitle() {
   const logoElement = document.querySelector('.logo h1');
   if (window.innerWidth <= 768) {
     logoElement.style.fontSize = Math.min(1.5, 4 * window.innerWidth / 100) + 'rem';
-  }
-}
-
-// Улучшенная функция для показа поисковых подсказок
-function showSearchSuggestions(query) {
-  if (!query || query.length < 2) return;
-  
-  const suggestions = getSearchSuggestions(query);
-  const searchContainer = document.querySelector('.search-container');
-  
-  let suggestionsContainer = document.getElementById('search-suggestions');
-  if (!suggestionsContainer) {
-    suggestionsContainer = document.createElement('div');
-    suggestionsContainer.id = 'search-suggestions';
-    suggestionsContainer.className = 'search-suggestions';
-    searchContainer.appendChild(suggestionsContainer);
-  }
-  
-  if (suggestions.length > 0) {
-    suggestionsContainer.innerHTML = '';
-    
-    const highlight = (text, query) => {
-      const regex = new RegExp(`(${query})`, 'ig');
-      return text.replace(regex, '<span class="highlight">$1</span>');
-    };
-    
-    suggestions.forEach(suggestion => {
-      const div = document.createElement('div');
-      div.className = 'search-suggestion';
-      div.innerHTML = `${suggestion.icon} ${highlight(suggestion.value, query)} <span class="suggestion-type">(${suggestion.type})</span>`;
-      div.addEventListener('click', () => applySuggestion(suggestion.value));
-      suggestionsContainer.appendChild(div);
-    });
-    suggestionsContainer.style.display = 'block';
-  } else {
-    suggestionsContainer.style.display = 'none';
-  }
-}
-
-// Функція для приховування підказок
-function hideSearchSuggestions() {
-  const suggestionsContainer = document.getElementById('search-suggestions');
-  if (suggestionsContainer) {
-    suggestionsContainer.style.display = 'none';
   }
 }
 
@@ -687,7 +824,7 @@ function updatePagination() {
   paginationContainer.appendChild(nextButton);
 }
 
-// Улучшенная функция фильтрации с учетом релевантности
+// Обновляем функцию getFilteredProducts для поиска
 function getFilteredProducts() {
   let filteredProducts = [...products];
   
@@ -695,32 +832,12 @@ function getFilteredProducts() {
     filteredProducts = filteredProducts.filter(product => favorites[product.id]);
   }
   
+  // Применяем поиск
   if (currentFilters.search) {
-    const searchTerm = normalizeSearchTerm(currentFilters.search);
-    
-    // Фильтрация с расчетом релевантности
-    filteredProducts = filteredProducts.filter(product => {
-      if (!product.searchIndex) return false;
-      return product.searchIndex.includes(searchTerm);
-    });
-    
-    // Сортировка по релевантности при поиске
-    if (currentFilters.search) {
-      filteredProducts.forEach(product => {
-        product.relevance = calculateRelevance(product, currentFilters.search);
-      });
-      
-      filteredProducts.sort((a, b) => {
-        // Сначала по релевантности (убывание)
-        if (b.relevance !== a.relevance) {
-          return b.relevance - a.relevance;
-        }
-        // Затем по выбранной сортировке
-        return applySorting(a, b, currentFilters.sort);
-      });
-    }
+    filteredProducts = searchProducts(currentFilters.search);
   }
   
+  // Применяем остальные фильтры
   if (currentFilters.category) {
     filteredProducts = filteredProducts.filter(product => 
       product.category === currentFilters.category
@@ -757,43 +874,31 @@ function getFilteredProducts() {
     );
   }
   
-  // Применяем сортировку только если не было поиска (при поиске уже отсортировано)
-  if (!currentFilters.search) {
-    switch (currentFilters.sort) {
-      case 'price-asc':
-        filteredProducts.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        filteredProducts.sort((a, b) => b.price - a.price);
-        break;
-      case 'name-asc':
-        filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case 'name-desc':
-        filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      default:
-        break;
-    }
+  // Применяем сортировку
+  switch (currentFilters.sort) {
+    case 'price-asc':
+      filteredProducts.sort((a, b) => a.price - b.price);
+      break;
+    case 'price-desc':
+      filteredProducts.sort((a, b) => b.price - a.price);
+      break;
+    case 'name-asc':
+      filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case 'name-desc':
+      filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    default:
+      // По умолчанию - популярные первыми
+      filteredProducts.sort((a, b) => {
+        if (a.isPopular && !b.isPopular) return -1;
+        if (!a.isPopular && b.isPopular) return 1;
+        return 0;
+      });
+      break;
   }
   
   return filteredProducts;
-}
-
-// Вспомогательная функция для сортировки
-function applySorting(a, b, sortType) {
-  switch (sortType) {
-    case 'price-asc':
-      return a.price - b.price;
-    case 'price-desc':
-      return b.price - a.price;
-    case 'name-asc':
-      return a.title.localeCompare(b.title);
-    case 'name-desc':
-      return b.title.localeCompare(a.title);
-    default:
-      return 0;
-  }
 }
 
 // ===== КІНЕЦЬ ФУНКЦІЇ ПАГІНАЦІЇ =====
@@ -863,83 +968,6 @@ function updatePagination() {
   nextButton.disabled = currentPage === totalPages;
   nextButton.onclick = () => changePage(currentPage + 1);
   paginationContainer.appendChild(nextButton);
-}
-
-// Отримання відфільтрованих продуктів (допоміжна функція)
-function getFilteredProducts() {
-  let filteredProducts = [...products];
-  
-  if (showingFavorites) {
-    filteredProducts = filteredProducts.filter(product => favorites[product.id]);
-  }
-  
-  if (currentFilters.search) {
-    const searchTerm = normalizeSearchTerm(currentFilters.search);
-    
-    // Используем предварительно созданный searchIndex для быстрого поиска
-    filteredProducts = filteredProducts.filter(product => {
-      if (!product.searchIndex) return false;
-      return product.searchIndex.includes(searchTerm);
-    });
-  }
-  
-  if (currentFilters.category) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.category === currentFilters.category
-    );
-  }
-  
-  if (currentFilters.brand) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.brand === currentFilters.brand
-    );
-  }
-  
-  if (currentFilters.minPrice) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.price >= currentFilters.minPrice
-    );
-  }
-  
-  if (currentFilters.maxPrice) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.price <= currentFilters.maxPrice
-    );
-  }
-  
-  if (currentFilters.availability) {
-    filteredProducts = filteredProducts.filter(product => 
-      currentFilters.availability === 'in-stock' ? product.inStock : !product.inStock
-    );
-  }
-  
-  // Фильтрация по источнику (JSON файлу)
-  if (currentFilters.source) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.source === currentFilters.source
-    );
-  }
-  
-  // Застосовуємо сортування
-  switch (currentFilters.sort) {
-    case 'price-asc':
-      filteredProducts.sort((a, b) => a.price - b.price);
-      break;
-    case 'price-desc':
-      filteredProducts.sort((a, b) => b.price - a.price);
-      break;
-    case 'name-asc':
-      filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
-      break;
-    case 'name-desc':
-      filteredProducts.sort((a, b) => b.title.localeCompare(a.title));
-      break;
-    default:
-      // За замовчуванням - без сортування
-      break;
-  }
-  
-  return filteredProducts;
 }
 
 // ===== КІНЕЦЬ ФУНКЦІЇ ПАГІНАЦІЇ =====
@@ -3171,15 +3199,6 @@ function switchSource(source, element) {
     
     document.getElementById('products-title').textContent = titles[source] || 'Товари';
     applyFilters();
-}
-
-// Функция перемешивания массива
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
 }
 
 // Ініціалізація додатка після завантаження DOM

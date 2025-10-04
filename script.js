@@ -412,6 +412,100 @@ function cleanupSearch() {
 
 window.addEventListener('beforeunload', cleanupSearch);
 
+// Динамическая генерация структурированных данных
+function generateStructuredData(products) {
+    if (!products || products.length === 0) return;
+    
+    // Берем первые 10 товаров для примера
+    const featuredProducts = products.slice(0, 10);
+    
+    const itemListElement = featuredProducts.map((product, index) => {
+        // Определяем наличие товара
+        let availability = "https://schema.org/InStock";
+        if (!product.inStock) {
+            availability = "https://schema.org/OutOfStock";
+        }
+        
+        // Определяем бренд из названия или категории
+        let brand = "InstruForge";
+        const brandMatch = product.title.match(/(SIGMA|AQUATICA|LEO|GRAD|MASTERTOOL)/i);
+        if (brandMatch) {
+            brand = brandMatch[0];
+        } else if (product.brand) {
+            brand = product.brand;
+        }
+        
+        // Определяем категорию
+        let category = "Інструменти";
+        if (product.category) {
+            category = product.category;
+        } else if (product.title.toLowerCase().includes("насос")) {
+            category = "Сантехніка та насоси";
+        } else if (product.title.toLowerCase().includes("ключ") || product.title.toLowerCase().includes("інструмент")) {
+            category = "Ручні та електроінструменти";
+        } else if (product.title.toLowerCase().includes("кріплен") || product.title.toLowerCase().includes("заклеп")) {
+            category = "Кріплення та витратні матеріали";
+        }
+        
+        return {
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+                "@type": "Product",
+                "name": product.title,
+                "description": product.description || `${product.title} - якісний товар від InstruForge`,
+                "brand": {
+                    "@type": "Brand",
+                    "name": brand
+                },
+                "category": category,
+                "offers": {
+                    "@type": "Offer",
+                    "availability": availability,
+                    "priceCurrency": "UAH",
+                    "price": product.price ? product.price.toString() : "0",
+                    "priceValidUntil": new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +90 дней
+                    "url": `${window.location.origin}/#product-${product.id}`
+                },
+                "image": product.image || "https://instruforge.web.app/images/placeholder-product.jpg",
+                "sku": product.id || `item-${index + 1}`,
+                "url": `${window.location.origin}/#product-${product.id}`
+            }
+        };
+    });
+
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Каталог інструментів та господарських товарів InstruForge",
+        "description": "Понад 5000 товарів: інструменти SIGMA, насоси Aquatica та LEO, кріплення, сантехніка з доставкою по Україні",
+        "url": window.location.href,
+        "numberOfItems": products.length,
+        "itemListElement": itemListElement
+    };
+
+    // Удаляем старые JSON-LD скрипты (только ItemList, остальные оставляем)
+    const oldScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    oldScripts.forEach(script => {
+        try {
+            const data = JSON.parse(script.textContent);
+            if (data["@type"] === "ItemList") {
+                script.remove();
+            }
+        } catch (e) {
+            // Если не JSON, пропускаем
+        }
+    });
+
+    // Создаем новый script элемент
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify(structuredData, null, 2);
+    document.head.appendChild(script);
+    
+    console.log('Structured data updated for', products.length, 'products');
+}
+
 let products = [];
 let cart = {};
 let favorites = {};
@@ -598,6 +692,8 @@ function initApp() {
     loadProductsFromJson()
       .then(jsonProducts => {
         products = preprocessProducts(jsonProducts);
+        window.currentProducts = products;
+        generateStructuredData(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -693,6 +789,8 @@ function loadProducts() {
   if (cachedProducts && cacheTime && Date.now() - cacheTime < 300000) {
     products = preprocessProducts(JSON.parse(cachedProducts));
     products = shuffleArray(products);
+    window.currentProducts = products;
+    generateStructuredData(products);
     renderProducts();
     return Promise.resolve();
   }
@@ -707,6 +805,8 @@ function loadProducts() {
         if (data) {
           products = preprocessProducts(JSON.parse(data));
           products = shuffleArray(products);
+          window.currentProducts = products;
+          generateStructuredData(products);
           updateCartCount();
           renderProducts();
           renderFeaturedProducts();
@@ -718,6 +818,8 @@ function loadProducts() {
             .then(jsonProducts => {
               products = preprocessProducts(jsonProducts);
               products = shuffleArray(products);
+              window.currentProducts = products;
+              generateStructuredData(products);
               updateCartCount();
               renderProducts();
               renderFeaturedProducts();
@@ -736,6 +838,8 @@ function loadProducts() {
                 
                 products = preprocessProducts(products);
                 products = shuffleArray(products);
+                window.currentProducts = products;
+                generateStructuredData(products);
         
         localStorage.setItem('products_cache', JSON.stringify(products));
         localStorage.setItem('products_cache_time', Date.now());
@@ -756,6 +860,8 @@ function loadProducts() {
       if (data) {
         products = preprocessProducts(JSON.parse(data));
         products = shuffleArray(products);
+        window.currentProducts = products;
+        generateStructuredData(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -1400,6 +1506,9 @@ function applyFilters() {
   // Оновлюємо лічильник товарів
   const filteredProducts = getFilteredProducts();
   document.getElementById('products-count').textContent = `Знайдено: ${filteredProducts.length}`;
+  
+  // Генерируем структурированные данные для отфильтрованных товаров
+  generateStructuredData(filteredProducts);
 }
 
 // Скидання фільтрів
@@ -3190,16 +3299,26 @@ function switchSource(source, element) {
     
     const titles = {
         'all': 'Всі товари',
-        'products1.json': 'Обладнання та інструменти',
-        'products2.json': 'Миючі засоби', 
-        'products3.json': 'Маслобаза',
-        'products4.json': 'Дрібниці для дому',
-        'products5.json': 'Мамин посуд'
+        'products1.json': 'Інструменти',
+        'products2.json': 'Насоси та сантехніка',
+        'products3.json': 'Кріплення та витратні матеріали',
+        'products4.json': 'Електроінструменти',
+        'products5.json': 'Спеціальні товари'
     };
     
     document.getElementById('products-title').textContent = titles[source] || 'Товари';
+    
     applyFilters();
 }
 
-// Ініціалізація додатка після завантаження DOM
-document.addEventListener('DOMContentLoaded', initApp);
+// Ініціалізація додатка
+document.addEventListener("DOMContentLoaded", function() {
+    initApp();
+    
+    // Додаємо обробник для закриття модального вікна при кліку поза ним
+    document.getElementById("modal").addEventListener("click", function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+});

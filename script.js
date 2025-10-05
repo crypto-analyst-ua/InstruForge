@@ -1302,28 +1302,27 @@ function renderProducts() {
     const isFavorite = favorites[product.id];
     
     card.innerHTML = `
-      ${product.discount ? `<div class="card-discount">-${product.discount}%</div>` : ''}
-      ${product.isNew ? '<div class="card-badge">Новинка</div>' : ''}
-      <img src="${product.image || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${product.title}">
-      <h3>${product.title}</h3>
-      <p>${product.description || 'Опис відсутній'}</p>
-      <div class="price-container">
-        <span class="price">${formatPrice(product.price)} ₴</span>
-        ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
-      </div>
-      
-      <div class="card-actions">
-        <button class="btn btn-buy" onclick="addToCart('${product.id}')">
-          <i class="fas fa-shopping-cart"></i> Купити
-        </button>
-        <button class="btn btn-detail" onclick="showProductDetail('${product.id}')">
-          <i class="fas fa-info"></i> Детальніше
-        </button>
-        <button class="btn-favorite ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${product.id}')">
-          <i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i>
-        </button>
-      </div>
-    `;
+  ${product.discount ? `<div class="card-discount">-${product.discount}%</div>` : ''}
+  ${product.isNew ? '<div class="card-badge">Новинка</div>' : ''}
+  <img src="${product.image || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${product.title}">
+  <h3>${product.title}</h3>
+  <div class="price-container">
+    <span class="price">${formatPrice(product.price)} ₴</span>
+    ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+  </div>
+  
+  <div class="card-actions">
+    <button class="btn btn-buy" onclick="addToCart('${product.id}')">
+      <i class="fas fa-shopping-cart"></i> Купити
+    </button>
+    <button class="btn btn-detail" onclick="showProductDetail('${product.id}')">
+      <i class="fas fa-info"></i> Детальніше
+    </button>
+    <button class="btn-favorite ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${product.id}')">
+      <i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i>
+    </button>
+  </div>
+`;
     
     grid.appendChild(card);
   });

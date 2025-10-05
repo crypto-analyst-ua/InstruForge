@@ -1754,9 +1754,44 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
 }
 
+/* ИЗМЕНЕНИЕ: Две колонки на мобильных устройствах */
 @media (max-width: 576px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr); /* Две колонки вместо одной */
+    gap: 0.8rem; /* Уменьшаем отступ между карточками для мобильных */
+  }
+  
+  /* Уменьшаем минимальную ширину карточек для лучшего отображения в 2 колонки */
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  /* Уменьшаем отступы внутри карточек для мобильных */
+  .card {
+    padding: 0.5rem;
+  }
+  
+  .card h3 {
+    font-size: 0.9rem;
+    padding: 0 0.5rem;
+  }
+  
+  .card p {
+    padding: 0 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .price-container {
+    padding: 0 0.5rem;
+  }
+  
+  .card-actions {
+    padding: 0 0.5rem 0.5rem;
+  }
+  
+  /* Уменьшаем размер изображений в карточках */
+  .card img {
+    height: 120px;
   }
   
   .header-controls {
@@ -1827,44 +1862,21 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
 }
 
-@media (max-width: 480px) {
-  /* Делаем кнопки более компактными */
-  .header-controls .btn {
-    min-width: 40px;
-    height: 40px;
-    padding: 0.5rem;
-  }
-
-  /* Скрываем текст на очень маленьких экранах, но оставляем прямоугольную форму */
-  .header-controls .btn .btn-text {
-    display: none;
-  }
-
-  /* Делаем выпадающий список еще компактнее */
-  .header-controls select {
-    min-width: 70px;
-    height: 40px;
-    padding: 0.4rem;
-    font-size: 0.7rem;
-  }
-
-  /* Уменьшаем кнопку корзины */
-  .header-controls .btn-cart {
-    min-width: 100px;
-  }
-
-  /* Дополнительные улучшения для очень маленьких экранов */
-  .modal .btn {
-    min-width: 100%;
-    margin-bottom: 0.5rem;
+/* ИЗМЕНЕНИЕ: Дополнительные стили для очень маленьких экранов */
+@media (max-width: 360px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    gap: 0.5rem;
   }
   
-  .detail-actions {
-    flex-direction: column;
+  .card img {
+    height: 100px;
   }
-}
-
-@media (max-width: 360px) {
+  
+  .card h3 {
+    font-size: 0.8rem;
+  }
+  
   .logo {
     flex-direction: column;
     text-align: center;
@@ -1905,6 +1917,57 @@ button:focus, input:focus, select:focus, textarea:focus {
   .header-controls select {
     min-width: 60px;
     font-size: 0.65rem;
+  }
+}
+
+/* Убедимся, что в режиме списка все равно остается одна колонка */
+@media (max-width: 576px) {
+  .grid.list-view {
+    grid-template-columns: 1fr; /* В режиме списка оставляем одну колонку */
+  }
+}
+
+/* Для планшетов (от 577px до 768px) можно сделать 3 колонки */
+@media (min-width: 577px) and (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  /* Делаем кнопки более компактными */
+  .header-controls .btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0.5rem;
+  }
+
+  /* Скрываем текст на очень маленьких экранах, но оставляем прямоугольную форму */
+  .header-controls .btn .btn-text {
+    display: none;
+  }
+
+  /* Делаем выпадающий список еще компактнее */
+  .header-controls select {
+    min-width: 70px;
+    height: 40px;
+    padding: 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  /* Уменьшаем кнопку корзины */
+  .header-controls .btn-cart {
+    min-width: 100px;
+  }
+
+  /* Дополнительные улучшения для очень маленьких экранов */
+  .modal .btn {
+    min-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .detail-actions {
+    flex-direction: column;
   }
 }
 

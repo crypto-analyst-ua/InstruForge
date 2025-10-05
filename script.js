@@ -705,7 +705,7 @@ function initApp() {
       })
       .catch(jsonError => {
         console.error("JSON:", jsonError);
-        showNotification("Не вдалося завантажити товари", "error");
+        showNotification("", "error");
       });
   }).finally(() => {
       checkFilesAvailability();

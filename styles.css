@@ -2849,3 +2849,138 @@ h1 {
     margin-bottom: 0.5rem;
   }
 }
+
+/* Стили для промежуточного модального окна заказа пользователя */
+@media (max-width: 768px) {
+  .user-orders .order-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+  }
+  
+  .user-orders .order-item h4 {
+    margin-bottom: 0.8rem;
+    color: var(--primary-dark);
+    font-size: 1rem;
+  }
+  
+  .user-orders .order-item p {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  /* Перемещаем кнопку вниз и делаем на всю ширину */
+  .user-orders .order-item .btn {
+    width: 100%;
+    margin-top: 1rem;
+    min-height: 44px;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+  }
+  
+  /* Улучшаем отображение статуса заказа */
+  .user-orders .order-status {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+  }
+}
+
+/* Дополнительные улучшения для очень маленьких экранов */
+@media (max-width: 480px) {
+  .user-orders .order-item {
+    padding: 0.8rem;
+  }
+  
+  .user-orders .order-item h4 {
+    font-size: 0.9rem;
+  }
+  
+  .user-orders .order-item p {
+    font-size: 0.8rem;
+  }
+  
+  .user-orders .order-item .btn {
+    min-height: 48px;
+    font-size: 1.1rem;
+  }
+}
+
+/* Специфические стили для модального окна с заказами пользователя */
+#modal-content .user-orders {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+/* Улучшаем скролл для мобильных */
+#modal-content .user-orders {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Гарантируем, что кнопка всегда видна и доступна */
+.user-orders .order-item {
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.user-orders .order-item .btn {
+  position: relative;
+  z-index: 2;
+}
+
+/* Стили для улучшенной мобильной разметки заказов */
+.order-header-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.order-header-mobile h4 {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.order-info-mobile {
+  margin-bottom: 1rem;
+}
+
+.order-info-mobile p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--gray);
+}
+
+.order-info-mobile i {
+  color: var(--primary);
+  width: 16px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .order-header-mobile {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .order-header-mobile h4 {
+    min-width: auto;
+    font-size: 1rem;
+  }
+  
+  .order-info-mobile p {
+    font-size: 0.9rem;
+  }
+}

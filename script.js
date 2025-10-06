@@ -3241,15 +3241,21 @@ function viewOrders() {
         }
         
         ordersHTML += `
-          <div class="order-item" style="border: 1px solid #eee; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-            <h4>Змовлення #${order.id}</h4>
-            <p><strong>Дата:</strong> ${orderDate}</p>
-            <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
-            <p><strong>Статус:</strong> <span class="order-status ${statusClass}">${statusText}</span></p>
-            <p><strong>Спосіб доставки:</strong> ${order.delivery.service}</p>
-            <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Детальніше</button>
-          </div>
-        `;
+  <div class="order-item">
+    <div class="order-header-mobile">
+      <h4>Замовлення #${order.id}</h4>
+      <span class="order-status ${statusClass}">${statusText}</span>
+    </div>
+    <div class="order-info-mobile">
+      <p><i class="fas fa-calendar"></i> ${orderDate}</p>
+      <p><i class="fas fa-receipt"></i> ${formatPrice(order.total)} ₴</p>
+      <p><i class="fas fa-truck"></i> ${order.delivery.service}</p>
+    </div>
+    <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
+      <i class="fas fa-info-circle"></i> Детальніше
+    </button>
+  </div>
+`;
       });
       
       modalContent.innerHTML = `

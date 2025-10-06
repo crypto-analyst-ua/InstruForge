@@ -95,7 +95,7 @@ header {
   z-index: 1000;
   flex-wrap: wrap;
   gap: 1rem;
-  transition: all 0.3s ease;
+  transition: var(--transition);
 }
 
 .logo {
@@ -1860,6 +1860,184 @@ button:focus, input:focus, select:focus, textarea:focus {
   .search-container .search-icon {
     left: 0.8rem;
   }
+}
+
+/* ИСПРАВЛЕНИЕ ДЛЯ МОДАЛЬНОГО ОКНА ЗАКАЗОВ НА МОБИЛЬНЫХ */
+@media (max-width: 768px) {
+  .modal-content {
+    max-height: 85vh !important;
+    margin: 5vh auto !important;
+  }
+  
+  /* Увеличиваем отступы для мобильных */
+  .order-details-container {
+    padding: 1rem !important;
+  }
+  
+  /* Гарантируем, что кнопки всегда видны */
+  .order-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: var(--white) !important;
+    padding: 1rem 0 !important;
+    border-top: 1px solid var(--gray-light) !important;
+    margin-top: 1rem !important;
+  }
+  
+  /* Увеличиваем размер кнопок для touch-устройств */
+  .order-actions .btn {
+    min-height: 48px !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Улучшаем прокрутку содержимого */
+  .order-items-list {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* Дополнительные исправления для очень маленьких экранов */
+@media (max-width: 480px) {
+  .modal-content {
+    width: 98% !important;
+    max-height: 90vh !important;
+    margin: 2vh auto !important;
+  }
+  
+  .order-details-container {
+    padding: 0.8rem !important;
+  }
+  
+  .order-actions .btn {
+    width: 100% !important;
+    margin: 0.3rem 0 !important;
+  }
+  
+  /* Уменьшаем отступы для экономии места */
+  .order-header,
+  .order-item {
+    padding: 0.8rem 0.5rem !important;
+  }
+}
+
+/* Специфические стили для модального окна заказов */
+.order-details-modal .modal-content {
+  max-width: 800px;
+}
+
+.order-details-container {
+  padding: 1.5rem;
+}
+
+.order-header {
+  background: var(--gray-lighter);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+}
+
+.order-items-list {
+  margin: 1rem 0;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+/* Улучшенная прокрутка для модальных окон */
+.modal-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Гарантируем, что модальное окно всегда по центру и видимо */
+.modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Улучшения для очень высокого контента */
+@media (max-height: 600px) {
+  .modal-content {
+    max-height: 95vh !important;
+  }
+  
+  .order-items-list {
+    max-height: 40vh !important;
+  }
+}
+
+/* Исправление для кнопки "Подробнее" в мобильном виде */
+@media (max-width: 768px) {
+  .order-details-container .btn {
+    min-width: 120px !important;
+    padding: 0.8rem 1.2rem !important;
+  }
+}
+
+/* Стили для мобильной оптимизации модальных окон */
+.mobile-modal .modal-content {
+  border-radius: 12px 12px 0 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  top: auto !important;
+  animation: slideUp 0.3s ease !important;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.mobile-modal {
+  align-items: flex-end !important;
+  padding: 0 !important;
+}
+
+/* Кнопка закрытия для мобильных */
+.mobile-modal .modal-close {
+  position: fixed !important;
+  top: 10px !important;
+  right: 10px !important;
+  background: rgba(0,0,0,0.5) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1001 !important;
 }
 
 /* ИЗМЕНЕНИЕ: Дополнительные стили для очень маленьких экранов */

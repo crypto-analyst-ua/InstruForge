@@ -412,6 +412,27 @@ function cleanupSearch() {
 
 window.addEventListener('beforeunload', cleanupSearch);
 
+// Функция для оптимизации модальных окон на мобильных устройствах
+function optimizeModalForMobile() {
+  const modal = document.getElementById('modal');
+  const modalContent = document.querySelector('.modal-content');
+  
+  if (window.innerWidth <= 768) {
+    // Добавляем класс для мобильной оптимизации
+    modal.classList.add('mobile-modal');
+    
+    // Предотвращаем прокрутку body когда модальное окно открыто
+    document.body.style.overflow = 'hidden';
+    
+    // Добавляем обработчик для закрытия по клику вне области
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+}
+
 // Динамическая генерация структурированных данных
 function generateStructuredData(products) {
     if (!products || products.length === 0) return;
@@ -1633,6 +1654,9 @@ function showProductDetail(productId) {
   updateRatingStars();
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Функция для установки рейтинга
@@ -1820,6 +1844,9 @@ function openCart() {
   }
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Зміна кількості товару в кошику
@@ -1935,6 +1962,9 @@ function checkout() {
   `;
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // ===== ЗБЕРЕЖЕННЯ ЗАМОВЛЕННЯ В FIREBASE =====
@@ -2117,7 +2147,11 @@ function openModal() {
 
 // Закриття модального вікна
 function closeModal() {
-  document.getElementById("modal").classList.remove("active");
+  const modal = document.getElementById("modal");
+  modal.classList.remove("active");
+  // Убираем мобильные стили
+  modal.classList.remove("mobile-modal");
+  document.body.style.overflow = '';
 }
 
 // Відкриття модального вікна авторизації
@@ -2168,6 +2202,9 @@ function openAuthModal() {
   `;
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Переключення вкладок авторизации
@@ -2658,6 +2695,9 @@ function viewOrderDetails(orderId) {
       `;
       
       openModal();
+      
+      // Оптимизация для мобильных устройств
+      optimizeModalForMobile();
     })
     .catch((error) => {
       console.error("Помилка завантаження деталей замовлення: ", error);
@@ -2857,6 +2897,9 @@ function openAddProductModal() {
   `;
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Функція збереження нового товару
@@ -3025,6 +3068,9 @@ function editProduct(productId) {
   `;
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Функція оновлення товару
@@ -3101,6 +3147,9 @@ function openProfile() {
   `;
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
 }
 
 // Функція оновлення профілю користувача
@@ -3146,6 +3195,9 @@ function viewOrders() {
   modalContent.innerHTML = '<h3>Мої замовлення</h3><p>Завантаження замовлень...</p>';
   
   openModal();
+  
+  // Оптимизация для мобильных устройств
+  setTimeout(optimizeModalForMobile, 100);
   
   // Завантажуємо замовлення користувача
   db.collection("orders")

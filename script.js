@@ -527,6 +527,58 @@ function generateStructuredData(products) {
     console.log('Structured data updated for', products.length, 'products');
 }
 
+// --- ДОДАНА ФУНКЦИЯ ДЛЯ SEO SCHEMA ---
+function generateSchemaForProducts(products) {
+  if (!products || products.length === 0) return;
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Каталог товарів InstruForge",
+    "itemListElement": products.map((p, index) => ({
+      "@type": "Product",
+      "position": index + 1,
+      "name": p.title,
+      "image": p.image || "https://instruforge.web.app/general-product-image.jpg",
+      "description": p.description || "",
+      "brand": { "@type": "Brand", "name": p.brand || "InstruForge" },
+      "category": p.category || "",
+      "offers": {
+        "@type": "Offer",
+        "price": p.price ? p.price.toString() : "0",
+        "priceCurrency": "UAH",
+        "availability": p.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "url": `${window.location.origin}/#product-${p.id}`
+      }
+    }))
+  };
+
+  const script = document.createElement("script");
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+}
+
+// Функція для завантаження всіх товарів з JSON-файлів
+async function loadAllProducts() {
+  let allProducts = [];
+
+  for (const file of PRODUCT_FILES) {
+    try {
+      const response = await fetch(file);
+      const data = await response.json();
+      allProducts = allProducts.concat(data);
+    } catch (e) {
+      console.warn(`Не вдалося завантажити ${file}`, e);
+    }
+  }
+
+  // Після завантаження викликаємо генерацію SEO Schema
+  generateSchemaForProducts(allProducts);
+
+  return allProducts;
+}
+
 let products = [];
 let cart = {};
 let favorites = {};
@@ -715,6 +767,8 @@ function initApp() {
         products = preprocessProducts(jsonProducts);
         window.currentProducts = products;
         generateStructuredData(products);
+        // Также вызываем новую функцию для генерации SEO schema
+        generateSchemaForProducts(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -812,6 +866,8 @@ function loadProducts() {
     products = shuffleArray(products);
     window.currentProducts = products;
     generateStructuredData(products);
+    // Также вызываем новую функцию для генерации SEO schema
+    generateSchemaForProducts(products);
     renderProducts();
     return Promise.resolve();
   }
@@ -828,6 +884,8 @@ function loadProducts() {
           products = shuffleArray(products);
           window.currentProducts = products;
           generateStructuredData(products);
+          // Также вызываем новую функцию для генерации SEO schema
+          generateSchemaForProducts(products);
           updateCartCount();
           renderProducts();
           renderFeaturedProducts();
@@ -841,6 +899,8 @@ function loadProducts() {
               products = shuffleArray(products);
               window.currentProducts = products;
               generateStructuredData(products);
+              // Также вызываем новую функцию для генерации SEO schema
+              generateSchemaForProducts(products);
               updateCartCount();
               renderProducts();
               renderFeaturedProducts();
@@ -861,6 +921,8 @@ function loadProducts() {
                 products = shuffleArray(products);
                 window.currentProducts = products;
                 generateStructuredData(products);
+                // Также вызываем новую функцию для генерации SEO schema
+                generateSchemaForProducts(products);
         
         localStorage.setItem('products_cache', JSON.stringify(products));
         localStorage.setItem('products_cache_time', Date.now());
@@ -883,6 +945,8 @@ function loadProducts() {
         products = shuffleArray(products);
         window.currentProducts = products;
         generateStructuredData(products);
+        // Также вызываем новую функцию для генерации SEO schema
+        generateSchemaForProducts(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -3378,4 +3442,7 @@ document.addEventListener("DOMContentLoaded", function() {
             closeModal();
         }
     });
+    
+    // Ініціалізація завантаження всіх продуктів для SEO
+    loadAllProducts();
 });

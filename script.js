@@ -547,6 +547,98 @@ function generateSchemaForProducts(products) {
   console.log("✅ Dynamic SEO schema updated");
 }
 
+// Функція для генерації SEO schema з випадковими товарами
+function generateRandomSEOProductsSchema(products) {
+    if (!products || products.length === 0) return;
+
+    // Берем случайные товары (до 50)
+    const randomProducts = shuffleArray([...products]).slice(0, 50);
+
+    const schema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Випадкові товари з каталогу InstruForge",
+        "description": "Понад 5000 товарів: інструменти SIGMA, насоси Aquatica та LEO, кріплення, сантехніка з доставкою по Україні",
+        "url": window.location.href,
+        "numberOfItems": randomProducts.length,
+        "itemListElement": randomProducts.map((product, index) => {
+            let availability = product.inStock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock";
+
+            let brand = "InstruForge";
+            const brandMatch = product.title.match(/(SIGMA|AQUATICA|LEO|GRAD|MASTERTOOL)/i);
+            if (brandMatch) {
+                brand = brandMatch[0];
+            } else if (product.brand) {
+                brand = product.brand;
+            }
+
+            let category = "Інструменти";
+            if (product.category) {
+                category = product.category;
+            } else if (product.title.toLowerCase().includes("насос")) {
+                category = "Сантехніка та насоси";
+            } else if (product.title.toLowerCase().includes("ключ") || product.title.toLowerCase().includes("інструмент")) {
+                category = "Ручні та електроінструменти";
+            } else if (product.title.toLowerCase().includes("кріплен") || product.title.toLowerCase().includes("заклеп")) {
+                category = "Кріплення та витратні матеріали";
+            }
+
+            return {
+                "@type": "ListItem",
+                "position": index + 1,
+                "item": {
+                    "@type": "Product",
+                    "name": product.title,
+                    "description": product.description || `${product.title} - якісний товар від InstruForge`,
+                    "brand": { 
+                        "@type": "Brand", 
+                        "name": brand 
+                    },
+                    "category": category,
+                    "offers": {
+                        "@type": "Offer",
+                        "availability": availability,
+                        "priceCurrency": "UAH",
+                        "price": product.price ? product.price.toString() : "0",
+                        "priceValidUntil": new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+                            .toISOString()
+                            .split("T")[0],
+                        "url": `${window.location.origin}/#product-${product.id}`
+                    },
+                    "image": product.image || "https://instruforge.web.app/images/placeholder-product.jpg",
+                    "sku": product.id || `item-${index + 1}`,
+                    "url": `${window.location.origin}/#product-${product.id}`
+                }
+            };
+        })
+    };
+
+    return schema;
+}
+
+// Функція для створення окремого SEO блоку з випадковими товарами
+function generateRandomSEOData(products) {
+    if (!products || products.length === 0) return;
+
+    const randomSchema = generateRandomSEOProductsSchema(products);
+    
+    // Створюємо новий script елемент для випадкових товарів
+    let randomSchemaScript = document.getElementById('random-seo-schema');
+    
+    if (!randomSchemaScript) {
+        randomSchemaScript = document.createElement('script');
+        randomSchemaScript.type = 'application/ld+json';
+        randomSchemaScript.id = 'random-seo-schema';
+        document.head.appendChild(randomSchemaScript);
+    }
+    
+    randomSchemaScript.textContent = JSON.stringify(randomSchema, null, 2);
+    
+    console.log("✅ Random SEO schema updated for", randomSchema.itemListElement.length, "random products");
+}
+
 // Функція для завантаження всіх товарів з JSON-файлів
 async function loadAllProducts() {
   let allProducts = [];
@@ -563,6 +655,8 @@ async function loadAllProducts() {
 
   // Після завантаження викликаємо генерацію SEO Schema
   generateSchemaForProducts(allProducts);
+  // Додаємо генерацію випадкової SEO розмітки
+  generateRandomSEOData(allProducts);
 
   return allProducts;
 }
@@ -757,6 +851,8 @@ function initApp() {
         generateStructuredData(products);
         // Также вызываем новую функцию для генерации SEO schema
         generateSchemaForProducts(products);
+        // Генерируем случайную SEO разметку
+        generateRandomSEOData(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -856,6 +952,8 @@ function loadProducts() {
     generateStructuredData(products);
     // Также вызываем новую функцию для генерации SEO schema
     generateSchemaForProducts(products);
+    // Генерируем случайную SEO разметку
+    generateRandomSEOData(products);
     renderProducts();
     return Promise.resolve();
   }
@@ -874,6 +972,8 @@ function loadProducts() {
           generateStructuredData(products);
           // Также вызываем новую функцию для генерации SEO schema
           generateSchemaForProducts(products);
+          // Генерируем случайную SEO разметку
+          generateRandomSEOData(products);
           updateCartCount();
           renderProducts();
           renderFeaturedProducts();
@@ -889,6 +989,8 @@ function loadProducts() {
               generateStructuredData(products);
               // Также вызываем новую функцию для генерации SEO schema
               generateSchemaForProducts(products);
+              // Генерируем случайную SEO разметку
+              generateRandomSEOData(products);
               updateCartCount();
               renderProducts();
               renderFeaturedProducts();
@@ -911,6 +1013,8 @@ function loadProducts() {
                 generateStructuredData(products);
                 // Также вызываем новую функцию для генерации SEO schema
                 generateSchemaForProducts(products);
+                // Генерируем случайную SEO разметку
+                generateRandomSEOData(products);
         
         localStorage.setItem('products_cache', JSON.stringify(products));
         localStorage.setItem('products_cache_time', Date.now());
@@ -935,6 +1039,8 @@ function loadProducts() {
         generateStructuredData(products);
         // Также вызываем новую функцию для генерации SEO schema
         generateSchemaForProducts(products);
+        // Генерируем случайную SEO разметку
+        generateRandomSEOData(products);
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();

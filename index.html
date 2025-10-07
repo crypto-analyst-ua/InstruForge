@@ -44,71 +44,74 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#2c3e50">
 
-    <!-- JSON-LD Schema - Упрощенная версия без товаров -->
+    <!-- Объединенная JSON-LD Schema -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "Store",
-        "name": "InstruForge",
-        "description": "Інтернет-магазин інструментів та господарських товарів в Україні. Понад 5000 товарів: електроінструменти SIGMA, насоси Aquatica та LEO, ручні інструменти Mastertool, сантехніка, кріплення, садовий інвентар",
-        "url": "https://instruforge.web.app/",
-        "telephone": "+380684296978",
-        "email": "korovinkonstantin0@gmail.com",
-        "address": {
-            "@type": "PostalAddress",
-            "addressCountry": "UA",
-            "addressLocality": "Україна"
-        },
-        "image": "https://instruforge.web.app/general-product-image.jpg",
-        "logo": "https://instruforge.web.app/logo.png",
-        "openingHours": "Mo-Su 08:00-20:00",
-        "priceRange": "₴",
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "reviewCount": "156"
-        }
-    }
-    </script>
-
-    <!-- JSON-LD Schema for Search -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "url": "https://instruforge.web.app/",
-        "name": "InstruForge",
-        "description": "Інтернет-магазин інструментів та господарських товарів",
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://instruforge.web.app/search?q={search_term_string}",
-            "query-input": "required name=search_term_string"
-        }
-    }
-    </script>
-
-    <!-- Additional Schema for Organization -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "InstruForge",
-        "url": "https://instruforge.web.app/",
-        "logo": "https://instruforge.web.app/logo.png",
-        "description": "Інтернет-магазин інструментів та господарських товарів в Україні",
-        "address": {
-            "@type": "PostalAddress",
-            "addressCountry": "UA",
-            "addressLocality": "Україна"
-        },
-        "contactPoint": {
-            "@type": "ContactPoint",
-            "telephone": "+380684296978",
-            "contactType": "customer service",
-            "email": "korovinkonstantin0@gmail.com",
-            "availableLanguage": ["uk", "ru"]
-        },
-        "sameAs": []
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://instruforge.web.app/#organization",
+                "name": "InstruForge",
+                "url": "https://instruforge.web.app/",
+                "logo": "https://instruforge.web.app/logo.png",
+                "description": "Інтернет-магазин інструментів та господарських товарів в Україні",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressCountry": "UA",
+                    "addressLocality": "Україна"
+                },
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+380684296978",
+                    "contactType": "customer service",
+                    "email": "korovinkonstantin0@gmail.com",
+                    "availableLanguage": ["uk", "ru"]
+                },
+                "sameAs": []
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://instruforge.web.app/#website",
+                "url": "https://instruforge.web.app/",
+                "name": "InstruForge",
+                "description": "Інтернет-магазин інструментів та господарських товарів",
+                "publisher": {
+                    "@id": "https://instruforge.web.app/#organization"
+                },
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://instruforge.web.app/search?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            },
+            {
+                "@type": "Store",
+                "@id": "https://instruforge.web.app/#store",
+                "name": "InstruForge",
+                "description": "Інтернет-магазин інструментів та господарських товарів в Україні. Понад 5000 товарів: електроінструменти SIGMA, насоси Aquatica та LEO, ручні інструменти Mastertool, сантехніка, кріплення, садовий інвентар",
+                "url": "https://instruforge.web.app/",
+                "telephone": "+380684296978",
+                "email": "korovinkonstantin0@gmail.com",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressCountry": "UA",
+                    "addressLocality": "Україна"
+                },
+                "image": "https://instruforge.web.app/general-product-image.jpg",
+                "logo": "https://instruforge.web.app/logo.png",
+                "openingHours": "Mo-Su 08:00-20:00",
+                "priceRange": "₴",
+                "aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": "4.8",
+                    "reviewCount": "156"
+                },
+                "parentOrganization": {
+                    "@id": "https://instruforge.web.app/#organization"
+                }
+            }
+        ]
     }
     </script>
 
@@ -129,7 +132,7 @@
         <div class="logo">
             <h1 class="logo-text">
                 InstruForge
-                <span class="logo-subtitle">Інтернет-магазин професійних інструментів в Україні. Понад 5000 товарів від SIGMA, AQUATICA, LEO, GRAD, MASTERTOOL. Для майстрів — від молотка до насоса. Доставка по всій Україні.</span>
+                <span class="logo-subtitle">Інтернет-магазин професійних інструментів</span>
             </h1>
         </div>
         <div class="header-controls">
@@ -247,65 +250,26 @@
             </div>
             
             <div id="product-grid" class="grid" role="grid" aria-label="Сітка товарів">
-                <!-- Skeleton loading with semantic structure -->
-                <article class="card" aria-label="Завантаження товару">
-                    <div class="skeleton-img" aria-hidden="true"></div>
-                    <div class="skeleton-title" aria-hidden="true"></div>
-                    <div class="skeleton-text" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="width: 80%;" aria-hidden="true"></div>
-                    <div class="skeleton-price" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="height: 36px; margin-top: 15px;" aria-hidden="true"></div>
-                </article>
-                <article class="card" aria-label="Завантаження товару">
-                    <div class="skeleton-img" aria-hidden="true"></div>
-                    <div class="skeleton-title" aria-hidden="true"></div>
-                    <div class="skeleton-text" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="width: 80%;" aria-hidden="true"></div>
-                    <div class="skeleton-price" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="height: 36px; margin-top: 15px;" aria-hidden="true"></div>
-                </article>
-                <article class="card" aria-label="Завантаження товару">
-                    <div class="skeleton-img" aria-hidden="true"></div>
-                    <div class="skeleton-title" aria-hidden="true"></div>
-                    <div class="skeleton-text" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="width: 80%;" aria-hidden="true"></div>
-                    <div class="skeleton-price" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="height: 36px; margin-top: 15px;" aria-hidden="true"></div>
-                </article>
-                <article class="card" aria-label="Завантаження товару">
-                    <div class="skeleton-img" aria-hidden="true"></div>
-                    <div class="skeleton-title" aria-hidden="true"></div>
-                    <div class="skeleton-text" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="width: 80%;" aria-hidden="true"></div>
-                    <div class="skeleton-price" aria-hidden="true"></div>
-                    <div class="skeleton-text" style="height: 36px; margin-top: 15px;" aria-hidden="true"></div>
+                <!-- Skeleton loading template -->
+                <article class="card skeleton-item" aria-label="Завантаження товарів">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text" style="width: 80%;"></div>
+                    <div class="skeleton-price"></div>
+                    <div class="skeleton-text" style="height: 36px; margin-top: 15px;"></div>
                 </article>
             </div>
             
             <nav class="pagination" id="pagination" role="navigation" aria-label="Навігація по сторінках каталогу">
-                <button onclick="changePage(1)" class="active" aria-current="page" aria-label="Сторінка 1, поточна">1</button>
-                <button onclick="changePage(2)" aria-label="Перейти на сторінку 2">2</button>
-                <button onclick="changePage(3)" aria-label="Перейти на сторінку 3">3</button>
+                <!-- Пагинация будет генерироваться динамически -->
             </nav>
         </section>
 
         <aside role="complementary">
             <h3>Популярні інструменти</h3>
             <div class="featured-products" id="featured-products">
-                <article class="featured-item">
-                    <div class="skeleton-img" style="width: 60px; height: 60px;" aria-hidden="true"></div>
-                    <div class="featured-item-info">
-                        <div class="skeleton-text" style="width: 80%; height: 14px;" aria-hidden="true"></div>
-                        <div class="skeleton-text" style="width: 40%; height: 16px; margin-top: 5px;" aria-hidden="true"></div>
-                    </div>
-                </article>
-                <article class="featured-item">
-                    <div class="skeleton-img" style="width: 60px; height: 60px;" aria-hidden="true"></div>
-                    <div class="featured-item-info">
-                        <div class="skeleton-text" style="width: 80%; height: 14px;" aria-hidden="true"></div>
-                        <div class="skeleton-text" style="width: 40%; height: 16px; margin-top: 5px;" aria-hidden="true"></div>
-                    </div>
-                </article>
+                <!-- Будет заполнено динамически -->
             </div>
             
             <div id="admin-panel" class="admin-panel" style="display:none;">
@@ -414,26 +378,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Скрытый семантический контент для SEO -->
-    <div style="display: none;" aria-hidden="true">
-        <h1>Інтернет-магазин інструментів та господарських товарів в Україні</h1>
-        <h2>Купити інструменти SIGMA, насоси Aquatica та LEO, кріплення</h2>
-        <p>Магазин інструментів з доставкою по Україні: Київ, Львів, Харків, Одеса, Дніпро. Професійні інструменти для майстрів та домашніх умільців. Великий вибір ручних та електроінструментів, сантехніки, кріплень, садового інвентарю.</p>
-        <p>Товари для дому та ремонту: заклепки алюмінієві, скоби для степлера, гідроакумулятори, насоси циркуляційні, щітки металеві, шпателі, валики, інструменти для будівництва та обслуговування.</p>
-        <ul>
-            <li>Інструменти SIGMA Україна</li>
-            <li>Насоси Aquatica купити</li>
-            <li>Насоси LEO ціна</li>
-            <li>Гідроакумулятори Aquatica</li>
-            <li>Заклепки алюмінієві купити</li>
-            <li>Скоби для степлера</li>
-            <li>Щітки металеві для дрилів</li>
-            <li>Кріплення та метизи</li>
-            <li>Сантехніка та обладнання</li>
-            <li>Електроінструменти професійні</li>
-        </ul>
-    </div>
 
     <!-- Лічильник переглядів (тільки для адміністраторів) -->
     <div id="page-views-container" style="display: none; text-align: center; margin-top: 10px;">

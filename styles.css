@@ -2984,3 +2984,39 @@ h1 {
     font-size: 0.9rem;
   }
 }
+
+/* Вариант 2: Увеличение z-index выпадающего меню */
+@media (max-width: 768px) {
+  .header-controls {
+    position: relative;
+    z-index: 1000;
+  }
+  
+  .user-menu {
+    position: relative;
+    z-index: 1005; /* Выше чем поиск */
+  }
+  
+  .user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1006; /* Еще выше */
+    margin-top: 5px;
+    min-width: 180px;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  }
+  
+  .search-container {
+    position: relative;
+    z-index: 1001; /* Ниже чем выпадающее меню */
+  }
+  
+  /* Активация по hover и focus */
+  .user-menu:hover .user-dropdown,
+  .user-menu:focus-within .user-dropdown {
+    display: block;
+  }
+}

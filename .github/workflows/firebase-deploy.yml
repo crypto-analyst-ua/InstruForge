@@ -10,34 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: |
-          if [ -f package.json ]; then
-            npm ci
-          else
-            echo "No package.json found — skipping npm install"
-          fi
+      - name: Install Dependencies
+        run: npm ci || true  # не дасть помилку, якщо немає package.json
 
-      - name: Generate sitemap.xml
-        run: node public/sitemap-generator.js
-
-      - name: Build project (if has build step)
-        run: |
-          if [ -f package.json ] && grep -q "\"build\":" package.json; then
-            npm run build
-          else
-            echo "No build script found, skipping..."
-          fi
-
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'

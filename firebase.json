@@ -1,20 +1,11 @@
 {
   "hosting": {
-    "public": "public",
+    "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "/product/**",
-        "destination": "/index.html"
-      },
-      {
-        "source": "!/sitemap.xml",
-        "destination": "/index.html"
-      }
-    ]
+    "cleanUrls": true
   }
 }

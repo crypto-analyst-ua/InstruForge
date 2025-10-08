@@ -434,61 +434,6 @@ function optimizeModalForMobile() {
   }
 }
 
-// === SEO-ДРУЖНІ URL ДЛЯ ТОВАРІВ ===
-
-// Коли користувач відкриває товар:
-function openProductPage(productId) {
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-
-  // Змінюємо URL без перезавантаження сторінки
-  window.history.pushState({ productId }, product.title, `/product/${product.id}`);
-
-  // Оновлюємо мета-теги для SEO
-  updateProductMetaTags(product);
-
-  // Показуємо картку товару
-  showProductDetail(productId);
-}
-
-// === ДИНАМІЧНІ МЕТА-ТЕГИ ===
-function updateProductMetaTags(product) {
-  if (!product) return;
-
-  const head = document.head;
-
-  // Оновлюємо title
-  document.title = `${product.title} | InstruForge`;
-
-  // Оновлюємо description
-  let desc = document.querySelector('meta[name="description"]');
-  if (!desc) {
-    desc = document.createElement("meta");
-    desc.name = "description";
-    head.appendChild(desc);
-  }
-  desc.content = product.description || `${product.title} — купити з доставкою по Україні`;
-
-  // Open Graph
-  const ogTags = [
-    { property: "og:title", content: product.title },
-    { property: "og:description", content: product.description || "" },
-    { property: "og:image", content: product.image || "https://instruforge.web.app/images/placeholder-product.jpg" },
-    { property: "og:url", content: `${window.location.origin}/product/${product.id}` },
-    { property: "og:type", content: "product" }
-  ];
-
-  ogTags.forEach(tag => {
-    let el = document.querySelector(`meta[property="${tag.property}"]`);
-    if (!el) {
-      el = document.createElement("meta");
-      el.setAttribute("property", tag.property);
-      head.appendChild(el);
-    }
-    el.setAttribute("content", tag.content);
-  });
-}
-
 // Динамическая генерация структурированных данных
 function generateStructuredData(products) {
   if (!products || products.length === 0) return;
@@ -1550,7 +1495,7 @@ function renderProducts() {
     <button class="btn btn-buy" onclick="addToCart('${product.id}')">
       <i class="fas fa-shopping-cart"></i> Купити
     </button>
-    <button class="btn btn-detail" onclick="openProductPage('${product.id}')">
+    <button class="btn btn-detail" onclick="showProductDetail('${product.id}')">
       <i class="fas fa-info"></i> Детальніше
     </button>
     <button class="btn-favorite ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${product.id}')">
@@ -1595,7 +1540,7 @@ function renderFeaturedProducts() {
       </div>
     `;
     
-    item.addEventListener('click', () => openProductPage(product.id));
+    item.addEventListener('click', () => showProductDetail(product.id));
     featuredContainer.appendChild(item);
   });
 }
@@ -3421,12 +3366,11 @@ function viewOrders() {
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
         modalContent.innerHTML = `
-          <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
           <h3>Мої замовлення</h3>
           <div class="empty-cart">
-            <i class="fas fa-shopping-bag"></i>
-            <h3>У вас ще немає замовлень</h3>
-            <p>Перейдіть в каталог, щоб зробити перше замовлення</p>
+            <i class="fas fa-box-open"></i>
+            <h3>Замовлень немає</h3>
+            <p>Ви ще не здійснювали покупок в нашому магазині</p>
           </div>
         `;
         return;
@@ -3456,23 +3400,24 @@ function viewOrders() {
         }
         
         ordersHTML += `
-          <div class="user-order-item">
-            <div class="order-header">
-              <h4>Замовлення #${order.id}</h4>
-              <span class="order-date">${orderDate}</span>
-            </div>
-            <div class="order-info">
-              <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
-              <p><strong>Статус:</strong> <span class="order-status ${statusClass}">${statusText}</span></p>
-              ${order.ttn ? `<p><strong>ТТН:</strong> ${order.ttn}</p>` : ''}
-            </div>
-            <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі замовлення</button>
-          </div>
-        `;
+  <div class="order-item">
+    <div class="order-header-mobile">
+      <h4>Замовлення #${order.id}</h4>
+      <span class="order-status ${statusClass}">${statusText}</span>
+    </div>
+    <div class="order-info-mobile">
+      <p><i class="fas fa-calendar"></i> ${orderDate}</p>
+      <p><i class="fas fa-receipt"></i> ${formatPrice(order.total)} ₴</p>
+      <p><i class="fas fa-truck"></i> ${order.delivery.service}</p>
+    </div>
+    <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
+      <i class="fas fa-info-circle"></i> Детальніше
+    </button>
+  </div>
+`;
       });
       
       modalContent.innerHTML = `
-        <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
         <h3>Мої замовлення</h3>
         <div class="user-orders">
           ${ordersHTML}
@@ -3482,24 +3427,28 @@ function viewOrders() {
     .catch((error) => {
       console.error("Помилка завантаження замовлень: ", error);
       modalContent.innerHTML = `
-        <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
         <h3>Мої замовлення</h3>
-        <p>Помилка завантаження замовлень</p>
+        <p>Помилка завантаження замовлень. Будь ласка, спробуйте пізніше.</p>
       `;
     });
 }
 
-// Функція перемикання джерела товарів
-function switchSource(source) {
-  currentFilters.source = source;
-  applyFilters();
-  
-  // Оновлюємо активну вкладку
-  document.querySelectorAll('.source-tab').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  event.target.classList.add('active');
+// Функція для відкриття модального вікна з правилами
+function openRules() {
+  document.getElementById('rules-modal').classList.add('active');
 }
+
+// Функція для закриття модального вікна з правилами
+function closeRulesModal() {
+  document.getElementById('rules-modal').classList.remove('active');
+}
+
+// Закриття модального вікна при кліку outside content
+document.getElementById('rules-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeRulesModal();
+  }
+});
 
 // Функція перемикання видимості фільтрів
 function toggleFilters() {
@@ -3522,55 +3471,74 @@ function shuffleArray(array) {
     return array;
 }
 
-// Функція додавання вкладки для модерации отзывов
+// Функція для додавання вкладки модерації відгуків
 function addReviewsTabIfNotExists() {
-  const tabsContainer = document.querySelector('.admin-tabs');
-  if (!tabsContainer) return;
-  
-  // Проверяем, существует ли уже вкладка отзывов
-  const existingReviewsTab = document.querySelector('.tab[onclick*="reviews-tab-content"]');
-  if (existingReviewsTab) return;
-  
-  // Создаем новую вкладку
-  const reviewsTab = document.createElement('div');
-  reviewsTab.className = 'tab';
-  reviewsTab.setAttribute('onclick', "switchTab('reviews-tab-content')");
-  reviewsTab.innerHTML = '<i class="fas fa-comments"></i> Модерація відгуків';
-  tabsContainer.appendChild(reviewsTab);
-  
-  // Создаем контент для вкладки
-  const tabContents = document.querySelector('.tab-contents');
-  if (tabContents) {
-    const reviewsContent = document.createElement('div');
-    reviewsContent.id = 'reviews-tab-content';
-    reviewsContent.className = 'tab-content';
-    reviewsContent.innerHTML = `
-      <h3>Модерація відгуків</h3>
-      <div id="reviews-moderation-container">
-        <p>Завантаження відгуків для модерації...</p>
-      </div>
-    `;
-    tabContents.appendChild(reviewsContent);
+  const existingTab = document.querySelector('.tab[onclick*="reviews-tab-content"]');
+  if (!existingTab) {
+    const tabsContainer = document.querySelector('.admin-tabs');
+    if (tabsContainer) {
+      const reviewsTab = document.createElement('div');
+      reviewsTab.className = 'tab';
+      reviewsTab.setAttribute('onclick', 'switchTab(\'reviews-tab-content\')');
+      reviewsTab.textContent = 'Модерація відгуків';
+      tabsContainer.appendChild(reviewsTab);
+      
+      const tabContent = document.createElement('div');
+      tabContent.id = 'reviews-tab-content';
+      tabContent.className = 'tab-content';
+      tabContent.innerHTML = `
+        <h3>Модерація відгуків</h3>
+        <div id="reviews-moderation-container"></div>
+      `;
+      document.querySelector('.admin-content').appendChild(tabContent);
+    }
   }
 }
 
-// Функция перемешивания массива
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
+// Функция переключения источника товаров
+function switchSource(source, element) {
+    document.querySelectorAll('.source-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    if (element) {
+        element.classList.add('active');
+    } else {
+        const tabButton = document.querySelector(`.source-tab[onclick*="${source}"]`);
+        if (tabButton) {
+            tabButton.classList.add('active');
+        }
+    }
+    
+    currentFilters.source = source === 'all' ? '' : source;
+    currentPage = 1;
+    
+    const titles = {
+        'all': 'Всі товари',
+        'products1.json': 'Інструменти',
+        'products2.json': 'Насоси та сантехніка',
+        'products3.json': 'Кріплення та витратні матеріали',
+        'products4.json': 'Електроінструменти',
+        'products5.json': 'Спеціальні товари',
+        'products6.json': 'Швидкий ремонт'
+    };
+    
+    document.getElementById('products-title').textContent = titles[source] || 'Товари';
+    
+    applyFilters();
 }
 
-// Функция перемешивания массива
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
-// Запуск додатка при завантаженні сторінки
-document.addEventListener("DOMContentLoaded", initApp);
+// Ініціалізація додатка
+document.addEventListener("DOMContentLoaded", function() {
+    initApp();
+    
+    // Додаємо обробник для закриття модального вікна при кліку поза ним
+    document.getElementById("modal").addEventListener("click", function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+    
+    // Ініціалізація завантаження всіх продуктів для SEO
+    loadAllProducts();
+});

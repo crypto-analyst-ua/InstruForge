@@ -3,29 +3,29 @@
 
 /* Обновленная цветовая палитра - светлая тема с насыщенными цветами */
 :root {
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --secondary: #f59e0b;
-  --secondary-light: #fbbf24;
-  --secondary-dark: #d97706;
-  --accent: #10b981;
-  --accent-light: #34d399;
-  --accent-dark: #059669;
-  --success: #22c55e;
-  --warning: #eab308;
-  --danger: #ef4444;
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --secondary: #dc2626;
+  --secondary-light: #ef4444;
+  --secondary-dark: #b91c1c;
+  --accent: #059669;
+  --accent-light: #10b981;
+  --accent-dark: #047857;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
   --light: #f8fafc;
-  --dark: #334155;
+  --dark: #1e293b;
   --gray: #64748b;
   --gray-light: #cbd5e1;
   --gray-lighter: #f1f5f9;
   --white: #ffffff;
   --surface: #ffffff;
   --surface-2: #f8fafc;
-  --shadow: 0 4px 6px rgba(99, 102, 241, 0.1);
-  --shadow-hover: 0 10px 15px rgba(99, 102, 241, 0.15);
-  --transition: all 0.3s ease;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --border-radius: 12px;
   --border-radius-lg: 16px;
 }

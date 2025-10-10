@@ -1,11 +1,11 @@
 /* Подключение шрифтов */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap');
 
-/* Обновленная цветовая палитра - светлая тема с насыщенными цветами */
+/* Обновленная цветовая палитра - СВЕТЛАЯ ТЕМА */
 :root {
-  --primary: #2563eb;
+  --primary: #1e3a8a;
   --primary-light: #3b82f6;
-  --primary-dark: #1d4ed8;
+  --primary-dark: #1e40af;
   --secondary: #dc2626;
   --secondary-light: #ef4444;
   --secondary-dark: #b91c1c;
@@ -19,10 +19,10 @@
   --dark: #1e293b;
   --gray: #64748b;
   --gray-light: #cbd5e1;
-  --gray-lighter: #f1f5f9;
+  --gray-lighter: #e2e8f0;
   --white: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f8fafc;
+  --surface-2: #f1f5f9;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -46,7 +46,9 @@ body {
   font-family: 'Roboto', sans-serif;
   line-height: 1.6;
   color: var(--dark);
-  background: var(--surface-2);
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 25%, #dbeafe 50%, #eff6ff 75%, #f8fafc 100%);
+  background-attachment: fixed;
+  background-size: cover;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -58,7 +60,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Open Sans', sans-serif;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: var(--primary-dark);
+  color: var(--primary);
 }
 
 h1 {
@@ -81,9 +83,9 @@ h3 {
   color: var(--primary);
 }
 
-/* Хедер - ИСПРАВЛЕНИЯ ДЛЯ ЗАГОЛОВКА */
+/* Хедер */
 header {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--white);
   padding: 1rem;
   display: flex;
@@ -109,11 +111,11 @@ header {
 
 .logo i {
   font-size: clamp(1.8rem, 5vw, 2.5rem);
-  color: var(--secondary);
-  background: var(--white);
+  color: var(--white);
+  background: var(--primary-light);
   padding: 0.5rem;
   border-radius: 50%;
-  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
   animation: pulse 2s infinite;
   flex-shrink: 0;
 }
@@ -235,6 +237,7 @@ header {
   width: 100%;
   font-size: 1rem;
   background: var(--white);
+  color: var(--dark);
   transition: var(--transition);
   -webkit-appearance: none;
   position: relative;
@@ -244,7 +247,7 @@ header {
 .search-container input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .search-container:focus-within {
@@ -253,14 +256,15 @@ header {
 
 .search-container input:focus {
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 select {
   padding: 0.8rem;
   border: none;
   border-radius: var(--border-radius);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--white);
+  color: var(--dark);
   font-size: 1rem;
   cursor: pointer;
   transition: var(--transition);
@@ -271,11 +275,12 @@ select {
   background-position: right 0.7rem center;
   background-size: 1rem;
   padding-right: 2.5rem;
+  border: 1px solid var(--gray-light);
 }
 
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Кнопки */
@@ -403,6 +408,7 @@ main {
   height: fit-content;
   position: sticky;
   top: 90px;
+  color: var(--dark);
 }
 
 .filter-group {
@@ -423,6 +429,7 @@ main {
   border-radius: var(--border-radius);
   font-size: 1rem;
   background: var(--white);
+  color: var(--dark);
   transition: var(--transition);
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -435,7 +442,7 @@ main {
 .filter-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
 }
 
 .price-range {
@@ -450,6 +457,8 @@ main {
   border: 1px solid var(--gray-light);
   border-radius: var(--border-radius);
   font-size: 1rem;
+  background: var(--white);
+  color: var(--dark);
 }
 
 .price-range span {
@@ -487,6 +496,7 @@ main {
   padding: 0.5rem;
   border: 1px solid var(--gray-light);
   background: var(--white);
+  color: var(--dark);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: var(--transition);
@@ -502,6 +512,7 @@ main {
   color: var(--white);
 }
 
+/* СЕТКА КАРТОЧЕК - СВЕТЛЫЕ */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -521,6 +532,8 @@ main {
   transition: var(--transition);
   position: relative;
   animation: fadeIn 0.5s ease;
+  color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 .card:hover {
@@ -543,7 +556,7 @@ main {
   font-size: 1.2rem;
   padding: 0 1rem;
   margin: 0.5rem 0;
-  color: var(--primary-dark);
+  color: var(--dark);
 }
 
 .card p {
@@ -627,6 +640,7 @@ main {
   padding: 0.7rem 1rem;
   border: 1px solid var(--gray-light);
   background: var(--white);
+  color: var(--dark);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: var(--transition);
@@ -644,6 +658,7 @@ aside h3 {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--secondary);
+  color: var(--dark);
 }
 
 .featured-products {
@@ -664,6 +679,7 @@ aside h3 {
   cursor: pointer;
   transition: var(--transition);
   animation: fadeIn 0.5s ease;
+  color: var(--dark);
 }
 
 .featured-item:hover {
@@ -681,12 +697,12 @@ aside h3 {
 .featured-item-title {
   font-size: 0.9rem;
   margin-bottom: 0.3rem;
-  color: var(--primary-dark);
+  color: var(--dark);
 }
 
 .featured-item-price {
   font-weight: 700;
-  color: var(--accent-dark);
+  color: var(--accent);
 }
 
 /* Админ-панель */
@@ -695,6 +711,7 @@ aside h3 {
   padding: 1.2rem;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow);
+  color: var(--dark);
 }
 
 .admin-panel h4 {
@@ -717,6 +734,7 @@ aside h3 {
   border-bottom: 3px solid transparent;
   white-space: nowrap;
   flex-shrink: 0;
+  color: var(--dark);
 }
 
 .tab.active, .tab:hover {
@@ -732,23 +750,43 @@ aside h3 {
   display: block;
 }
 
-/* О магазине */
+/* О магазине - СВЕТЛАЯ СЕКЦИЯ */
 .about-section {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
-  color: var(--white);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%);
+  color: #1e293b;
   padding: 2.5rem 0;
   margin: 2rem 0;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .about-section h1 {
-  color: var(--white);
-  -webkit-text-fill-color: var(--white);
+  color: #1e40af;
   margin-bottom: 1.5rem;
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.about-section h2 {
+  color: #1e40af;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin-bottom: 1rem;
 }
 
 .about-section h3 {
-  color: var(--accent-light);
+  color: #1e40af;
   margin: 1.5rem 0 1rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+.about-section h4 {
+  color: #1e40af;
+  margin: 1.5rem 0 1rem;
+}
+
+.about-section p {
+  color: #374151;
+  margin-bottom: 1rem;
+  line-height: 1.6;
 }
 
 .about-section ul {
@@ -759,10 +797,43 @@ aside h3 {
 .about-section li {
   margin-bottom: 0.5rem;
   line-height: 1.6;
+  color: #374151;
 }
 
 .about-section strong {
-  color: var(--accent-light);
+  color: #059669;
+}
+
+.about-section mark {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.about-section .highlight {
+  background: #f1f5f9;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid #3b82f6;
+  color: #374151;
+  margin: 1.5rem 0;
+}
+
+.about-section .container {
+  color: #374151;
+}
+
+.about-section article {
+  color: #374151;
+  margin-bottom: 1.5rem;
+}
+
+.about-section ul li::before {
+  content: "✓ ";
+  color: #059669;
+  font-weight: bold;
+  margin-right: 0.5rem;
 }
 
 .container {
@@ -773,7 +844,7 @@ aside h3 {
 
 /* Футер */
 footer {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--white);
   padding: 2rem 1.5rem;
   text-align: center;
@@ -793,7 +864,7 @@ footer {
 }
 
 .footer-section h4 {
-  color: var(--secondary-light);
+  color: var(--white);
   margin-bottom: 1rem;
 }
 
@@ -824,7 +895,7 @@ footer {
 }
 
 .contact-info i {
-  color: var(--secondary-light);
+  color: var(--white);
 }
 
 .copyright {
@@ -867,8 +938,9 @@ footer {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: modalFadeIn 0.3s ease;
+  color: var(--dark);
 }
 
 @keyframes modalFadeIn {
@@ -954,6 +1026,7 @@ footer {
   padding: 0.5rem;
   border: 1px solid var(--gray-light);
   background: var(--white);
+  color: var(--dark);
   border-radius: var(--border-radius);
   width: 40px;
   height: 40px;
@@ -977,6 +1050,8 @@ footer {
   border: 1px solid var(--gray-light);
   border-radius: var(--border-radius);
   font-size: 1rem;
+  background: var(--white);
+  color: var(--dark);
 }
 
 .detail-actions {
@@ -1013,11 +1088,11 @@ footer {
 .cart-item-title {
   font-size: 1rem;
   margin-bottom: 0.5rem;
-  color: var(--primary-dark);
+  color: var(--dark);
 }
 
 .cart-item-price {
-  color: var(--accent-dark);
+  color: var(--accent);
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
@@ -1079,12 +1154,14 @@ footer {
   border-radius: var(--border-radius);
   font-size: 1rem;
   transition: var(--transition);
+  background: var(--white);
+  color: var(--dark);
 }
 
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
 }
 
 .form-row {
@@ -1127,7 +1204,7 @@ footer {
 
 .notification.warning {
   background: var(--warning);
-  color: var(--dark);
+  color: var(--light);
 }
 
 /* Скелетоны */
@@ -1173,11 +1250,13 @@ footer {
 /* Специфические стили для правил магазина */
 .rules-container {
   padding: 1rem;
+  color: var(--dark);
 }
 
 .rules-container h1 {
   text-align: center;
   margin-bottom: 0.5rem;
+  color: var(--primary);
 }
 
 .version {
@@ -1205,6 +1284,7 @@ footer {
 .rules-container li {
   margin-bottom: 0.5rem;
   line-height: 1.6;
+  color: var(--dark);
 }
 
 .rules-container .small {
@@ -1230,27 +1310,27 @@ footer {
 }
 
 .status-new {
-  background: rgba(37, 99, 235, 0.2);
-  color: var(--primary-dark);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
 }
 
 .status-processing {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.1);
   color: #d97706;
 }
 
 .status-shipped {
-  background: rgba(6, 182, 212, 0.2);
-  color: var(--accent-dark);
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--accent);
 }
 
 .status-delivered {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.1);
   color: #059669;
 }
 
 .status-cancelled {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--danger);
 }
 
@@ -1321,6 +1401,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   border-radius: var(--border-radius);
   background: rgba(255, 255, 255, 0.2);
   transition: var(--transition);
+  color: var(--white);
 }
 
 .user-btn:hover {
@@ -1369,6 +1450,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   cursor: pointer;
   transition: var(--transition);
   border-bottom: 3px solid transparent;
+  color: var(--dark);
 }
 
 .auth-tab.active, .auth-tab:hover {
@@ -1394,6 +1476,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .order-info p {
   margin-bottom: 0.5rem;
+  color: var(--dark);
 }
 
 .admin-order-actions {
@@ -1426,6 +1509,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .confirmation-details p {
   margin-bottom: 0.8rem;
+  color: var(--dark);
 }
 
 .confirmation-actions {
@@ -1452,10 +1536,12 @@ button:focus, input:focus, select:focus, textarea:focus {
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: var(--transition);
+  background: var(--white);
+  color: var(--dark);
 }
 
 .payment-option:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-light);
 }
 
 .payment-option input[type="radio"] {
@@ -1466,7 +1552,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 .order-summary {
   margin: 1.5rem 0;
   padding: 1rem;
-  background: var(--gray-lighter);
+  background: var(--surface-2);
   border-radius: var(--border-radius);
 }
 
@@ -1479,6 +1565,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   justify-content: space-between;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--gray-light);
+  color: var(--dark);
 }
 
 .order-total {
@@ -1490,6 +1577,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5rem;
+  color: var(--dark);
 }
 
 .final-total {
@@ -1507,6 +1595,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   margin: 1rem 0;
   display: flex;
   gap: 0.5rem;
+  color: var(--dark);
 }
 
 .delivery-notice i {
@@ -1534,7 +1623,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 #rules-modal h2 {
   margin-top: 1.5rem;
-  color: var(--primary-dark);
+  color: var(--primary);
 }
 
 #rules-modal ul {
@@ -1545,6 +1634,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 #rules-modal li {
   margin-bottom: 0.5rem;
   line-height: 1.6;
+  color: var(--dark);
 }
 
 /* Кнопка переключения фильтров для мобильных устройств */
@@ -1675,7 +1765,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     overflow-x: auto;
   }
 
-  /* Изменяем круглые кнопки на прямоугольные */
   .header-controls .btn {
     width: auto;
     min-width: 44px;
@@ -1687,14 +1776,12 @@ button:focus, input:focus, select:focus, textarea:focus {
     justify-content: center;
   }
 
-  /* Показываем текст на кнопках */
   .header-controls .btn .btn-text {
     display: inline;
     font-size: 0.8rem;
     margin-left: 0.3rem;
   }
 
-  /* Уменьшаем размер выпадающего списка категорий */
   .header-controls select {
     min-width: 80px;
     height: 44px;
@@ -1702,12 +1789,10 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-size: 0.8rem;
   }
 
-  /* Улучшаем внешний вид кнопки корзины */
   .header-controls .btn-cart {
     min-width: 120px;
   }
 
-  /* Улучшаем отображение счетчика корзины */
   .header-controls .cart-count {
     top: -5px;
     right: -5px;
@@ -1716,57 +1801,32 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-size: 0.7rem;
   }
 
-  /* Исправления для кнопок в модальных окнах */
   .modal .btn {
     min-width: 120px;
     width: auto;
     border-radius: var(--border-radius);
     padding: 0.8rem 1.2rem;
     font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
   .modal .btn .btn-text {
     display: inline;
     margin-left: 0.5rem;
   }
-
-  /* Улучшенная контрастность для конкретных типов кнопок */
-  .modal .btn-admin {
-    background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--secondary) 100%);
-  }
-
-  .modal .btn-cart {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-  }
-
-  .modal .btn-buy {
-    background: linear-gradient(135deg, #0da76c 0%, #059669 100%);
-  }
-
-  .modal .btn-detail {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-  }
-
-  /* Увеличиваем размер текста для лучшей читаемости */
-  .modal .btn {
-    font-size: 1rem;
-  }
 }
 
 /* ИЗМЕНЕНИЕ: Две колонки на мобильных устройствах */
 @media (max-width: 576px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr); /* Две колонки вместо одной */
-    gap: 0.8rem; /* Уменьшаем отступ между карточками для мобильных */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
   }
   
-  /* Уменьшаем минимальную ширину карточек для лучшего отображения в 2 колонки */
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
   
-  /* Уменьшаем отступы внутри карточек для мобильных */
   .card {
     padding: 0.5rem;
   }
@@ -1789,7 +1849,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     padding: 0 0.5rem 0.5rem;
   }
   
-  /* Уменьшаем размер изображений в карточках */
   .card img {
     height: 120px;
   }
@@ -1852,7 +1911,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     flex-direction: column;
   }
   
-  /* Уменьшаем отступы в поиске на очень маленьких экранах */
   .search-container input {
     padding: 0.6rem 1rem 0.6rem 2.5rem;
   }
@@ -1869,12 +1927,10 @@ button:focus, input:focus, select:focus, textarea:focus {
     margin: 5vh auto !important;
   }
   
-  /* Увеличиваем отступы для мобильных */
   .order-details-container {
     padding: 1rem !important;
   }
   
-  /* Гарантируем, что кнопки всегда видны */
   .order-actions {
     position: sticky !important;
     bottom: 0 !important;
@@ -1884,14 +1940,12 @@ button:focus, input:focus, select:focus, textarea:focus {
     margin-top: 1rem !important;
   }
   
-  /* Увеличиваем размер кнопок для touch-устройств */
   .order-actions .btn {
     min-height: 48px !important;
     font-size: 1rem !important;
     margin-bottom: 0.5rem !important;
   }
   
-  /* Улучшаем прокрутку содержимого */
   .order-items-list {
     max-height: 50vh !important;
     overflow-y: auto !important;
@@ -1916,7 +1970,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     margin: 0.3rem 0 !important;
   }
   
-  /* Уменьшаем отступы для экономии места */
   .order-header,
   .order-item {
     padding: 0.8rem 0.5rem !important;
@@ -2074,7 +2127,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     padding: 0.2rem 0.4rem;
   }
   
-  /* Еще более компактный поиск для очень маленьких устройств */
   .search-container input {
     padding: 0.5rem 0.8rem 0.5rem 2.2rem;
     font-size: 0.9rem;
@@ -2085,13 +2137,11 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-size: 0.9rem;
   }
 
-  /* Делаем кнопки квадратными */
   .header-controls .btn {
     width: 40px;
     height: 40px;
   }
 
-  /* Уменьшаем выпадающий список */
   .header-controls select {
     min-width: 60px;
     font-size: 0.65rem;
@@ -2101,7 +2151,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 /* Убедимся, что в режиме списка все равно остается одна колонка */
 @media (max-width: 576px) {
   .grid.list-view {
-    grid-template-columns: 1fr; /* В режиме списка оставляем одну колонку */
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2113,19 +2163,16 @@ button:focus, input:focus, select:focus, textarea:focus {
 }
 
 @media (max-width: 480px) {
-  /* Делаем кнопки более компактными */
   .header-controls .btn {
     min-width: 40px;
     height: 40px;
     padding: 0.5rem;
   }
 
-  /* Скрываем текст на очень маленьких экранах, но оставляем прямоугольную форму */
   .header-controls .btn .btn-text {
     display: none;
   }
 
-  /* Делаем выпадающий список еще компактнее */
   .header-controls select {
     min-width: 70px;
     height: 40px;
@@ -2133,12 +2180,10 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-size: 0.7rem;
   }
 
-  /* Уменьшаем кнопку корзины */
   .header-controls .btn-cart {
     min-width: 100px;
   }
 
-  /* Дополнительные улучшения для очень маленьких экранов */
   .modal .btn {
     min-width: 100%;
     margin-bottom: 0.5rem;
@@ -2309,7 +2354,6 @@ button:focus, input:focus, select:focus, textarea:focus {
     max-width: 100%;
   }
 
-  /* Улучшаем отображение кнопок */
   .header-controls .btn {
     width: auto;
     min-width: 44px;
@@ -2321,14 +2365,12 @@ button:focus, input:focus, select:focus, textarea:focus {
     justify-content: center;
   }
 
-  /* Показываем текст на кнопках */
   .header-controls .btn .btn-text {
     display: inline;
     font-size: 0.8rem;
     margin-left: 0.3rem;
   }
 
-  /* Улучшаем выпадающий список */
   .header-controls select {
     min-width: 100px;
     height: 44px;
@@ -2458,7 +2500,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   padding: 10px 15px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
-  color: var(--dark); /* ДОБАВЛЕНО: цвет текста */
+  color: var(--dark);
   transition: var(--transition);
   display: flex;
   align-items: center;
@@ -2471,12 +2513,12 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .search-suggestion:hover {
   background: #f5f5f5;
-  color: var(--primary); /* ДОБАВЛЕНО: цвет текста при наведении */
+  color: var(--primary);
 }
 
 .search-suggestion i {
   margin-right: 10px;
-  color: var(--gray); /* ДОБАВЛЕНО: цвет иконки */
+  color: var(--gray);
   flex-shrink: 0;
 }
 
@@ -2493,17 +2535,6 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .search-container {
   position: relative;
-}
-
-/* Убедимся, что текст в подсказках всегда читаем */
-.search-suggestion * {
-  color: inherit;
-}
-
-/* Исправление для контейнера поиска */
-.search-container {
-  position: relative;
-  z-index: 1001; /* Увеличиваем z-index чтобы подсказки были поверх других элементов */
 }
 
 .search-container:focus-within .search-suggestions {
@@ -2529,15 +2560,17 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .source-tab {
     padding: 8px 16px;
-    border: 1px solid #ddd;
-    background: white;
+    border: 1px solid var(--gray-light);
+    background: var(--white);
+    color: var(--dark);
     border-radius: var(--border-radius);
     cursor: pointer;
+    transition: var(--transition);
 }
 
 .source-tab.active {
     background: var(--primary);
-    color: white;
+    color: var(--white);
     border-color: var(--primary);
 }
 
@@ -2597,7 +2630,7 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-family: 'Arial', sans-serif;
     font-size: 28px;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--white);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin: 0;
@@ -2612,7 +2645,7 @@ button:focus, input:focus, select:focus, textarea:focus {
     left: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, #3498db, #2c3e50);
+    background: linear-gradient(90deg, var(--primary-light), var(--accent-light));
     border-radius: 2px;
 }
 
@@ -2622,7 +2655,7 @@ button:focus, input:focus, select:focus, textarea:focus {
     font-weight: 400;
     text-transform: none;
     letter-spacing: 0.5px;
-    color: #7f8c8d;
+    color: var(--gray-light);
     margin-top: 2px;
 }
 
@@ -2721,38 +2754,22 @@ button:focus, input:focus, select:focus, textarea:focus {
   background-color: #f8f9fa;
 }
 
-/* ИСПРАВЛЕНИЕ ПРОБЛЕМЫ С ЧЕРНЫМ ТЕКСТОМ НА ЧЕРНОМ ФОНЕ */
-
-/* 1. Исправление градиентных заголовков */
-h1 {
-  color: var(--primary-dark) !important; /* Fallback цвет */
-}
-
-/* 2. Улучшение цветовой схемы */
-:root {
-  --primary: #1a365d;        /* Темно-синий вместо черного */
-  --primary-light: #2d3748;  /* Серо-синий */
-  --primary-dark: #0f172a;   /* Очень темный синий */
-}
-
-/* Добавьте эти стили в конец файла styles.css */
-
 /* Исправления для секции "О магазине" */
 .about-section,
 .about-section *:not(.button):not(.btn) {
-  color: var(--white) !important;
+  color: var(--dark) !important;
 }
 
 .about-section h1,
 .about-section h2,
 .about-section h3,
 .about-section h4 {
-  color: var(--white) !important;
-  -webkit-text-fill-color: var(--white) !important;
+  color: var(--primary) !important;
+  -webkit-text-fill-color: var(--primary) !important;
 }
 
 .about-section strong {
-  color: var(--accent-light) !important;
+  color: var(--accent) !important;
 }
 
 .about-section mark {
@@ -2763,13 +2780,13 @@ h1 {
 }
 
 .about-section .container {
-  color: var(--white) !important;
+  color: var(--dark) !important;
 }
 
 .about-section p,
 .about-section li,
 .about-section article {
-  color: var(--white) !important;
+  color: var(--dark) !important;
   opacity: 0.95;
 }
 
@@ -2806,20 +2823,18 @@ h1 {
   color: var(--white) !important;
 }
 
-/* Убедимся, что все заголовки видны */
 .about-section h3 {
-  color: var(--accent-light) !important;
-  border-bottom: 2px solid var(--accent-light);
+  color: var(--accent) !important;
+  border-bottom: 2px solid var(--accent);
   padding-bottom: 0.5rem;
   margin-top: 2rem;
 }
 
 .about-section h4 {
-  color: var(--secondary-light) !important;
+  color: var(--secondary) !important;
   margin-top: 1.5rem;
 }
 
-/* Улучшение читаемости списков */
 .about-section ul li {
   margin-bottom: 0.8rem;
   line-height: 1.6;
@@ -2827,7 +2842,7 @@ h1 {
 
 .about-section ul li::before {
   content: "✓ ";
-  color: var(--accent-light);
+  color: var(--accent);
   font-weight: bold;
   margin-right: 0.5rem;
 }
@@ -2837,13 +2852,12 @@ h1 {
   .filters .btn,
   .admin-panel .btn,
   .btn-favorite {
-    border-radius: var(--border-radius) !important;  /* Прямоугольные с закруглениями */
+    border-radius: var(--border-radius) !important;
     width: auto !important;
     min-width: 44px !important;
     padding: 0.8rem 1.2rem !important;
   }
   
-  /* Особое исправление для кнопок в админ-панели */
   .admin-panel .btn {
     width: 100% !important;
     margin-bottom: 0.5rem;
@@ -2871,7 +2885,6 @@ h1 {
     font-size: 0.9rem;
   }
   
-  /* Перемещаем кнопку вниз и делаем на всю ширину */
   .user-orders .order-item .btn {
     width: 100%;
     margin-top: 1rem;
@@ -2880,8 +2893,7 @@ h1 {
     border-radius: var(--border-radius);
   }
   
-  /* Улучшаем отображение статуса заказа */
-  .user-orders .order-status {
+  .user-orders .order-item .order-status {
     display: inline-block;
     padding: 0.3rem 0.8rem;
     border-radius: var(--border-radius);
@@ -2918,13 +2930,11 @@ h1 {
   padding: 0.5rem;
 }
 
-/* Улучшаем скролл для мобильных */
 #modal-content .user-orders {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 
-/* Гарантируем, что кнопка всегда видна и доступна */
 .user-orders .order-item {
   position: relative;
   padding-bottom: 1rem;
@@ -2985,42 +2995,6 @@ h1 {
   }
 }
 
-/* Вариант 2: Увеличение z-index выпадающего меню */
-@media (max-width: 768px) {
-  .header-controls {
-    position: relative;
-    z-index: 1000;
-  }
-  
-  .user-menu {
-    position: relative;
-    z-index: 1005; /* Выше чем поиск */
-  }
-  
-  .user-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 1006; /* Еще выше */
-    margin-top: 5px;
-    min-width: 180px;
-    background: var(--white);
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  }
-  
-  .search-container {
-    position: relative;
-    z-index: 1001; /* Ниже чем выпадающее меню */
-  }
-  
-  /* Активация по hover и focus */
-  .user-menu:hover .user-dropdown,
-  .user-menu:focus-within .user-dropdown {
-    display: block;
-  }
-}
-
 /* ИСПРАВЛЕНИЕ ДЛЯ КНОПКИ В МОДАЛЬНОМ ОКНЕ ЗАКАЗОВ ПОЛЬЗОВАТЕЛЯ */
 @media (max-width: 768px) {
   .user-orders .order-item {
@@ -3072,7 +3046,6 @@ h1 {
     text-align: center;
   }
   
-  /* ГЛАВНОЕ ИСПРАВЛЕНИЕ - кнопка занимает всю ширину */
   .user-orders .order-item .btn {
     width: 100% !important;
     margin-top: 1rem !important;
@@ -3082,7 +3055,7 @@ h1 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    order: 999; /* Перемещаем кнопку в самый конец */
+    order: 999;
   }
   
   .user-orders .order-status {
@@ -3132,7 +3105,6 @@ h1 {
   overscroll-behavior: contain;
 }
 
-/* Гарантируем, что кнопка всегда внизу и доступна */
 .user-orders .order-item {
   position: relative;
   padding-bottom: 1rem;
@@ -3141,7 +3113,7 @@ h1 {
 .user-orders .order-item .btn {
   position: relative;
   z-index: 2;
-  margin-top: auto; /* Прижимаем к низу */
+  margin-top: auto;
 }
 
 /* Улучшение для планшетов */

@@ -46,76 +46,76 @@
 
     <!-- Объединенная JSON-LD Schema -->
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "Organization",
-                "@id": "https://instruforge.web.app/#organization",
-                "name": "InstruForge",
-                "url": "https://instruforge.web.app/",
-                "logo": "https://instruforge.web.app/logo.png",
-                "description": "Інтернет-магазин інструментів та господарських товарів в Україні",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressCountry": "UA",
-                    "addressLocality": "Україна"
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "Organization",
+                    "@id": "https://instruforge.web.app/#organization",
+                    "name": "InstruForge",
+                    "url": "https://instruforge.web.app/",
+                    "logo": "https://instruforge.web.app/logo.png",
+                    "description": "Інтернет-магазин інструментів та господарських товарів в Україні",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressCountry": "UA",
+                        "addressLocality": "Україна"
+                    },
+                    "contactPoint": {
+                        "@type": "ContactPoint",
+                        "telephone": "+380684296978",
+                        "contactType": "customer service",
+                        "email": "korovinkonstantin0@gmail.com",
+                        "availableLanguage": ["uk", "ru"]
+                    },
+                    "sameAs": []
                 },
-                "contactPoint": {
-                    "@type": "ContactPoint",
+                {
+                    "@type": "WebSite",
+                    "@id": "https://instruforge.web.app/#website",
+                    "url": "https://instruforge.web.app/",
+                    "name": "InstruForge",
+                    "description": "Інтернет-магазин інструментів та господарських товарів",
+                    "publisher": {
+                        "@id": "https://instruforge.web.app/#organization"
+                    },
+                    "potentialAction": {
+                        "@type": "SearchAction",
+                        "target": "https://instruforge.web.app/search?q={search_term_string}",
+                        "query-input": "required name=search_term_string"
+                    }
+                },
+                {
+                    "@type": "Store",
+                    "@id": "https://instruforge.web.app/#store",
+                    "name": "InstruForge",
+                    "description": "Інтернет-магазин інструментів та господарських товарів в Україні. Понад 5000 товарів: електроінструменти SIGMA, насоси Aquatica та LEO, ручні інструменти Mastertool, сантехніка, кріплення, садовий інвентар",
+                    "url": "https://instruforge.web.app/",
                     "telephone": "+380684296978",
-                    "contactType": "customer service",
                     "email": "korovinkonstantin0@gmail.com",
-                    "availableLanguage": ["uk", "ru"]
-                },
-                "sameAs": []
-            },
-            {
-                "@type": "WebSite",
-                "@id": "https://instruforge.web.app/#website",
-                "url": "https://instruforge.web.app/",
-                "name": "InstruForge",
-                "description": "Інтернет-магазин інструментів та господарських товарів",
-                "publisher": {
-                    "@id": "https://instruforge.web.app/#organization"
-                },
-                "potentialAction": {
-                    "@type": "SearchAction",
-                    "target": "https://instruforge.web.app/search?q={search_term_string}",
-                    "query-input": "required name=search_term_string"
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressCountry": "UA",
+                        "addressLocality": "Україна"
+                    },
+                    "image": "https://instruforge.web.app/general-product-image.jpg",
+                    "logo": "https://instruforge.web.app/logo.png",
+                    "openingHours": "Mo-Su 08:00-20:00",
+                    "priceRange": "₴",
+                    "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": "4.8",
+                        "reviewCount": "156"
+                    },
+                    "parentOrganization": {
+                        "@id": "https://instruforge.web.app/#organization"
+                    }
                 }
-            },
-            {
-                "@type": "Store",
-                "@id": "https://instruforge.web.app/#store",
-                "name": "InstruForge",
-                "description": "Інтернет-магазин інструментів та господарських товарів в Україні. Понад 5000 товарів: електроінструменти SIGMA, насоси Aquatica та LEO, ручні інструменти Mastertool, сантехніка, кріплення, садовий інвентар",
-                "url": "https://instruforge.web.app/",
-                "telephone": "+380684296978",
-                "email": "korovinkonstantin0@gmail.com",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressCountry": "UA",
-                    "addressLocality": "Україна"
-                },
-                "image": "https://instruforge.web.app/general-product-image.jpg",
-                "logo": "https://instruforge.web.app/logo.png",
-                "openingHours": "Mo-Su 08:00-20:00",
-                "priceRange": "₴",
-                "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "4.8",
-                    "reviewCount": "156"
-                },
-                "parentOrganization": {
-                    "@id": "https://instruforge.web.app/#organization"
-                }
-            }
-        ]
-    }
+            ]
+        }
     </script>
 
-<script type="application/ld+json" id="random-seo-schema"></script>
+    <script type="application/ld+json" id="random-seo-schema"></script>
 
     <!-- CSS and Scripts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -127,7 +127,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <header role="banner">
         <div class="logo">
             <h1 class="logo-text">
@@ -311,66 +310,144 @@
     </main>
 
     <!-- Enhanced About Section with SEO-optimized content -->
-    <section class="about-section" role="contentinfo">
-        <div class="container">
-            <header>
-                <h2>InstruForge — провідний інтернет-магазин інструментів в Україні</h2>
-                <p><strong>InstruForge (ІнструФордж)</strong> – ваш надійний партнер у світі професійних інструментів та інженерних рішень. Ми пропонуємо якісне обладнання для будь-яких завдань — від домашнього ремонту до промислового використання. <mark>Понад 5000 товарів в наявності з доставкою по всій Україні!</mark></p>
-            </header>
-            
-            <section>
-                <h3>Чому обирають InstruForge? 🏆</h3>
-                
-                <ul>
-                    <li><strong>📦 Величезний асортимент:</strong> У нас ви знайдете все: від дрібних кріпильних елементів (<strong>заклепки алюмінієві, скоби для степлера</strong>) та ручного інструменту (<strong>ключі, шпателі, щітки</strong>) до складного обладнання (<strong>гідроакумулятори, насоси, циркуляційні помпи</strong>).</li>
-                    <li><strong>🚚 Зручна доставка:</strong> Доставляємо по всій Україні через <strong>«Нову Пошту»</strong>. Середній термін доставки — 1-3 робочих дні.</li>
-                    <li><strong>💳 Проста оплата:</strong> Оплачуйте товар при отриманні на відділенні <strong>«Нової Пошти»</strong> готівкою або банківською карткою.</li>
-                    <li><strong>✅ Перевірена якість:</strong> Ми ретельно відбираємо постачальників. У каталозі представлені товари таких брендів, як <strong>SIGMA, AQUATICA, LEO, GRAD, MASTERTOOL</strong>, що гарантує їхню надійність і довговічність.</li>
-                    <li><strong>💰 Найкращі ціни:</strong> Прямі поставки від виробників дозволяють нам пропонувати конкурентні ціни без переплат посередникам.</li>
-                    <li><strong>🔧 Професійні консультації:</strong> Наші фахівці допоможуть вибрати потрібний інструмент та відповість на всі питання.</li>
-                </ul>
-            </section>
-
-            <section>
-                <h3>Топ категорії інструментів в нашому магазині 🛠️</h3>
-                <p>У каталозі InstruForge ви знайдете все необхідне для виконання завдань будь-якої складності:</p>
-                
-                <article>
-                    <h4>🔩 Кріплення та витратні матеріали</h4>
-                    <p>У нас ви можете <strong>купити заклепки алюмінієві, скоби для степлера</strong> та інші кріплення за вигідними цінами з доставкою по всій Україні. В наявності понад 500 найменувань метизів.</p>
-                </article>
-                
-                <article>
-                    <h4>💧 Сантехніка та системи водопостачання</h4>
-                    <p>В наявності <strong>гідроакумулятори, циркуляційні та фонтанні насоси, реле тиску, розширювальні баки</strong> для систем опалення від перевірених брендів AQUATICA та LEO.</p>
-                </article>
-                
-                <article>
-                    <h4>⚙️ Абразивний та слюсарний інструмент</h4>
-                    <p>Пропонуємо <strong>пелюсткові круги для УШМ, набори торцевих головок та біт, ключі-трещотки, викрутки ударні, зубила та кліщі переставні для труб</strong> від бренду SIGMA.</p>
-                </article>
-                
-                <article>
-                    <h4>🎨 Щітки металеві та малярний інструмент</h4>
-                    <p>У нашому магазині представлені <strong>дискові, чашкові та конічні щітки для дрилів та УШМ, а також шпателі, валики, кюветки</strong> та інший малярний інструмент.</p>
-                </article>
-            </section>
-
-            <section>
-                <h3>Асортимент нашого магазину включає:</h3>
-                <ul>
-                    <li>Слюсарно-монтажний інструмент: Набори гайкових ключів, торцеві головки, трещотки, подовжувачі.</li>
-                    <li>Кріпильні вироби: Заклепки алюмінієві, скоби для степлера.</li>
-                    <li>Обладнання для водопостачання та опалення: Гідроакумулятори, насоси циркуляційні та фонтанні, реле тиску, розширювальні баки.</li>
-                    <li>Абразивні інструменти: Шліфувальні круги, щітки проволочні для болгарки та дрелі.</li>
-                    <li>Будівельно-оздоблювальний інструмент: Шпателі, валики, кюветки, зубила.</li>
-                </ul>
-            </section>
-
-            <div class="highlight">
-                <p>InstruForge — це більше ніж просто магазин. Це ваш помічник у створенні, ремонті та вдосконаленні вашого простору.</p>
-                <p>Незалежно від того, чи потрібен вам інструмент для професійного використання чи для домашнього ремонту, у InstruForge ви знайдете саме те, що шукаєте. Ми ретельно відбираємо асортимент, співпрацюючи лише з перевіреними виробниками та постачальниками.</p>
+<section class="about-section">
+    <div class="container">
+        <h2>Чому обирають InstruForge? 🏆</h2>
+        
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">📦</div>
+                <div class="feature-content">
+                    <h4>Величезний асортимент</h4>
+                    <p>У нас ви знайдете все: від дрібних кріпильних елементів (<strong>заклепки алюмінієві, скоби для степлера</strong>) та ручного інструменту (<strong>ключі, шпателі, щітки</strong>) до складного обладнання (<strong>гідроакумулятори, насоси, циркуляційні помпи</strong>).</p>
+                </div>
             </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">🚚</div>
+                <div class="feature-content">
+                    <h4>Зручна доставка</h4>
+                    <p>Доставляємо по всій Україні через <strong>«Нову Пошту»</strong>. Середній термін доставки — 1-3 робочих дні.</p>
+                </div>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">💳</div>
+                <div class="feature-content">
+                    <h4>Проста оплата</h4>
+                    <p>Оплачуйте товар при отриманні на відділенні <strong>«Нової Пошти»</strong> готівкою або банківською карткою.</p>
+                </div>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">✅</div>
+                <div class="feature-content">
+                    <h4>Перевірена якість</h4>
+                    <p>Ми ретельно відбираємо постачальників. У каталозі представлені товари таких брендів, як <strong>SIGMA, AQUATICA, LEO, GRAD, MASTERTOOL</strong>, що гарантує їхню надійність і довговічність.</p>
+                </div>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">💰</div>
+                <div class="feature-content">
+                    <h4>Найкращі ціни</h4>
+                    <p>Прямі поставки від виробників дозволяють нам пропонувати конкурентні ціни без переплат посередникам.</p>
+                </div>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">🔧</div>
+                <div class="feature-content">
+                    <h4>Професійні консультації</h4>
+                    <p>Наші фахівці допоможуть вибрати потрібний інструмент та відповість на всі питання.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="about-section">
+    <div class="container">
+        <h2>Топ категорії інструментів в нашому магазині 🛠️</h2>
+        <p class="section-intro">У каталозі InstruForge ви знайдете все необхідне для виконання завдань будь-якої складності:</p>
+        
+        <div class="categories-grid">
+            <article class="category-card">
+                <div class="category-icon">🔩</div>
+                <div class="category-content">
+                    <h4>Кріплення та витратні матеріали</h4>
+                    <p>У нас ви можете <strong>купити заклепки алюмінієві, скоби для степлера</strong> та інші кріплення за вигідними цінами з доставкою по всій Україні. В наявності понад 500 найменувань метизів.</p>
+                </div>
+            </article>
+            
+            <article class="category-card">
+                <div class="category-icon">💧</div>
+                <div class="category-content">
+                    <h4>Сантехніка та системи водопостачання</h4>
+                    <p>В наявності <strong>гідроакумулятори, циркуляційні та фонтанні насоси, реле тиску, розширювальні баки</strong> для систем опалення від перевірених брендів AQUATICA та LEO.</p>
+                </div>
+            </article>
+            
+            <article class="category-card">
+                <div class="category-icon">⚙️</div>
+                <div class="category-content">
+                    <h4>Абразивний та слюсарний інструмент</h4>
+                    <p>Пропонуємо <strong>пелюсткові круги для УШМ, набори торцевих головок та біт, ключі-трещотки, викрутки ударні, зубила та кліщі переставні для труб</strong> від бренду SIGMA.</p>
+                </div>
+            </article>
+            
+            <article class="category-card">
+                <div class="category-icon">🎨</div>
+                <div class="category-content">
+                    <h4>Щітки металеві та малярний інструмент</h4>
+                    <p>У нашому магазині представлені <strong>дискові, чашкові та конічні щітки для дрилів та УШМ, а також шпателі, валики, кюветки</strong> та інший малярний інструмент.</p>
+                </div>
+            </article>
+            
+            <article class="category-card">
+                <div class="category-icon">🏠</div>
+                <div class="category-content">
+                    <h4>Матеріали для швидкого ремонту приміщень</h4>
+                    <p><strong>Оновіть інтер'єр за 1 день — без пилу, без майстрів!</strong> Самоклеючі <strong>3D панелі</strong> та <strong>вінілова плитка</strong> допоможуть швидко та акуратно відремонтувати будь-яке приміщення.</p>
+                </div>
+            </article>
+        </div>
+        
+        <div class="seo-description">
+            <h5>🔍 Матеріали для швидкого ремонту — швидко, чисто, без майстрів</h5>
+            <p>InstruForge пропонує сучасні <strong>самоклеючі 3D панелі</strong> та <strong>вінілову плитку</strong> для оновлення інтер'єру без зайвих витрат і бруду. Матеріали легко монтуються, не потребують спеціальних навичок і підходять для будь-яких приміщень. Це ідеальне рішення для тих, хто цінує <strong>час, чистоту та естетику</strong>. Доставка по всій Україні, гарантія якості та найкраща ціна від InstruForge.</p>
+        </div>
+    </div>
+</section>
+
+<section class="about-section">
+    <div class="container">
+        <h3>Асортимент нашого магазину включає:</h3>
+        <div class="assortment-list">
+            <div class="assortment-column">
+                <ul>
+                    <li><strong>Слюсарно-монтажний інструмент:</strong> Набори гайкових ключів, торцеві головки, трещотки, подовжувачі.</li>
+                    <li><strong>Кріпильні вироби:</strong> Заклепки алюмінієві, скоби для степлера.</li>
+                    <li><strong>Обладнання для водопостачання та опалення:</strong> Гідроакумулятори, насоси циркуляційні та фонтанні, реле тиску, розширювальні баки.</li>
+                </ul>
+            </div>
+            <div class="assortment-column">
+                <ul>
+                    <li><strong>Абразивні інструменти:</strong> Шліфувальні круги, щітки проволочні для болгарки та дрелі.</li>
+                    <li><strong>Будівельно-оздоблювальний інструмент:</strong> Шпателі, валики, кюветки, зубила.</li>
+                    <li><strong>Матеріали для швидкого ремонту:</strong> Самоклеючі 3D панелі, вінілова плитка, декоративні настінні покриття.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="highlight about-section">
+    <div class="container">
+        <p>InstruForge — це більше ніж просто магазин. Це ваш помічник у створенні, ремонті та вдосконаленні вашого простору.</p>
+        <p>Незалежно від того, чи потрібен вам інструмент для професійного використання чи для домашнього ремонту, у InstruForge ви знайдете саме те, що шукаєте. Ми ретельно відбираємо асортимент, співпрацюючи лише з перевіреними виробниками та постачальниками.</p>
+    </div>
+</div>
     </section>
 
     <!-- Лічильник переглядів (тільки для адміністраторів) -->

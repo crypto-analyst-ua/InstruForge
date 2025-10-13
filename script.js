@@ -1752,8 +1752,7 @@ function showProductDetail(productId) {
         </div>
         <div class="product-meta">
           <div><i class="fas fa-box"></i> ${product.inStock ? 'В наявності' : 'Немає в наявності'}</div>
-          <div><i class="fas fa-truck"></i> Доставка за 1-2 дні</div>
-          <div><i class="fas fa-shield-alt"></i> Гарантія 12 місяців</div>
+          <div><i class="fas fa-truck"></i> Доставка за 1-3 дні</div>
         </div>
         <div class="product-description">
           <h4>Опис</h4>

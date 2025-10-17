@@ -51,13 +51,13 @@ function clearSearchCache() {
   searchCache.clear();
 }
 
-// Простая нормализация текста
+// УЛУЧШЕННАЯ нормализация текста - разрешаем цифры и дефисы
 function normalizeSearchTerm(term) {
   return term.toLowerCase()
     .replace(/[ї]/g, 'і')
     .replace(/[є]/g, 'е')
     .replace(/[ъь]/g, '')
-    .replace(/[^а-яієґ\s]/g, '')
+    .replace(/[^а-яієґ0-9\-\s]/g, '') // Разрешить цифры и дефисы
     .trim();
 }
 
@@ -68,12 +68,46 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Словарь синонимов для поиска
+const searchSynonyms = {
+  'болгарка': 'ушм',
+  'ушм': 'болгарка',
+  'дрель': 'сверлильный',
+  'шуруповерт': 'дрель',
+  'насос': 'помпа',
+  'кран': 'вентиль',
+  'отвертка': 'шуруповерт',
+  'пила': 'ножовка',
+  'молоток': 'кувалда',
+  'перфоратор': 'дрель',
+  'лобзик': 'пила',
+  'рубанок': 'строгальный',
+  'фрезер': 'фрезерный',
+  'шлифмашина': 'шлифовальный'
+};
+
+// Расширение поискового запроса синонимами
+function expandSearchQuery(query) {
+  const words = query.split(' ');
+  const expanded = [...words];
+  
+  words.forEach(word => {
+    const normalizedWord = normalizeSearchTerm(word);
+    if (searchSynonyms[normalizedWord]) {
+      expanded.push(searchSynonyms[normalizedWord]);
+    }
+  });
+  
+  return expanded.join(' ');
+}
+
 // Улучшенная функция для получения поисковых подсказок
 function getSearchSuggestions(query) {
   try {
-    if (!query || query.length < 2) return [];
+    if (!query || query.length < 1) return []; // Разрешаем подсказки с 1 символа
     
     const normalizedQuery = normalizeSearchTerm(query);
+    const expandedQuery = expandSearchQuery(query);
     
     // Проверяем кэш
     if (searchCache.has(normalizedQuery)) {
@@ -83,23 +117,40 @@ function getSearchSuggestions(query) {
     const suggestions = [];
     const seen = new Set();
     
-    // Ограничиваем количество проверяемых товаров для производительности
-    const maxProductsToCheck = Math.min(products.length, 500);
+    // Для коротких запросов увеличиваем ограничение
+    const maxProductsToCheck = query.length <= 2 ? 
+      Math.min(products.length, 200) : 
+      Math.min(products.length, 500);
     
     for (let i = 0; i < maxProductsToCheck; i++) {
       const product = products[i];
       if (!product || typeof product !== 'object') continue;
       
-      // Проверяем название
+      // Проверяем название - приоритет для коротких запросов
       if (product.title) {
         const normalizedTitle = normalizeSearchTerm(product.title);
-        if (normalizedTitle.includes(normalizedQuery) && !seen.has(product.title)) {
+        // Для коротких запросов ищем совпадения в начале слов
+        if (query.length <= 2) {
+          const words = normalizedTitle.split(/\s+/);
+          const hasPrefixMatch = words.some(word => word.indexOf(normalizedQuery) === 0);
+          if (hasPrefixMatch && !seen.has(product.title)) {
+            seen.add(product.title);
+            suggestions.push({ 
+              value: product.title, 
+              type: 'Назва', 
+              icon: '📦',
+              productId: product.id,
+              relevance: 10 // Высокий приоритет для префиксного совпадения
+            });
+          }
+        } else if (normalizedTitle.includes(normalizedQuery) && !seen.has(product.title)) {
           seen.add(product.title);
           suggestions.push({ 
             value: product.title, 
             type: 'Назва', 
             icon: '📦',
-            productId: product.id
+            productId: product.id,
+            relevance: 5
           });
         }
       }
@@ -112,7 +163,8 @@ function getSearchSuggestions(query) {
           suggestions.push({ 
             value: product.brand, 
             type: 'Бренд', 
-            icon: '🏷️' 
+            icon: '🏷️',
+            relevance: 8
           });
         }
       }
@@ -125,14 +177,45 @@ function getSearchSuggestions(query) {
           suggestions.push({ 
             value: product.category, 
             type: 'Категорія', 
-            icon: '📂' 
+            icon: '📂',
+            relevance: 6
+          });
+        }
+      }
+      
+      // Проверяем модель и артикул если есть
+      if (product.model && !seen.has(product.model)) {
+        const normalizedModel = normalizeSearchTerm(product.model);
+        if (normalizedModel.includes(normalizedQuery)) {
+          seen.add(product.model);
+          suggestions.push({ 
+            value: product.model, 
+            type: 'Модель', 
+            icon: '🔧',
+            relevance: 7
+          });
+        }
+      }
+      
+      if (product.sku && !seen.has(product.sku)) {
+        const normalizedSku = normalizeSearchTerm(product.sku);
+        if (normalizedSku.includes(normalizedQuery)) {
+          seen.add(product.sku);
+          suggestions.push({ 
+            value: product.sku, 
+            type: 'Артикул', 
+            icon: '🏷️',
+            relevance: 7
           });
         }
       }
       
       // Ограничиваем количество подсказок
-      if (suggestions.length >= 8) break;
+      if (suggestions.length >= 10) break;
     }
+    
+    // Сортируем по релевантности
+    suggestions.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     
     // Очищаем кэш если он слишком большой
     if (searchCache.size > MAX_CACHE_SIZE) {
@@ -140,27 +223,46 @@ function getSearchSuggestions(query) {
       searchCache.delete(firstKey);
     }
     
-    searchCache.set(normalizedQuery, suggestions.slice(0, 5));
-    return suggestions.slice(0, 5);
+    const finalSuggestions = suggestions.slice(0, 5);
+    searchCache.set(normalizedQuery, finalSuggestions);
+    return finalSuggestions;
   } catch (error) {
     console.error("Ошибка в поиске подсказок:", error);
     return [];
   }
 }
 
-// Улучшенная функция фильтрации товаров
+// Улучшенная функция фильтрации товаров с поддержкой коротких запросов
 function searchProducts(searchTerm) {
-  if (!searchTerm || searchTerm.length < 2) {
+  if (!searchTerm || searchTerm.trim().length < 1) {
     return products;
   }
   
   const normalizedSearch = normalizeSearchTerm(searchTerm);
-  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length > 1);
+  const expandedSearch = expandSearchQuery(searchTerm);
+  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
   
   if (searchWords.length === 0) {
     return products;
   }
   
+  // Для очень коротких запросов используем префиксный поиск с ограничением
+  if (normalizedSearch.replace(/\s+/g, '').length < 2) {
+    const firstWord = searchWords[0];
+    let filtered = products.filter(product => {
+      if (!product.searchIndex) return false;
+      
+      // Разбиваем searchIndex товара на слова и проверяем префиксные совпадения
+      const wordsInProduct = product.searchIndex.split(/\s+/);
+      return wordsInProduct.some(word => word.indexOf(firstWord) === 0);
+    });
+    
+    // Ограничиваем количество результатов для коротких запросов
+    filtered = filtered.slice(0, 100);
+    return filtered;
+  }
+  
+  // Для обычных запросов используем старую логику
   return products.filter(product => {
     if (!product.searchIndex) return false;
     
@@ -188,8 +290,8 @@ function setupSearchHandler() {
       lastSearchValue = currentValue;
       currentFilters.search = currentValue;
       
-      // Показываем/скрываем подсказки
-      if (currentValue.length > 1) {
+      // Показываем/скрываем подсказки (разрешаем с 1 символа)
+      if (currentValue.length >= 1) {
         showSearchSuggestions(currentValue);
       } else {
         hideSearchSuggestions();
@@ -247,7 +349,7 @@ function setupSearchHandler() {
 
 // Улучшенная функция показа подсказок
 function showSearchSuggestions(query) {
-  if (!query || query.length < 2) {
+  if (!query || query.length < 1) {
     hideSearchSuggestions();
     return;
   }
@@ -315,18 +417,20 @@ function hideSearchSuggestions() {
   }
 }
 
-// Улучшенная предобработка товаров
+// Улучшенная предобработка товаров с расширенным поисковым индексом
 function preprocessProducts(productsArray) {
   return productsArray.map(product => {
     if (!product || typeof product !== 'object') return product;
     
-    // Создаем расширенный поисковый индекс
+    // Создаем расширенный поисковый индекс с дополнительными полями
     const searchText = [
       product.title || '',
       product.brand || '',
       product.category || '',
       product.description || '',
-      product.specifications || ''
+      product.specifications || '',
+      product.model || '', // Добавляем поле модели
+      product.sku || '' // Добавляем артикул
     ].join(' ').toLowerCase();
     
     const searchIndex = normalizeSearchTerm(searchText);
@@ -342,7 +446,9 @@ function preprocessProducts(productsArray) {
       price: Number(product.price) || 0,
       image: product.image || '',
       inStock: product.inStock !== undefined ? product.inStock : true,
-      specifications: product.specifications || ''
+      specifications: product.specifications || '',
+      model: product.model || '',
+      sku: product.sku || ''
     };
   });
 }
@@ -3527,17 +3633,8 @@ function switchSource(source, element) {
     applyFilters();
 }
 
-// Ініціалізація додатка
-document.addEventListener("DOMContentLoaded", function() {
+// Запуск додатку
+document.addEventListener('DOMContentLoaded', function() {
     initApp();
-    
-    // Додаємо обробник для закриття модального вікна при кліку поза ним
-    document.getElementById("modal").addEventListener("click", function(e) {
-        if (e.target === this) {
-            closeModal();
-        }
-    });
-    
-    // Ініціалізація завантаження всіх продуктів для SEO
-    loadAllProducts();
 });
+

@@ -215,6 +215,15 @@
                     <option value="popular">За популярністю</option>
                 </select>
             </div>
+            
+            <!-- Добавьте этот код в aside class="filters" после существующих фильтров -->
+            <div class="filter-group">
+                <label>Категории товаров</label>
+                <div class="categories-list" id="categories-list">
+                    <!-- Категории будут заполнены динамически -->
+                </div>
+            </div>
+            
             <div class="filter-buttons">
                 <button onclick="applyFilters()" class="btn btn-detail">Застосувати</button>
                 <button onclick="resetFilters()" class="btn">Скинути</button>

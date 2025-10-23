@@ -37,6 +37,47 @@ const FEED_UPDATE_TIME_KEY = "electrotools_feed_update";
 const VIEW_MODE_KEY = "electrotools_view_mode";
 const ADMINS_STORAGE_KEY = "electrotools_admins";
 
+// ===== СЛОВНИК ПЕРЕКЛАДУ КАТЕГОРІЙ =====
+const categoryTranslations = {
+    "Инструменты": "Інструменти",
+    "Насосы": "Насоси",
+    "Сантехника": "Сантехніка",
+    "Крепеж": "Кріплення",
+    "Электроинструменты": "Електроінструменти",
+    "Садовый инвентарь": "Садовий інвентар",
+    "Отделочные материалы": "Оздоблювальні матеріали",
+    "Хозтовары": "Господарські товари",
+    "Стройматериалы": "Будматеріали",
+    "Автоинструменты": "Автоінструменти",
+    "Без категории": "Без категорії",
+    "Все для кухни": "Все для кухні",
+    "Красота и здоровье": "Красота і здоров'я",
+    "Товары для дома и сада": "Товари для дому та саду",
+    "Фонари, лампы, зажигалки": "Ліхтарі, лампи, запальнички",
+    "Часы, смарт, фитнес браслеты": "Годинники, смарт, фітнес браслети",
+    "Обувь": "Взуття",
+    "Комплекты товаров": "Комплекти товарів",
+    "Автотовары": "Автотовари",
+    "Товары для детей": "Товари для дітей",
+    "Электроника": "Електроніка",
+    "Сумки, клатчи, кошельки, очки": "Сумки, клатчі, гаманці, окуляри",
+    "Электронки": "Електронні пристрої",
+    "Колонки и акустика": "Колонки та акустика",
+    "Спорт, здоровье, отдых": "Спорт, здоров'я, відпочинок",
+    "Наушники и гарнитура": "Навушники та гарнітура",
+    "Мобильные аксессуары": "Мобільні аксесуари",
+    "Косметика": "Косметика",
+    "Товары для животных": "Товари для тварин",
+    "Застосувати": "Застосувати"
+    // добавьте другие переводы по необходимости
+};
+
+// Функция для перевода категорий
+function translateCategory(category) {
+    if (!category) return '';
+    return categoryTranslations[category] || category;
+}
+
 // Додаємо змінні для покращеного пошуку
 let searchTimeout = null;
 const SEARCH_DELAY = 300; // Затримка в мс
@@ -148,12 +189,12 @@ function getSearchSuggestions(query) {
           suggestions.push({ 
             value: product.title, 
             type: 'Назва', 
-            icon: '📦',
-            productId: product.id,
-            relevance: 5
-          });
+              icon: '📦',
+              productId: product.id,
+              relevance: 5
+            });
+          }
         }
-      }
       
       // Проверяем бренд
       if (product.brand && !seen.has(product.brand)) {
@@ -562,7 +603,7 @@ function generateStructuredData(products) {
 
     let category = "Інструменти";
     if (product.category) {
-      category = product.category;
+      category = translateCategory(product.category);
     } else if (product.title.toLowerCase().includes("насос")) {
       category = "Сантехніка та насоси";
     } else if (product.title.toLowerCase().includes("ключ") || product.title.toLowerCase().includes("інструмент")) {
@@ -632,7 +673,7 @@ function generateSchemaForProducts(products) {
       "image": p.image || "https://instruforge.web.app/general-product-image.jpg",
       "description": p.description || "",
       "brand": { "@type": "Brand", "name": p.brand || "InstruForge" },
-      "category": p.category || "",
+      "category": translateCategory(p.category) || "",
       "offers": {
         "@type": "Offer",
         "price": p.price ? p.price.toString() : "0",
@@ -683,7 +724,7 @@ function generateRandomSEOProductsSchema(products) {
 
             let category = "Інструменти";
             if (product.category) {
-                category = product.category;
+                category = translateCategory(product.category);
             } else if (product.title.toLowerCase().includes("насос")) {
                 category = "Сантехніка та насоси";
             } else if (product.title.toLowerCase().includes("ключ") || product.title.toLowerCase().includes("інструмент")) {
@@ -1597,9 +1638,79 @@ function renderCategories() {
   categories.forEach(category => {
     const option = document.createElement("option");
     option.value = category;
-    option.textContent = category;
+    option.textContent = translateCategory(category);
     categorySelect.appendChild(option);
   });
+  
+  // Теперь также рендерим список категорий
+  renderCategoriesList();
+}
+
+// Функция для рендеринга списка категорий
+function renderCategoriesList() {
+    const categoriesList = document.getElementById('categories-list');
+    if (!categoriesList) return;
+
+    // Получаем все уникальные категории и подсчитываем количество товаров
+    const categoryCounts = {};
+    products.forEach(product => {
+        if (product.category) {
+            categoryCounts[product.category] = (categoryCounts[product.category] || 0) + 1;
+        }
+    });
+
+    // Сортируем категории по количеству товаров (по убыванию)
+    const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+
+    let categoriesHTML = '';
+
+    // Добавляем кнопку "Все категории"
+    categoriesHTML += `
+        <div class="category-item active" onclick="selectCategory('')">
+            Всі категорії
+            <span class="category-count">${products.length}</span>
+        </div>
+    `;
+
+    // Добавляем остальные категории
+    sortedCategories.forEach(category => {
+        categoriesHTML += `
+            <div class="category-item" onclick="selectCategory('${category}')">
+                ${translateCategory(category)}
+                <span class="category-count">${categoryCounts[category]}</span>
+            </div>
+        `;
+    });
+
+    categoriesList.innerHTML = categoriesHTML;
+}
+
+// Функция выбора категории
+function selectCategory(category) {
+    // Обновляем выпадающий список категорий
+    document.getElementById('category').value = category;
+    
+    // Обновляем активный элемент в списке категорий
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Находим и активируем выбранную категорию
+    if (category === '') {
+        document.querySelectorAll('.category-item')[0].classList.add('active');
+    } else {
+        const categoryItems = document.querySelectorAll('.category-item');
+        for (let item of categoryItems) {
+            if (item.textContent.includes(translateCategory(category))) {
+                item.classList.add('active');
+                break;
+            }
+        }
+    }
+    
+    // Применяем фильтры
+    currentFilters.category = category;
+    applyFilters();
 }
 
 // Рендеринг брендів
@@ -1716,6 +1827,24 @@ function applyFilters() {
   currentFilters.availability = document.getElementById("availability").value;
   currentFilters.sort = document.getElementById("sort").value;
   
+  // Синхронизируем активную категорию в списке
+  const currentCategory = currentFilters.category;
+  document.querySelectorAll('.category-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  if (currentCategory === '') {
+    document.querySelectorAll('.category-item')[0].classList.add('active');
+  } else {
+    const categoryItems = document.querySelectorAll('.category-item');
+    for (let item of categoryItems) {
+      if (item.textContent.includes(translateCategory(currentCategory))) {
+        item.classList.add('active');
+        break;
+      }
+    }
+  }
+  
   currentPage = 1;
   renderProducts();
   
@@ -1736,6 +1865,9 @@ function resetFilters() {
   document.getElementById("availability").value = '';
   document.getElementById("sort").value = 'default';
   document.getElementById("search").value = '';
+  
+  // Сбрасываем выбор категории в списке
+  selectCategory('');
   
   currentFilters = {
     category: '',
@@ -3160,7 +3292,7 @@ function loadAdminProducts() {
               <h4>${product.title}</h4>
               <p>${product.description || 'Опис відсутній'}</p>
               <p><strong>Ціна:</strong> ${formatPrice(product.price)} ₴</p>
-              <p><strong>Категорія:</strong> ${product.category}</p>
+              <p><strong>Категорія:</strong> ${translateCategory(product.category)}</p>
               <p><strong>Бренд:</strong> ${product.brand}</p>
               <p><strong>Статус:</strong> ${product.inStock ? 'В наявності' : 'Немає в наявності'}</p>
             </div>
@@ -3568,4 +3700,3 @@ function switchSource(source, element) {
 document.addEventListener('DOMContentLoaded', function() {
     initApp();
 });
-

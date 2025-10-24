@@ -36,6 +36,25 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#2c3e50">
 
+    <!-- Стили для черного текста с белой обводкой -->
+<style>
+    .logo-text .logo-name {
+        color: #000000 !important; /* Черный цвет текста */
+        font-weight: 700;
+        text-shadow: 
+            0 0 5px #ffffff,
+            0 0 10px #ffffff,
+            0 0 15px #ffffff,
+            0 0 20px #ffffff,
+            0 0 25px #ffffff,
+            0 0 30px #ffffff !important;
+        -webkit-text-stroke: 1px #ffffff !important; /* Дополнительная белая обводка */
+        background: none !important;
+        -webkit-background-clip: initial !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+</style>
+
     <!-- Объединенная JSON-LD Schema -->
     <script type="application/ld+json">
         {
@@ -121,7 +140,7 @@
     <header role="banner">
         <div class="logo">
             <h1 class="logo-text">
-                InstruForge
+                <span class="logo-name">InstruForge</span>
                 <span class="logo-subtitle">Інтернет-магазин</span>
             </h1>
         </div>

@@ -113,107 +113,18 @@ function escapeHtml(text) {
 const searchSynonyms = {
   'болгарка': 'ушм',
   'ушм': 'болгарка',
-  'дриль': ['свердлильний', 'перфоратор', 'шуруповерт'],
-  'шуруповерт': ['дриль', 'викрутка'],
+  'дрель': 'сверлильный',
+  'шуруповерт': 'дрель',
   'насос': 'помпа',
   'кран': 'вентиль',
-  'викрутка': 'шуруповерт',
-  'пила': ['ножівка', 'лобзик'],
+  'отвертка': 'шуруповерт',
+  'пила': 'ножовка',
   'молоток': 'кувалда',
-  'перфоратор': 'дриль',
+  'перфоратор': 'дрель',
   'лобзик': 'пила',
-  'рубанок': 'стругальний',
-  'фрезер': 'фрезерний',
-  'шліфмашина': 'шліфувальний',
-
-  // 3D панелі та декоративні елементи
-  '3d панелі': ['об’ємні панелі', 'декоративні панелі', 'стінові 3d панелі'],
-  'об’ємні панелі': '3d панелі',
-  'декоративні панелі': ['3d панелі', 'стінові панелі'],
-  'стінові 3d панелі': '3d панелі',
-  '3d плитка': 'об’ємна плитка',
-  'об’ємна плитка': '3d плитка',
-  'гіпсові 3d панелі': ['3d панелі', 'гіпсові панелі'],
-  'мдф 3d панелі': ['3d панелі', 'мдф панелі'],
-  'пластикові 3d панелі': ['3d панелі', 'пвх панелі'],
-
-  // Матеріали для швидкого ремонту
-  'рідкі шпалери': 'шовкова штукатурка',
-  'шовкова штукатурка': 'рідкі шпалери',
-  'декоративна штукатурка': ['венеціанська штукатурка', 'фактурна штукатурка'],
-  'венеціанська штукатурка': 'декоративна штукатурка',
-  'фактурна штукатурка': 'декоративна штукатурка',
-  'натяжна стеля': 'натяжні стелі',
-  'натяжні стелі': 'натяжна стеля',
-  'стельові плити': 'стельові панелі',
-  'стельові панелі': 'стельові плити',
-  'ламінат': ['ламінований паркет', 'ламінатна дошка'],
-  'ламінований паркет': 'ламінат',
-  'ламінатна дошка': 'ламінат',
-  'кварцвініл': 'вініловий ламінат',
-  'вініловий ламінат': 'кварцвініл',
-  'лінолеум': 'пвх покриття',
-  'пвх покриття': 'лінолеум',
-
-  // Системи швидкого монтажу
-  'гіпсокартон': ['гкл', 'гіпсокартонний лист'],
-  'гкл': 'гіпсокартон',
-  'гіпсокартонний лист': 'гіпсокартон',
-  'гвл': ['гіпсоволокнистий лист', 'вологостійкий гіпсокартон'],
-  'гіпсоволокнистий лист': 'гвл',
-  'осб': ['орієнтовано-стружкова плита', 'osb'],
-  'osb': 'осб',
-  'двп': 'деревноволокниста плита',
-  'дсп': 'деревностружкова плита',
-  'мдф': 'мілкодисперсна фракція',
-
-  // Кріплення і монтаж
-  'дюбель': ['розпірний дюбель', 'дюбель-цвях'],
-  'анкер': 'анкерний болт',
-  'анкерний болт': 'анкер',
-  'саморіз': ['шуруп', 'гвинт'],
-  'шуруп': 'саморіз',
-  'рідкі цвяхи': ['монтажний клей', 'клей для панелей'],
-  'монтажний клей': 'рідкі цвяхи',
-  'монтажна піна': ['пінополіуретанова піна', 'піна монтажна'],
-  'клей для шпалер': 'шпалерний клей',
-  'шпалерний клей': 'клей для шпалер',
-
-  // Інструменти для швидкого ремонту
-  'шпатель': ['лопатка', 'кельма'],
-  'лопатка': 'шпатель',
-  'кельма': 'шпатель',
-  'валик': ['малярний валик', 'валик для фарби'],
-  'малярний валик': 'валик',
-  'пензель': ['малярний пензель', 'кисть'],
-  'малярний пензель': 'пензель',
-  'будівельний міксер': 'міксерна насадка',
-  'міксерна насадка': 'будівельний міксер',
-  'степлер': 'скобозабивач',
-  'скобозабивач': 'степлер',
-  'рівень': ['ватерпас', 'бульбашковий рівень'],
-  'ватерпас': 'рівень',
-  'бульбашковий рівень': 'рівень',
-
-  // Опоряджувальні матеріали
-  'фарба': ['емаль', 'лакофарбові матеріали'],
-  'емаль': 'фарба',
-  'лак': ['прозоре покриття', 'деревний лак'],
-  'грунтівка': ['праймер', 'грунт'],
-  'праймер': 'грунтівка',
-  'шпаклівка': ['шпатлівка', 'замазка'],
-  'шпатлівка': 'шпаклівка',
-  'замазка': 'шпаклівка',
-  'герметик': ['силікон', 'акриловий герметик'],
-  'силікон': 'герметик',
-  'акриловий герметик': 'герметик',
-
-  // Швидкі рішення
-  'швидкий ремонт': ['косметичний ремонт', 'євроремонт'],
-  'косметичний ремонт': 'швидкий ремонт',
-  'євроремонт': 'швидкий ремонт',
-  'ремонт під ключ': ['повний ремонт', 'комплексний ремонт'],
-  'повний ремонт': 'ремонт під ключ'
+  'рубанок': 'строгальный',
+  'фрезер': 'фрезерный',
+  'шлифмашина': 'шлифовальный'
 };
 
 // Расширение поискового запроса синонимами
@@ -748,66 +659,40 @@ function generateStructuredData(products) {
 }
 
 // --- ДОДАНА ФУНКЦИЯ ДЛЯ SEO SCHEMA ---
-// Основная функция для генерации SEO schema
 function generateSchemaForProducts(products) {
   if (!products || products.length === 0) return;
-
-  // Берем первые 20 товаров для примера
-  const featuredProducts = products.slice(0, 20);
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "Каталог інструментів та господарських товарів InstruForge",
-    "description": "Понад 5000 товарів: інструменти SIGMA, насоси Aquatica та LEO, кріплення, сантехніка з доставкою по Україні",
-    "url": window.location.href,
-    "numberOfItems": featuredProducts.length,
-    "itemListElement": featuredProducts.map((product, index) => {
-      let availability = product.inStock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock";
-
-      let brand = "InstruForge";
-      const brandMatch = product.title.match(/(SIGMA|AQUATICA|LEO|GRAD|MASTERTOOL)/i);
-      if (brandMatch) {
-        brand = brandMatch[0];
-      } else if (product.brand) {
-        brand = product.brand;
+    "name": "Каталог товарів InstruForge",
+    "itemListElement": products.map((p, index) => ({
+      "@type": "Product",
+      "position": index + 1,
+      "name": p.title,
+      "image": p.image || "https://instruforge.web.app/general-product-image.jpg",
+      "description": p.description || "",
+      "brand": { "@type": "Brand", "name": p.brand || "InstruForge" },
+      "category": translateCategory(p.category) || "",
+      "offers": {
+        "@type": "Offer",
+        "price": p.price ? p.price.toString() : "0",
+        "priceCurrency": "UAH",
+        "availability": p.inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+        "url": `${window.location.origin}/#product-${p.id}`
       }
-
-      return {
-        "@type": "ListItem",
-        "position": index + 1,
-        "item": {
-          "@type": "Product",
-          "name": product.title,
-          "description": product.description || `${product.title} - якісний товар від InstruForge`,
-          "brand": { 
-            "@type": "Brand", 
-            "name": brand 
-          },
-          "category": translateCategory(product.category) || "Інструменти",
-          "offers": {
-            "@type": "Offer",
-            "availability": availability,
-            "priceCurrency": "UAH",
-            "price": product.price ? product.price.toString() : "0",
-            "priceValidUntil": new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0]
-          },
-          "image": product.image || "https://instruforge.web.app/general-product-image.jpg"
-        }
-      };
-    })
+    }))
   };
 
+  // Оновлюємо тег #dynamic-products-schema замість створення нового
   const schemaScript = document.getElementById("dynamic-products-schema");
   if (schemaScript) {
     schemaScript.textContent = JSON.stringify(schema, null, 2);
   }
 
-  console.log("✅ Dynamic SEO schema updated for", featuredProducts.length, "products");
+  console.log("✅ Dynamic SEO schema updated");
 }
 
 // Функція для генерації SEO schema з випадковими товарами
@@ -1013,7 +898,7 @@ function loadProductsFromJson() {
         fetch(file)
             .then(response => {
                 if (!response.ok) {
-                    console.warn(`Файл ${file} не знайдено, пропускаємо`);
+                    console.warn(`Файл ${file} не найден, пропускаем`);
                     return [];
                 }
                 return response.json();
@@ -1026,7 +911,7 @@ function loadProductsFromJson() {
                 }));
             })
             .catch(error => {
-                console.warn(`Помилка завантаження файлу ${file}:`, error);
+                console.warn(`Ошибка загрузки файла ${file}:`, error);
                 return [];
             })
     );
@@ -1212,7 +1097,10 @@ function loadProducts() {
     products = preprocessProducts(JSON.parse(cachedProducts));
     products = shuffleArray(products);
     window.currentProducts = products;
+    generateStructuredData(products);
+    // Также вызываем новую функцию для генерации SEO schema
     generateSchemaForProducts(products);
+    // Генерируем случайную SEO разметку
     generateRandomSEOData(products);
     renderProducts();
     return Promise.resolve();
@@ -1224,24 +1112,43 @@ function loadProducts() {
         .get()
         .then((querySnapshot) => {
             if (querySnapshot.empty) {
-        // Если в Firestore нет товаров, загружаем из JSON файлов
-        return loadProductsFromJson()
-          .then(jsonProducts => {
-            products = preprocessProducts(jsonProducts);
-            products = shuffleArray(products);
-            window.currentProducts = products;
-            generateSchemaForProducts(products);
-            generateRandomSEOData(products);
-            updateCartCount();
-            renderProducts();
-            renderFeaturedProducts();
-            renderCategories();
-            renderBrands();
-            showNotification("Товари завантажено з JSON файлів");
-            
-            localStorage.setItem('products_backup', JSON.stringify(products));
-            return Promise.resolve();
-          });
+        const data = localStorage.getItem('products_backup');
+        if (data) {
+          products = preprocessProducts(JSON.parse(data));
+          products = shuffleArray(products);
+          window.currentProducts = products;
+          generateStructuredData(products);
+          // Также вызываем новую функцию для генерации SEO schema
+          generateSchemaForProducts(products);
+          // Генерируем случайную SEO разметку
+          generateRandomSEOData(products);
+          updateCartCount();
+          renderProducts();
+          renderFeaturedProducts();
+          renderCategories();
+          renderBrands();
+          return Promise.resolve();
+        } else {
+          return loadProductsFromJson()
+            .then(jsonProducts => {
+              products = preprocessProducts(jsonProducts);
+              products = shuffleArray(products);
+              window.currentProducts = products;
+              generateStructuredData(products);
+              // Также вызываем новую функцию для генерации SEO schema
+              generateSchemaForProducts(products);
+              // Генерируем случайную SEO разметку
+              generateRandomSEOData(products);
+              updateCartCount();
+              renderProducts();
+              renderFeaturedProducts();
+              renderCategories();
+              renderBrands();
+              showNotification("Товари завантажено з локального файлу");
+              
+              localStorage.setItem('products_backup', JSON.stringify(products));
+            });
+        }
       } else {
                 products = [];
                 querySnapshot.forEach((doc) => {
@@ -1251,7 +1158,10 @@ function loadProducts() {
                 products = preprocessProducts(products);
                 products = shuffleArray(products);
                 window.currentProducts = products;
+                generateStructuredData(products);
+                // Также вызываем новую функцию для генерации SEO schema
                 generateSchemaForProducts(products);
+                // Генерируем случайную SEO разметку
                 generateRandomSEOData(products);
         
         localStorage.setItem('products_cache', JSON.stringify(products));
@@ -1266,32 +1176,28 @@ function loadProducts() {
       }
     })
     .catch((error) => {
-      console.error("Помилка завантаження з Firestore", error);
-      showNotification("Помилка завантаження з Firestore", "error");
+      console.error("", error);
+      showNotification("", "error");
       
-      // При ошибке Firestore загружаем из JSON файлов
-      return loadProductsFromJson()
-        .then(jsonProducts => {
-          products = preprocessProducts(jsonProducts);
-          products = shuffleArray(products);
-          window.currentProducts = products;
-          generateSchemaForProducts(products);
-          generateRandomSEOData(products);
-          updateCartCount();
-          renderProducts();
-          renderFeaturedProducts();
-          renderCategories();
-          renderBrands();
-          showNotification("Товари завантажено з JSON файлів");
-          
-          localStorage.setItem('products_backup', JSON.stringify(products));
-          return Promise.resolve();
-        })
-        .catch(jsonError => {
-          console.error("Помилка завантаження з JSON файлів", jsonError);
-          showNotification("Помилка завантаження товарів", "error");
-          return Promise.reject(jsonError);
-        });
+      const data = localStorage.getItem('products_backup');
+      if (data) {
+        products = preprocessProducts(JSON.parse(data));
+        products = shuffleArray(products);
+        window.currentProducts = products;
+        generateStructuredData(products);
+        // Также вызываем новую функцию для генерации SEO schema
+        generateSchemaForProducts(products);
+        // Генерируем случайную SEO разметку
+        generateRandomSEOData(products);
+        updateCartCount();
+        renderProducts();
+        renderFeaturedProducts();
+        renderCategories();
+        renderBrands();
+        return Promise.resolve();
+      } else {
+        return Promise.reject(error);
+      }
     });
 }
 
@@ -3573,42 +3479,38 @@ function openProfile() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функція оновлення профілю
+// Функція оновлення профілю користувача
 function updateProfile() {
   const name = document.getElementById('profile-name').value;
   const password = document.getElementById('profile-password').value;
   
-  const promises = [];
-  
-  // Оновлюємо ім'я, якщо воно змінилося
+  const updates = {};
   if (name !== currentUser.displayName) {
-    promises.push(currentUser.updateProfile({
-      displayName: name
-    }));
+    updates.displayName = name;
   }
   
-  // Оновлюємо пароль, якщо він введений
+  // Оновлюємо профіль
+  const promises = [currentUser.updateProfile(updates)];
+  
+  // Якщо вказано новий пароль, оновлюємо його
   if (password) {
     promises.push(currentUser.updatePassword(password));
   }
   
-  if (promises.length === 0) {
-    showNotification("Немає змін для збереження");
-    return;
-  }
-  
   Promise.all(promises)
     .then(() => {
-      showNotification("Профіль оновлено");
+      showNotification("Профіль успішно оновлено");
       closeModal();
+      // Оновлюємо ім'я користувача в інтерфейсі
+      document.getElementById('user-name').textContent = name || currentUser.email;
     })
-    .catch(error => {
+    .catch((error) => {
       console.error("Помилка оновлення профілю: ", error);
-      showNotification("Помилка оновлення профілю", "error");
+      showNotification("Помилка оновлення профілю: " + error.message, "error");
     });
 }
 
-// Функція перегляду історії замовлень
+// Функція перегляду замовлень користувача
 function viewOrders() {
   if (!currentUser) {
     showNotification("Спочатку увійдіть в систему", "warning");
@@ -3617,71 +3519,104 @@ function viewOrders() {
   }
   
   const modalContent = document.getElementById("modal-content");
-  modalContent.innerHTML = `
-    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-    <h3>Мої замовлення</h3>
-    <div id="user-orders-list"></div>
-  `;
+  modalContent.innerHTML = '<h3>Мої замовлення</h3><p>Завантаження замовлень...</p>';
   
   openModal();
   
-  // Завантажуємо замовлення користувача
-  loadUserOrders();
-  
   // Оптимизация для мобильных устройств
   setTimeout(optimizeModalForMobile, 100);
-}
-
-// Функція завантаження замовлень користувача
-function loadUserOrders() {
-  const ordersList = document.getElementById("user-orders-list");
-  ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
   
+  // Завантажуємо замовлення користувача
   db.collection("orders")
     .where("userId", "==", currentUser.uid)
     .orderBy("createdAt", "desc")
     .get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
-        ordersList.innerHTML = '<p>У вас немає замовлень</p>';
+        modalContent.innerHTML = `
+          <h3>Мої замовлення</h3>
+          <div class="empty-cart">
+            <i class="fas fa-box-open"></i>
+            <h3>Замовлень немає</h3>
+            <p>Ви ще не здійснювали покупок в нашому магазині</p>
+          </div>
+        `;
         return;
       }
       
-      ordersList.innerHTML = '';
-      
+      let ordersHTML = '';
       querySnapshot.forEach((doc) => {
         const order = { id: doc.id, ...doc.data() };
         const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
         
-        const orderElement = document.createElement('div');
-        orderElement.className = 'user-order-item';
-        orderElement.style.border = '1px solid #eee';
-        orderElement.style.padding = '15px';
-        orderElement.style.marginBottom = '15px';
-        orderElement.style.borderRadius = '8px';
+        // Визначаємо статус замовлення
+        let statusClass = 'status-new';
+        let statusText = 'Новий';
         
-        orderElement.innerHTML = `
-          <div class="order-header">
-            <h4>Замовлення #${order.id}</h4>
-            <span class="order-date">${orderDate}</span>
-          </div>
-          <div class="order-info">
-            <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
-            <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
-            <p><strong>Доставка:</strong> ${order.delivery.service}</p>
-            ${order.ttn ? `<p><strong>ТТН:</strong> ${order.ttn}</p>` : ''}
-          </div>
-          <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі замовлення</button>
-        `;
+        if (order.status === 'processing') {
+          statusClass = 'status-processing';
+          statusText = 'В обробці';
+        } else if (order.status === 'shipped') {
+          statusClass = 'status-shipped';
+          statusText = 'Відправлено';
+        } else if (order.status === 'delivered') {
+          statusClass = 'status-delivered';
+          statusText = 'Доставлено';
+        } else if (order.status === 'cancelled') {
+          statusClass = 'status-cancelled';
+          statusText = 'Скасовано';
+        }
         
-        ordersList.appendChild(orderElement);
+        ordersHTML += `
+  <div class="order-item">
+    <div class="order-header-mobile">
+      <h4>Замовлення #${order.id}</h4>
+      <span class="order-status ${statusClass}">${statusText}</span>
+    </div>
+    <div class="order-info-mobile">
+      <p><i class="fas fa-calendar"></i> ${orderDate}</p>
+      <p><i class="fas fa-receipt"></i> ${formatPrice(order.total)} ₴</p>
+      <p><i class="fas fa-truck"></i> ${order.delivery.service}</p>
+    </div>
+    <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
+      <i class="fas fa-info-circle"></i> Детальніше
+    </button>
+  </div>
+`;
       });
+      
+      modalContent.innerHTML = `
+        <h3>Мої замовлення</h3>
+        <div class="user-orders">
+          ${ordersHTML}
+        </div>
+      `;
     })
     .catch((error) => {
       console.error("Помилка завантаження замовлень: ", error);
-      ordersList.innerHTML = '<p>Помилка завантаження замовлень</p>';
+      modalContent.innerHTML = `
+        <h3>Мої замовлення</h3>
+        <p>Помилка завантаження замовлень. Будь ласка, спробуйте пізніше.</p>
+      `;
     });
 }
+
+// Функція для відкриття модального вікна з правилами
+function openRules() {
+  document.getElementById('rules-modal').classList.add('active');
+}
+
+// Функція для закриття модального вікна з правилами
+function closeRulesModal() {
+  document.getElementById('rules-modal').classList.remove('active');
+}
+
+// Закриття модального вікна при кліку outside content
+document.getElementById('rules-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeRulesModal();
+  }
+});
 
 // Функція перемикання видимості фільтрів
 function toggleFilters() {

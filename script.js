@@ -81,7 +81,7 @@ function translateCategory(category) {
 let searchTimeout = null;
 const SEARCH_DELAY = 300;
 
-// ====== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ======
+// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА =====
 
 // Кэширование результатов поиска
 const searchCache = new Map();
@@ -91,40 +91,84 @@ function clearSearchCache() {
   searchCache.clear();
 }
 
-// УЛУЧШЕННАЯ нормализация текста - разрешаем цифры и дефисы
-function normalizeSearchTerm(term) {
-  return term.toLowerCase()
-    .replace(/[ї]/g, 'і')
-    .replace(/[є]/g, 'е')
-    .replace(/[ъь]/g, '')
-    .replace(/[^а-яієґ0-9\-\s]/g, '')
-    .trim();
-}
-
-// Функция для экранирования HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Словарь синонимов для поиска
+// Расширенный словарь синонимов для поиска
 const searchSynonyms = {
-  'болгарка': 'ушм',
-  'ушм': 'болгарка',
-  'дрель': 'сверлильный',
-  'шуруповерт': 'дрель',
-  'насос': 'помпа',
-  'кран': 'вентиль',
-  'отвертка': 'шуруповерт',
-  'пила': 'ножовка',
-  'молоток': 'кувалда',
-  'перфоратор': 'дрель',
-  'лобзик': 'пила',
-  'рубанок': 'строгальный',
-  'фрезер': 'фрезерный',
-  'шлифмашина': 'шлифовальный'
+  // Русские синонимы
+  'болгарка': ['ушм', 'углошлифовальная'],
+  'ушм': ['болгарка', 'углошлифовальная'],
+  'дрель': ['сверлильный', 'перфоратор'],
+  'шуруповерт': ['дрель', 'винтоверт'],
+  'шуруповёрт': ['дрель', 'винтоверт'],
+  'насос': ['помпа'],
+  'кран': ['вентиль', 'затвор'],
+  'отвертка': ['шуруповерт'],
+  'пила': ['ножовка', 'циркулярка'],
+  'молоток': ['кувалда'],
+  'перфоратор': ['дрель', 'отбойный'],
+  'лобзик': ['пила'],
+  'рубанок': ['строгальный'],
+  'фрезер': ['фрезерный'],
+  'шлифмашина': ['шлифовальный'],
+  'паяльник': ['паяльный'],
+  
+  // Украинские синонимы
+  'болгарка': ['ушм', 'кутошлифувальна'],
+  'ушм': ['болгарка', 'кутошлифувальна'],
+  'дриль': ['свердлильний', 'перфоратор'],
+  'шуруповерт': ['дриль', 'гвинтокрил'],
+  'насос': ['помпа'],
+  'кран': ['вентиль', 'затвор'],
+  'викрутка': ['шуруповерт'],
+  'пила': ['ножівка', 'циркулярка'],
+  'молоток': ['кувалда'],
+  'перфоратор': ['дриль', 'відбійний'],
+  'лобзик': ['пила'],
+  'рубанок': ['стругальний'],
+  'фрезер': ['фрезерний'],
+  'шліфмашина': ['шліфувальний'],
+  'паяльник': ['паяльний']
 };
+
+// Улучшенная нормализация текста
+function normalizeSearchTerm(term) {
+  if (!term) return '';
+  
+  let normalized = term.toLowerCase()
+    // Заменяем украинские буквы на русские аналоги
+    .replace(/[є]/g, 'е')
+    .replace(/[ї]/g, 'и') 
+    .replace(/[і]/g, 'и')
+    .replace(/[ґ]/g, 'г')
+    // Заменяем русские буквы на украинские аналоги
+    .replace(/[ё]/g, 'е')
+    .replace(/[ы]/g, 'и')
+    .replace(/[э]/g, 'е')
+    // Удаляем мягкие и твердые знаки
+    .replace(/[ъь]/g, '')
+    // Оставляем только буквы, цифры, дефисы, пробелы и апострофы
+    .replace(/[^а-яa-z0-9\-\s']/g, '')
+    // Убираем множественные пробелы
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return normalized;
+}
+
+// Функция для транслитерации текста
+function transliterateText(text) {
+  const transliterationMap = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+  };
+  
+  let result = '';
+  for (let char of text.toLowerCase()) {
+    result += transliterationMap[char] || char;
+  }
+  return result;
+}
 
 // Расширение поискового запроса синонимами
 function expandSearchQuery(query) {
@@ -133,12 +177,15 @@ function expandSearchQuery(query) {
   
   words.forEach(word => {
     const normalizedWord = normalizeSearchTerm(word);
+    
+    // Добавляем синонимы
     if (searchSynonyms[normalizedWord]) {
-      expanded.push(searchSynonyms[normalizedWord]);
+      expanded.push(...searchSynonyms[normalizedWord]);
     }
   });
   
-  return expanded.join(' ');
+  // Удаляем дубликаты
+  return [...new Set(expanded)].join(' ');
 }
 
 // Улучшенная функция для получения поисковых подсказок
@@ -147,7 +194,6 @@ function getSearchSuggestions(query) {
     if (!query || query.length < 1) return [];
     
     const normalizedQuery = normalizeSearchTerm(query);
-    const expandedQuery = expandSearchQuery(query);
     
     if (searchCache.has(normalizedQuery)) {
       return searchCache.get(normalizedQuery);
@@ -156,98 +202,45 @@ function getSearchSuggestions(query) {
     const suggestions = [];
     const seen = new Set();
     
-    const maxProductsToCheck = query.length <= 2 ? 
-      Math.min(products.length, 200) : 
-      Math.min(products.length, 500);
+    // Ограничиваем количество проверяемых товаров для производительности
+    const maxProductsToCheck = Math.min(products.length, 200);
     
     for (let i = 0; i < maxProductsToCheck; i++) {
       const product = products[i];
       if (!product || typeof product !== 'object') continue;
       
-      if (product.title) {
-        const normalizedTitle = normalizeSearchTerm(product.title);
-        if (query.length <= 2) {
-          const words = normalizedTitle.split(/\s+/);
-          const hasPrefixMatch = words.some(word => word.indexOf(normalizedQuery) === 0);
-          if (hasPrefixMatch && !seen.has(product.title)) {
-            seen.add(product.title);
+      // Проверяем только основные поля
+      const fieldsToCheck = [
+        { field: 'title', type: 'Назва', icon: '📦', relevance: 10 },
+        { field: 'brand', type: 'Бренд', icon: '🏷️', relevance: 8 },
+        { field: 'category', type: 'Категорія', icon: '📂', relevance: 6 }
+      ];
+      
+      for (const { field, type, icon, relevance } of fieldsToCheck) {
+        if (product[field] && !seen.has(product[field])) {
+          const fieldValue = String(product[field]);
+          const normalizedField = normalizeSearchTerm(fieldValue);
+          
+          if (normalizedField.includes(normalizedQuery)) {
+            seen.add(product[field]);
             suggestions.push({ 
-              value: product.title, 
-              type: 'Назва', 
-              icon: '📦',
+              value: product[field], 
+              type: type, 
+              icon: icon,
               productId: product.id,
-              relevance: 10
-            });
-          }
-        } else if (normalizedTitle.includes(normalizedQuery) && !seen.has(product.title)) {
-          seen.add(product.title);
-          suggestions.push({ 
-            value: product.title, 
-            type: 'Назва', 
-              icon: '📦',
-              productId: product.id,
-              relevance: 5
+              relevance: relevance + (field === 'title' ? 5 : 0)
             });
           }
         }
-      
-      if (product.brand && !seen.has(product.brand)) {
-        const normalizedBrand = normalizeSearchTerm(product.brand);
-        if (normalizedBrand.includes(normalizedQuery)) {
-          seen.add(product.brand);
-          suggestions.push({ 
-            value: product.brand, 
-            type: 'Бренд', 
-            icon: '🏷️',
-            relevance: 8
-          });
-        }
       }
       
-      if (product.category && !seen.has(product.category)) {
-        const normalizedCategory = normalizeSearchTerm(product.category);
-        if (normalizedCategory.includes(normalizedQuery)) {
-          seen.add(product.category);
-          suggestions.push({ 
-            value: product.category, 
-            type: 'Категорія', 
-            icon: '📂',
-            relevance: 6
-          });
-        }
-      }
-      
-      if (product.model && !seen.has(product.model)) {
-        const normalizedModel = normalizeSearchTerm(product.model);
-        if (normalizedModel.includes(normalizedQuery)) {
-          seen.add(product.model);
-          suggestions.push({ 
-            value: product.model, 
-            type: 'Модель', 
-            icon: '🔧',
-            relevance: 7
-          });
-        }
-      }
-      
-      if (product.sku && !seen.has(product.sku)) {
-        const normalizedSku = normalizeSearchTerm(product.sku);
-        if (normalizedSku.includes(normalizedQuery)) {
-          seen.add(product.sku);
-          suggestions.push({ 
-            value: product.sku, 
-            type: 'Артикул', 
-            icon: '🏷️',
-            relevance: 7
-          });
-        }
-      }
-      
-      if (suggestions.length >= 10) break;
+      if (suggestions.length >= 5) break;
     }
     
+    // Сортируем по релевантности
     suggestions.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     
+    // Обновляем кэш
     if (searchCache.size > MAX_CACHE_SIZE) {
       const firstKey = searchCache.keys().next().value;
       searchCache.delete(firstKey);
@@ -262,40 +255,34 @@ function getSearchSuggestions(query) {
   }
 }
 
-// Улучшенная функция фильтрации товаров с поддержкой коротких запросов
+// Упрощенная функция фильтрации товаров
 function searchProducts(searchTerm) {
   if (!searchTerm || searchTerm.trim().length < 1) {
     return products;
   }
   
   const normalizedSearch = normalizeSearchTerm(searchTerm);
-  const expandedSearch = expandSearchQuery(searchTerm);
   const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
   
   if (searchWords.length === 0) {
     return products;
   }
   
-  if (normalizedSearch.replace(/\s+/g, '').length < 2) {
-    const firstWord = searchWords[0];
-    let filtered = products.filter(product => {
-      if (!product.searchIndex) return false;
-      
-      const wordsInProduct = product.searchIndex.split(/\s+/);
-      return wordsInProduct.some(word => word.indexOf(firstWord) === 0);
-    });
-    
-    filtered = filtered.slice(0, 100);
-    return filtered;
-  }
-  
   return products.filter(product => {
     if (!product.searchIndex) return false;
     
+    // Проверяем все слова запроса в searchIndex
     return searchWords.every(word => 
       product.searchIndex.includes(word)
     );
   });
+}
+
+// Функция для экранирования HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Улучшенный обработчик ввода в поиске
@@ -314,7 +301,7 @@ function setupSearchHandler() {
       lastSearchValue = currentValue;
       currentFilters.search = currentValue;
       
-      if (currentValue.length >= 1) {
+      if (currentValue.length >= 2) {
         showSearchSuggestions(currentValue);
       } else {
         hideSearchSuggestions();
@@ -363,9 +350,29 @@ function setupSearchHandler() {
         
       case 'Escape':
         hideSearchSuggestions();
+        this.value = '';
+        currentFilters.search = '';
+        applyFilters();
         break;
     }
   });
+  
+  // Добавьте обработчик для клика вне области поиска
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-container')) {
+      hideSearchSuggestions();
+    }
+  });
+}
+
+// Функция для сброса поиска
+function clearSearch() {
+  const searchInput = document.getElementById('search');
+  searchInput.value = '';
+  currentFilters.search = '';
+  hideSearchSuggestions();
+  applyFilters();
+  searchInput.focus();
 }
 
 // Улучшенная функция показа подсказок
@@ -436,12 +443,13 @@ function hideSearchSuggestions() {
   }
 }
 
-// Улучшенная предобработка товаров с расширенным поисковым индексом
+// Улучшенная предобработка товаров
 function preprocessProducts(productsArray) {
   return productsArray.map(product => {
     if (!product || typeof product !== 'object') return product;
     
-    const searchText = [
+    // Создаем расширенный поисковый индекс
+    const searchFields = [
       product.title || '',
       product.brand || '',
       product.category || '',
@@ -449,9 +457,14 @@ function preprocessProducts(productsArray) {
       product.specifications || '',
       product.model || '',
       product.sku || ''
-    ].join(' ').toLowerCase();
+    ];
     
-    const searchIndex = normalizeSearchTerm(searchText);
+    // Нормализуем каждое поле отдельно
+    const normalizedFields = searchFields.map(field => 
+      normalizeSearchTerm(String(field))
+    );
+    
+    const searchIndex = normalizedFields.join(' ').toLowerCase();
     
     return {
       ...product,
@@ -474,6 +487,11 @@ function preprocessProducts(productsArray) {
 function addSearchStyles() {
   const style = document.createElement('style');
   style.textContent = `
+    .search-container {
+      position: relative;
+      width: 100%;
+    }
+    
     .search-suggestions {
       position: absolute;
       top: 100%;
@@ -482,7 +500,7 @@ function addSearchStyles() {
       background: white;
       border: 1px solid #ddd;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       z-index: 1000;
       max-height: 300px;
       overflow-y: auto;
@@ -511,18 +529,39 @@ function addSearchStyles() {
     .suggestion-text {
       flex: 1;
       font-weight: 500;
+      font-size: 14px;
     }
     
     .suggestion-type {
-      font-size: 0.8em;
+      font-size: 0.75em;
       color: #6c757d;
       background: #e9ecef;
       padding: 2px 6px;
       border-radius: 4px;
     }
     
-    .search-container {
-      position: relative;
+    .search-loading {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6c757d;
+    }
+    
+    .clear-search {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 5px;
+    }
+    
+    .clear-search:hover {
+      color: #333;
     }
   `;
   document.head.appendChild(style);
@@ -592,6 +631,26 @@ let currentFilters = {
 
 // Глобальная переменная для рейтинга
 let currentRating = 0;
+
+// Функція для налаштування лічильника переглядів
+function setupPageCounter() {
+  const params = new URLSearchParams({
+      style: 'flat-square',
+      label: 'Views',
+      color: 'blue',
+      logo: 'firebase'
+  });
+
+  // Беремо шлях поточної сторінки
+  const currentPath = window.location.pathname;
+
+  // Робимо лічильник для boltmaster-2025.web.app
+  const counterURL = `https://hits.sh/boltmaster-2025.web.app${currentPath}.svg?${params.toString()}`;
+  const pageViewsElement = document.getElementById('page-views');
+  if (pageViewsElement) {
+      pageViewsElement.src = counterURL;
+  }
+}
 
 // Функція отправки email с данными заказа
 function sendOrderEmail(orderId, order) {
@@ -2290,6 +2349,7 @@ function register(event) {
   
   auth.createUserWithEmailAndPassword(email, password)
     .then((userCredential) => {
+      // Оновлюємо профіль користувача
       return userCredential.user.updateProfile({
         displayName: name
       });
@@ -2314,6 +2374,7 @@ function verifyAdminPassword() {
       return;
     }
     
+    // Зберігаємо користувача як адміністратора
     const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
     admins[currentUser.uid] = true;
     localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
@@ -2323,7 +2384,14 @@ function verifyAdminPassword() {
     showNotification("Права адміністратора отримані");
     closeModal();
     
+    // Завантажуємо замовлення для адмін-панелі
     loadAdminOrders();
+    
+    // Показуємо лічильник переглядів
+    document.getElementById("page-views-container").style.display = "block";
+    setupPageCounter();
+    
+    // Добавляем вкладку для модерации отзывов
     addReviewsTabIfNotExists();
   } else {
     showNotification("Невірний пароль адміністратора", "error");
@@ -2340,6 +2408,7 @@ function promptAdminPassword() {
       return;
     }
     
+    // Зберігаємо користувача як адміністратора
     const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
     admins[currentUser.uid] = true;
     localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
@@ -2348,7 +2417,14 @@ function promptAdminPassword() {
     adminMode = true;
     showNotification("Права адміністратора отримані");
     
+    // Завантажуємо замовлення для адмін-панелі
     loadAdminOrders();
+    
+    // Показуємо лічильник переглядів
+    document.getElementById("page-views-container").style.display = "block";
+    setupPageCounter();
+    
+    // Добавляем вкладку для модерации отзывов
     addReviewsTabIfNotExists();
   } else if (password) {
     showNotification("Невірний пароль адміністратора", "error");
@@ -2363,6 +2439,12 @@ function checkAdminStatus(userId) {
         document.getElementById("admin-panel").style.display = "block";
         adminMode = true;
         loadAdminOrders();
+        
+        // Показуємо лічильник переглядів
+        document.getElementById("page-views-container").style.display = "block";
+        setupPageCounter();
+        
+        // Добавляем вкладку для модерации отзывов
         addReviewsTabIfNotExists();
       }
     })
@@ -2373,6 +2455,7 @@ function checkAdminStatus(userId) {
 
 // Вихід з системи
 function logout() {
+  // Не видаляємо права адміністратора при виході, щоб не вводити пароль кожного разу
   auth.signOut()
     .then(() => {
       showNotification("Вихід виконано успішно");
@@ -2394,14 +2477,17 @@ function switchTab(tabId) {
   document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add("active");
   document.getElementById(tabId).classList.add("active");
   
+  // Якщо переключилися на вкладку товарів, завантажуємо їх
   if (tabId === 'products-tab') {
     loadAdminProducts();
   }
   
+  // Якщо переключилися на вкладку замовлень, завантажуємо їх
   if (tabId === 'orders-tab') {
     loadAdminOrders();
   }
   
+  // Если переключились на вкладку отзывов, загружаем их
   if (tabId === 'reviews-tab-content') {
     loadReviewsForModeration();
   }
@@ -2412,6 +2498,7 @@ function loadAdminOrders() {
   const ordersList = document.getElementById("admin-orders-list");
   ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
   
+  // Слухаємо оновлення в реальному часі
   db.collection("orders")
     .orderBy("createdAt", "desc")
     .onSnapshot((querySnapshot) => {
@@ -2426,6 +2513,7 @@ function loadAdminOrders() {
         const order = { id: doc.id, ...doc.data() };
         const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
         
+        // Визначаємо статус замовлення
         let statusClass = 'status-new';
         let statusText = 'Новий';
         
@@ -2492,6 +2580,7 @@ function addTTNToOrder(orderId) {
     .then(() => {
       showNotification("ТТН успішно додано до замовлення");
       
+      // Отправляем email с уведомлением о ТТН
       db.collection("orders").doc(orderId).get()
         .then((doc) => {
           if (doc.exists) {
@@ -2500,6 +2589,7 @@ function addTTNToOrder(orderId) {
           }
         });
       
+      // Обновляем список заказов
       loadAdminOrders();
     })
     .catch((error) => {
@@ -2524,6 +2614,7 @@ function sendTTNEmail(orderId, order) {
     tracking_url: `https://tracking.novaposhta.ua/#/uk/search/${order.ttn}`
   };
 
+  // Используем другой шаблон для уведомления о ТТН
   emailjs.send(EMAILJS_SERVICE_ID, "template_ttn_notification", templateParams)
     .then(function(response) {
       console.log('Email с ТТН успешно отправлен!', response.status, response.text);

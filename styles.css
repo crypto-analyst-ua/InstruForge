@@ -28,6 +28,14 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --border-radius: 12px;
   --border-radius-lg: 16px;
+  --primary: #2c3e50;
+  --primary-dark: #1a252f;
+  --primary-light: #3498db;
+  --secondary: #e74c3c;
+  --accent: #f39c12;
+  --success: #27ae60;
+  --warning: #f1c40f;
+  --danger: #e74c3c;
 }
 
 /* Общие стили */

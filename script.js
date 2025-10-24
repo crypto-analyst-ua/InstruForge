@@ -659,40 +659,66 @@ function generateStructuredData(products) {
 }
 
 // --- ДОДАНА ФУНКЦИЯ ДЛЯ SEO SCHEMA ---
+// Основная функция для генерации SEO schema
 function generateSchemaForProducts(products) {
   if (!products || products.length === 0) return;
+
+  // Берем первые 20 товаров для примера
+  const featuredProducts = products.slice(0, 20);
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "Каталог товарів InstruForge",
-    "itemListElement": products.map((p, index) => ({
-      "@type": "Product",
-      "position": index + 1,
-      "name": p.title,
-      "image": p.image || "https://instruforge.web.app/general-product-image.jpg",
-      "description": p.description || "",
-      "brand": { "@type": "Brand", "name": p.brand || "InstruForge" },
-      "category": translateCategory(p.category) || "",
-      "offers": {
-        "@type": "Offer",
-        "price": p.price ? p.price.toString() : "0",
-        "priceCurrency": "UAH",
-        "availability": p.inStock
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-        "url": `${window.location.origin}/#product-${p.id}`
+    "name": "Каталог інструментів та господарських товарів InstruForge",
+    "description": "Понад 5000 товарів: інструменти SIGMA, насоси Aquatica та LEO, кріплення, сантехніка з доставкою по Україні",
+    "url": window.location.href,
+    "numberOfItems": featuredProducts.length,
+    "itemListElement": featuredProducts.map((product, index) => {
+      let availability = product.inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock";
+
+      let brand = "InstruForge";
+      const brandMatch = product.title.match(/(SIGMA|AQUATICA|LEO|GRAD|MASTERTOOL)/i);
+      if (brandMatch) {
+        brand = brandMatch[0];
+      } else if (product.brand) {
+        brand = product.brand;
       }
-    }))
+
+      return {
+        "@type": "ListItem",
+        "position": index + 1,
+        "item": {
+          "@type": "Product",
+          "name": product.title,
+          "description": product.description || `${product.title} - якісний товар від InstruForge`,
+          "brand": { 
+            "@type": "Brand", 
+            "name": brand 
+          },
+          "category": translateCategory(product.category) || "Інструменти",
+          "offers": {
+            "@type": "Offer",
+            "availability": availability,
+            "priceCurrency": "UAH",
+            "price": product.price ? product.price.toString() : "0",
+            "priceValidUntil": new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0]
+          },
+          "image": product.image || "https://instruforge.web.app/general-product-image.jpg"
+        }
+      };
+    })
   };
 
-  // Оновлюємо тег #dynamic-products-schema замість створення нового
   const schemaScript = document.getElementById("dynamic-products-schema");
   if (schemaScript) {
     schemaScript.textContent = JSON.stringify(schema, null, 2);
   }
 
-  console.log("✅ Dynamic SEO schema updated");
+  console.log("✅ Dynamic SEO schema updated for", featuredProducts.length, "products");
 }
 
 // Функція для генерації SEO schema з випадковими товарами

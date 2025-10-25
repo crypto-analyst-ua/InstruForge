@@ -3491,3 +3491,24 @@ button:focus, input:focus, select:focus, textarea:focus {
 #mobile-filters .filter-group:has(#mobile-availability) {
     display: none !important;
 }
+
+/* Добавить для лучшей адаптации на ПК */
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* Улучшение для широкоформатных мониторов */
+@media (min-width: 1920px) {
+  main {
+    grid-template-columns: 320px 1fr 320px;
+    gap: 2rem;
+    padding: 2rem;
+  }
+}

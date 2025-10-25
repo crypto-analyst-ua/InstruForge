@@ -885,14 +885,64 @@ function initApp() {
       hideSearchSuggestions();
     }
   });
+
+  // Синхронизация фильтров при загрузке
+  setTimeout(() => {
+    document.getElementById('mobile-price-min').value = document.getElementById('price-min').value;
+    document.getElementById('mobile-price-max').value = document.getElementById('price-max').value;
+    document.getElementById('mobile-brand').value = document.getElementById('brand').value;
+    document.getElementById('mobile-availability').value = document.getElementById('availability').value;
+    document.getElementById('mobile-sort').value = document.getElementById('sort').value;
+  }, 1000);
 }
 
-// Функция для адаптации заголовка
-function adjustHeaderTitle() {
-  const logoElement = document.querySelector('.logo h1');
-  if (window.innerWidth <= 768) {
-    logoElement.style.fontSize = Math.min(1.5, 4 * window.innerWidth / 100) + 'rem';
-  }
+// Функции для мобильных фильтров
+function toggleMobileFilters() {
+    const mobileFilters = document.getElementById('mobile-filters');
+    mobileFilters.classList.toggle('active');
+    
+    // Блокируем прокрутку body при открытых фильтрах
+    if (mobileFilters.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+function closeMobileFilters() {
+    const mobileFilters = document.getElementById('mobile-filters');
+    mobileFilters.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function applyMobileFilters() {
+    // Синхронизируем значения из мобильных фильтров в основные
+    document.getElementById('price-min').value = document.getElementById('mobile-price-min').value;
+    document.getElementById('price-max').value = document.getElementById('mobile-price-max').value;
+    document.getElementById('brand').value = document.getElementById('mobile-brand').value;
+    document.getElementById('availability').value = document.getElementById('mobile-availability').value;
+    document.getElementById('sort').value = document.getElementById('mobile-sort').value;
+    
+    // Применяем фильтры
+    applyFilters();
+    
+    // Закрываем мобильные фильтры
+    closeMobileFilters();
+}
+
+function resetMobileFilters() {
+    // Сбрасываем мобильные фильтры
+    document.getElementById('mobile-price-min').value = '';
+    document.getElementById('mobile-price-max').value = '';
+    document.getElementById('mobile-brand').value = '';
+    document.getElementById('mobile-availability').value = '';
+    document.getElementById('mobile-sort').value = 'default';
+    
+    // Сбрасываем основные фильтры
+    resetFilters();
+    
+    // Закрываем мобильные фильтры
+    closeMobileFilters();
 }
 
 function loadProducts() {
@@ -1447,7 +1497,9 @@ function renderCategories() {
 // Функция для рендеринга списка категорий
 function renderCategoriesList() {
     const categoriesList = document.getElementById('categories-list');
-    if (!categoriesList) return;
+    const mobileCategoriesList = document.getElementById('mobile-categories-list');
+    
+    if (!categoriesList || !mobileCategoriesList) return;
 
     const categoryCounts = {};
     products.forEach(product => {
@@ -1459,9 +1511,19 @@ function renderCategoriesList() {
     const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
 
     let categoriesHTML = '';
+    let mobileCategoriesHTML = '';
 
+    // Для десктопной версии
     categoriesHTML += `
         <div class="category-item active" onclick="selectCategory('')">
+            Всі категорії
+            <span class="category-count">${products.length}</span>
+        </div>
+    `;
+
+    // Для мобильной версии
+    mobileCategoriesHTML += `
+        <div class="category-item active" onclick="selectMobileCategory('')">
             Всі категорії
             <span class="category-count">${products.length}</span>
         </div>
@@ -1474,9 +1536,17 @@ function renderCategoriesList() {
                 <span class="category-count">${categoryCounts[category]}</span>
             </div>
         `;
+        
+        mobileCategoriesHTML += `
+            <div class="category-item" onclick="selectMobileCategory('${category}')">
+                ${translateCategory(category)}
+                <span class="category-count">${categoryCounts[category]}</span>
+            </div>
+        `;
     });
 
     categoriesList.innerHTML = categoriesHTML;
+    mobileCategoriesList.innerHTML = mobileCategoriesHTML;
 }
 
 // Функция выбора категории
@@ -1501,6 +1571,29 @@ function selectCategory(category) {
     
     currentFilters.category = category;
     applyFilters();
+}
+
+// Функция выбора категории для мобильной версии
+function selectMobileCategory(category) {
+    document.getElementById('category').value = category;
+    
+    document.querySelectorAll('#mobile-categories-list .category-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    if (category === '') {
+        document.querySelectorAll('#mobile-categories-list .category-item')[0].classList.add('active');
+    } else {
+        const categoryItems = document.querySelectorAll('#mobile-categories-list .category-item');
+        for (let item of categoryItems) {
+            if (item.textContent.includes(translateCategory(category))) {
+                item.classList.add('active');
+                break;
+            }
+        }
+    }
+    
+    currentFilters.category = category;
 }
 
 // Рендеринг брендів
@@ -1639,6 +1732,9 @@ function applyFilters() {
   if (!isProductsLoading) {
     document.getElementById('products-count').textContent = `Знайдено: ${filteredProducts.length}`;
   }
+  
+  // Закрываем мобильные фильтры после применения (если они открыты)
+  closeMobileFilters();
 }
 
 // Скидання фільтрів
@@ -2295,7 +2391,7 @@ function switchAuthTab(tab) {
   const adminForm = document.getElementById("admin-auth-form");
   const tabs = document.querySelectorAll(".auth-tab");
   
-  tabs.forEach(t => t.classList.remove('active'));
+  tabs.forEach(tab => tab.classList.remove('active'));
   
   if (tab === 'login') {
     loginForm.style.display = 'block';

@@ -1953,10 +1953,6 @@ function showProductDetail(productId) {
           <span class="detail-price">${formatPrice(product.price)} ₴</span>
           ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
         </div>
-        <div class="product-meta">
-          <div><i class="fas fa-box"></i> ${product.inStock ? 'В наявності' : 'Немає в наявності'}</div>
-          <div><i class="fas fa-truck"></i> Доставка за 1-3 дні</div>
-        </div>
         <div class="product-description">
           <h4>Опис</h4>
           <p>${product.description || 'Опис відсутній'}</p>

@@ -768,7 +768,7 @@ let adminMode = false;
 let showingFavorites = false;
 let currentUser = null;
 let currentPage = 1;
-const productsPerPage = 32;
+const productsPerPage = 36;
 let isProductsLoading = false;
 let currentFilters = {
   category: '',

@@ -81,7 +81,7 @@ function translateCategory(category) {
 let searchTimeout = null;
 const SEARCH_DELAY = 300;
 
-// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА =====
+// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
 
 // Кэширование результатов поиска
 const searchCache = new Map();
@@ -285,82 +285,131 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Улучшенный обработчик ввода в поиске
+// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
+
 function setupSearchHandler() {
   const searchInput = document.getElementById('search');
+  const searchMobileInput = document.getElementById('search-mobile');
   let lastSearchValue = '';
   
-  searchInput.addEventListener('input', function() {
-    const currentValue = this.value.trim();
-    
-    if (currentValue === lastSearchValue) return;
+  function handleSearch(value, isMobile = false) {
+    if (value === lastSearchValue) return;
     
     clearTimeout(searchTimeout);
     
     searchTimeout = setTimeout(() => {
-      lastSearchValue = currentValue;
-      currentFilters.search = currentValue;
+      lastSearchValue = value;
+      currentFilters.search = value;
       
-      if (currentValue.length >= 2) {
-        showSearchSuggestions(currentValue);
+      if (value.length >= 2) {
+        showSearchSuggestions(value, isMobile);
       } else {
-        hideSearchSuggestions();
+        hideSearchSuggestions(isMobile);
       }
       
       applyFilters();
     }, SEARCH_DELAY);
-  });
+  }
   
-  searchInput.addEventListener('keydown', function(e) {
-    const suggestionsContainer = document.getElementById('search-suggestions');
-    if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+  // Обработчик для десктопного поиска
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const currentValue = this.value.trim();
+      handleSearch(currentValue, false);
+      // Синхронизируем с мобильным полем
+      if (searchMobileInput) {
+        searchMobileInput.value = currentValue;
+      }
+    });
     
-    const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
-    let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
+    searchInput.addEventListener('keydown', function(e) {
+      const suggestionsContainer = document.getElementById('search-suggestions');
+      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+      
+      const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
+      let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (!activeSuggestion) {
+            suggestions[0]?.classList.add('active');
+          } else {
+            activeSuggestion.classList.remove('active');
+            const next = activeSuggestion.nextElementSibling || suggestions[0];
+            next.classList.add('active');
+          }
+          break;
+          
+        case 'ArrowUp':
+          e.preventDefault();
+          if (!activeSuggestion) {
+            suggestions[suggestions.length - 1]?.classList.add('active');
+          } else {
+            activeSuggestion.classList.remove('active');
+            const prev = activeSuggestion.previousElementSibling || suggestions[suggestions.length - 1];
+            prev.classList.add('active');
+          }
+          break;
+          
+        case 'Enter':
+          e.preventDefault();
+          if (activeSuggestion) {
+            activeSuggestion.click();
+          }
+          break;
+          
+        case 'Escape':
+          hideSearchSuggestions(false);
+          this.value = '';
+          currentFilters.search = '';
+          applyFilters();
+          break;
+      }
+    });
+  }
+  
+  // Обработчик для мобильного поиска
+  if (searchMobileInput) {
+    searchMobileInput.addEventListener('input', function() {
+      const currentValue = this.value.trim();
+      handleSearch(currentValue, true);
+      // Синхронизируем с десктопным полем
+      if (searchInput) {
+        searchInput.value = currentValue;
+      }
+    });
     
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        if (!activeSuggestion) {
-          suggestions[0]?.classList.add('active');
-        } else {
-          activeSuggestion.classList.remove('active');
-          const next = activeSuggestion.nextElementSibling || suggestions[0];
-          next.classList.add('active');
-        }
-        break;
-        
-      case 'ArrowUp':
-        e.preventDefault();
-        if (!activeSuggestion) {
-          suggestions[suggestions.length - 1]?.classList.add('active');
-        } else {
-          activeSuggestion.classList.remove('active');
-          const prev = activeSuggestion.previousElementSibling || suggestions[suggestions.length - 1];
-          prev.classList.add('active');
-        }
-        break;
-        
-      case 'Enter':
-        e.preventDefault();
-        if (activeSuggestion) {
-          activeSuggestion.click();
-        }
-        break;
-        
-      case 'Escape':
-        hideSearchSuggestions();
-        this.value = '';
-        currentFilters.search = '';
-        applyFilters();
-        break;
-    }
-  });
+    searchMobileInput.addEventListener('keydown', function(e) {
+      const suggestionsContainer = document.getElementById('search-suggestions-mobile');
+      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+      
+      const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
+      let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
+      
+      switch (e.key) {
+        case 'Enter':
+          e.preventDefault();
+          if (activeSuggestion) {
+            activeSuggestion.click();
+          }
+          break;
+          
+        case 'Escape':
+          hideSearchSuggestions(true);
+          this.value = '';
+          currentFilters.search = '';
+          applyFilters();
+          break;
+      }
+    });
+  }
   
   // Добавьте обработчик для клика вне области поиска
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('.search-container')) {
-      hideSearchSuggestions();
+    if (!e.target.closest('.search-container') && !e.target.closest('.search-container-mobile')) {
+      hideSearchSuggestions(false);
+      hideSearchSuggestions(true);
     }
   });
 }
@@ -375,21 +424,27 @@ function clearSearch() {
   searchInput.focus();
 }
 
-// Улучшенная функция показа подсказок
-function showSearchSuggestions(query) {
+// Улучшенная функция показа подсказок для десктопа и мобильных
+function showSearchSuggestions(query, isMobile = false) {
   if (!query || query.length < 1) {
-    hideSearchSuggestions();
+    hideSearchSuggestions(isMobile);
     return;
   }
   
   const suggestions = getSearchSuggestions(query);
-  const searchContainer = document.querySelector('.search-container');
+  const searchContainer = isMobile 
+    ? document.querySelector('.search-container-mobile') 
+    : document.querySelector('.search-container');
   
-  let suggestionsContainer = document.getElementById('search-suggestions');
+  if (!searchContainer) return;
+  
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  let suggestionsContainer = document.getElementById(suggestionsId);
+  
   if (!suggestionsContainer) {
     suggestionsContainer = document.createElement('div');
-    suggestionsContainer.id = 'search-suggestions';
-    suggestionsContainer.className = 'search-suggestions';
+    suggestionsContainer.id = suggestionsId;
+    suggestionsContainer.className = 'search-suggestions' + (isMobile ? ' mobile-suggestions' : '');
     searchContainer.appendChild(suggestionsContainer);
   }
   
@@ -406,10 +461,14 @@ function showSearchSuggestions(query) {
       `;
       
       div.addEventListener('click', () => {
-        document.getElementById('search').value = suggestion.value;
+        if (isMobile) {
+          document.getElementById('search-mobile').value = suggestion.value;
+        } else {
+          document.getElementById('search').value = suggestion.value;
+        }
         currentFilters.search = suggestion.value;
         applyFilters();
-        hideSearchSuggestions();
+        hideSearchSuggestions(isMobile);
         
         if (suggestion.productId) {
           showProductDetail(suggestion.productId);
@@ -433,8 +492,9 @@ function showSearchSuggestions(query) {
 }
 
 // Функция для скрытия подсказок
-function hideSearchSuggestions() {
-  const suggestionsContainer = document.getElementById('search-suggestions');
+function hideSearchSuggestions(isMobile = false) {
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  const suggestionsContainer = document.getElementById(suggestionsId);
   if (suggestionsContainer) {
     suggestionsContainer.style.display = 'none';
     suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
@@ -483,13 +543,19 @@ function preprocessProducts(productsArray) {
   });
 }
 
-// Добавляем CSS для улучшенных подсказок
+// Добавляем CSS для улучшенных подсказок (десктоп и мобильные)
 function addSearchStyles() {
   const style = document.createElement('style');
   style.textContent = `
     .search-container {
       position: relative;
       width: 100%;
+    }
+    
+    .search-container-mobile {
+      position: relative;
+      width: 100%;
+      margin: 10px 0;
     }
     
     .search-suggestions {
@@ -505,6 +571,16 @@ function addSearchStyles() {
       max-height: 300px;
       overflow-y: auto;
       display: none;
+    }
+    
+    .mobile-suggestions {
+      position: fixed;
+      top: auto;
+      bottom: 0;
+      left: 10px;
+      right: 10px;
+      max-height: 50vh;
+      border-radius: 8px 8px 0 0;
     }
     
     .search-suggestion {
@@ -563,8 +639,42 @@ function addSearchStyles() {
     .clear-search:hover {
       color: #333;
     }
+    
+    @media (max-width: 768px) {
+      .search-container {
+        display: none;
+      }
+      .search-container-mobile {
+        display: block;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .search-container-mobile {
+        display: none;
+      }
+    }
   `;
   document.head.appendChild(style);
+}
+
+// Синхронизация поисковых полей при загрузке
+function syncSearchFieldsOnLoad() {
+  const searchDesktop = document.getElementById('search');
+  const searchMobile = document.getElementById('search-mobile');
+  
+  if (searchDesktop && searchMobile) {
+    // Синхронизация значений при загрузке
+    searchMobile.value = searchDesktop.value;
+    
+    // Обработчик очистки для мобильного поиска
+    searchMobile.addEventListener('input', function() {
+      if (this.value === '') {
+        currentFilters.search = '';
+        applyFilters();
+      }
+    });
+  }
 }
 
 // Очистка таймера при закрытии страницы
@@ -846,6 +956,7 @@ function initApp() {
   document.getElementById("year").innerText = new Date().getFullYear();
   
   setupSearchHandler();
+  syncSearchFieldsOnLoad(); // Добавьте эту строку
   
   document.getElementById('category').addEventListener('change', function() {
     currentFilters.category = this.value;
@@ -881,8 +992,9 @@ function initApp() {
   adjustHeaderTitle();
   
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('.search-container')) {
-      hideSearchSuggestions();
+    if (!e.target.closest('.search-container') && !e.target.closest('.search-container-mobile')) {
+      hideSearchSuggestions(false);
+      hideSearchSuggestions(true);
     }
   });
 
@@ -3159,13 +3271,13 @@ function loadAdminProducts() {
 // Функція пошуку товарів в адмін-панелі
 function searchAdminProducts(query) {
   const productItems = document.querySelectorAll('.admin-product-item');
-  const searchTerm = query.toLowerCase();
   
   productItems.forEach(item => {
     const title = item.querySelector('h4').textContent.toLowerCase();
     const description = item.querySelector('p').textContent.toLowerCase();
+    const searchText = query.toLowerCase();
     
-    if (title.includes(searchTerm) || description.includes(searchTerm)) {
+    if (title.includes(searchText) || description.includes(searchText)) {
       item.style.display = 'block';
     } else {
       item.style.display = 'none';
@@ -3194,11 +3306,11 @@ function editProduct(productId) {
       <div class="form-row">
         <div class="form-group">
           <label>Ціна, ₴</label>
-          <input type="number" id="edit-product-price" value="${product.price}" min="0" step="0.01" required>
+          <input type="number" id="edit-product-price" min="0" step="0.01" value="${product.price}" required>
         </div>
         <div class="form-group">
           <label>Стара ціна, ₴</label>
-          <input type="number" id="edit-product-old-price" value="${product.oldPrice || ''}" min="0" step="0.01">
+          <input type="number" id="edit-product-old-price" min="0" step="0.01" value="${product.oldPrice || ''}">
         </div>
       </div>
       <div class="form-row">
@@ -3229,9 +3341,9 @@ function editProduct(productId) {
       </div>
       <div class="form-group">
         <label>Знижка, %</label>
-        <input type="number" id="edit-product-discount" value="${product.discount || ''}" min="0" max="100">
+        <input type="number" id="edit-product-discount" min="0" max="100" value="${product.discount || ''}">
       </div>
-      <button type="submit" class="btn btn-detail">Зберегти зміни</button>
+      <button type="submit" class="btn btn-detail">Оновити товар</button>
     </form>
   `;
   
@@ -3261,7 +3373,7 @@ function updateProduct(event, productId) {
   saveProduct(updatedProduct)
     .then(() => {
       closeModal();
-      loadAdminProducts();
+      switchTab('products-tab');
     });
 }
 
@@ -3272,7 +3384,6 @@ function deleteProduct(productId) {
       .then(() => {
         showNotification("Товар успішно видалено");
         loadAdminProducts();
-        loadProducts();
       })
       .catch((error) => {
         console.error("Помилка видалення товару: ", error);
@@ -3281,82 +3392,23 @@ function deleteProduct(productId) {
   }
 }
 
-// Функція відкриття профілю користувача
-function openProfile() {
+// Функція перегляду замовлень користувача
+function viewOrders() {
   if (!currentUser) {
-    showNotification("Спочатку увійдіть в систему", "warning");
     openAuthModal();
+    showNotification("Увійдіть в систему для перегляду замовлень", "warning");
     return;
   }
   
   const modalContent = document.getElementById("modal-content");
   modalContent.innerHTML = `
     <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-    <h3>Профіль користувача</h3>
-    <div class="profile-info">
-      <div class="form-group">
-        <label>Ім'я</label>
-        <input type="text" id="profile-name" value="${currentUser.displayName || ''}">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="profile-email" value="${currentUser.email || ''}" disabled>
-      </div>
-      <div class="form-group">
-        <label>Новий пароль</label>
-        <input type="password" id="profile-password" placeholder="Залиште порожнім, якщо не хочете змінювати">
-      </div>
-      <button class="btn btn-detail" onclick="updateProfile()">Зберегти зміни</button>
-    </div>
+    <h3>Мої замовлення</h3>
+    <div id="user-orders-list"></div>
   `;
   
-  openModal();
-  
-  setTimeout(optimizeModalForMobile, 100);
-}
-
-// Функція оновлення профілю користувача
-function updateProfile() {
-  const name = document.getElementById('profile-name').value;
-  const password = document.getElementById('profile-password').value;
-  
-  const updates = {};
-  if (name !== currentUser.displayName) {
-    updates.displayName = name;
-  }
-  
-  const promises = [currentUser.updateProfile(updates)];
-  
-  if (password) {
-    promises.push(currentUser.updatePassword(password));
-  }
-  
-  Promise.all(promises)
-    .then(() => {
-      showNotification("Профіль успішно оновлено");
-      closeModal();
-      document.getElementById('user-name').textContent = name || currentUser.email;
-    })
-    .catch((error) => {
-      console.error("Помилка оновлення профілю: ", error);
-      showNotification("Помилка оновлення профілю: " + error.message, "error");
-    });
-}
-
-// Функція перегляду замовлень користувача
-function viewOrders() {
-  if (!currentUser) {
-    showNotification("Спочатку увійдіть в систему", "warning");
-    openAuthModal();
-    return;
-  }
-  
-  const modalContent = document.getElementById("modal-content");
-  modalContent.innerHTML = '<h3>Мої замовлення</h3><p>Завантаження замовлень...</p>';
-  
-  openModal();
-  
-  setTimeout(optimizeModalForMobile, 100);
+  const ordersList = document.getElementById("user-orders-list");
+  ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
   
   db.collection("orders")
     .where("userId", "==", currentUser.uid)
@@ -3364,132 +3416,123 @@ function viewOrders() {
     .get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
-        modalContent.innerHTML = `
-          <h3>Мої замовлення</h3>
-          <div class="empty-cart">
-            <i class="fas fa-box-open"></i>
-            <h3>Замовлень немає</h3>
-            <p>Ви ще не здійснювали покупок в нашому магазині</p>
-          </div>
-        `;
+        ordersList.innerHTML = '<p>У вас немає замовлень</p>';
         return;
       }
       
-      let ordersHTML = '';
+      ordersList.innerHTML = '';
+      
       querySnapshot.forEach((doc) => {
         const order = { id: doc.id, ...doc.data() };
         const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
+        const ttnSection = order.ttn ? `
+          <div class="ttn-info" style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
+            <p><strong>ТТН:</strong> ${order.ttn}</p>
+            <p><a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" style="color: #007bff; text-decoration: none;">
+              <i class="fas fa-external-link-alt"></i> Відстежити посилку
+            </a></p>
+          </div>
+        ` : '';
         
-        let statusClass = 'status-new';
-        let statusText = 'Новий';
+        const orderElement = document.createElement('div');
+        orderElement.className = 'user-order-item';
+        orderElement.style.border = '1px solid #eee';
+        orderElement.style.padding = '15px';
+        orderElement.style.marginBottom = '15px';
+        orderElement.style.borderRadius = '8px';
         
-        if (order.status === 'processing') {
-          statusClass = 'status-processing';
-          statusText = 'В обробці';
-        } else if (order.status === 'shipped') {
-          statusClass = 'status-shipped';
-          statusText = 'Відправлено';
-        } else if (order.status === 'delivered') {
-          statusClass = 'status-delivered';
-          statusText = 'Доставлено';
-        } else if (order.status === 'cancelled') {
-          statusClass = 'status-cancelled';
-          statusText = 'Скасовано';
-        }
+        orderElement.innerHTML = `
+          <div class="order-header">
+            <h4>Замовлення #${order.id}</h4>
+            <span class="order-date">${orderDate}</span>
+          </div>
+          <div class="order-info">
+            <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
+            <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
+            <p><strong>Спосіб доставки:</strong> ${order.delivery.service}</p>
+            <p><strong>Місто:</strong> ${order.delivery.city}</p>
+            <p><strong>Відділення:</strong> ${order.delivery.warehouse}</p>
+          </div>
+          ${ttnSection}
+          <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі замовлення</button>
+        `;
         
-        ordersHTML += `
-  <div class="order-item">
-    <div class="order-header-mobile">
-      <h4>Замовлення #${order.id}</h4>
-      <span class="order-status ${statusClass}">${statusText}</span>
-    </div>
-    <div class="order-info-mobile">
-      <p><i class="fas fa-calendar"></i> ${orderDate}</p>
-      <p><i class="fas fa-receipt"></i> ${formatPrice(order.total)} ₴</p>
-      <p><i class="fas fa-truck"></i> ${order.delivery.service}</p>
-    </div>
-    <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
-      <i class="fas fa-info-circle"></i> Детальніше
-    </button>
-  </div>
-`;
+        ordersList.appendChild(orderElement);
       });
-      
-      modalContent.innerHTML = `
-        <h3>Мої замовлення</h3>
-        <div class="user-orders">
-          ${ordersHTML}
-        </div>
-      `;
     })
     .catch((error) => {
       console.error("Помилка завантаження замовлень: ", error);
-      modalContent.innerHTML = `
-        <h3>Мої замовлення</h3>
-        <p>Помилка завантаження замовлень. Будь ласка, спробуйте пізніше.</p>
-      `;
+      ordersList.innerHTML = '<p>Помилка завантаження замовлень</p>';
     });
-}
-
-// Функція для відкриття модального вікна з правилами
-function openRules() {
-  document.getElementById('rules-modal').classList.add('active');
-}
-
-// Функція для закриття модального вікна з правилами
-function closeRulesModal() {
-  document.getElementById('rules-modal').classList.remove('active');
-}
-
-// Закриття модального вікна при кліку outside content
-document.getElementById('rules-modal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    closeRulesModal();
-  }
-});
-
-// Функція перемикання видимості фільтрів
-function toggleFilters() {
-  const filters = document.querySelector('.filters');
-  filters.classList.toggle('active');
   
-const button = document.querySelector('.filter-toggle');
-  if (filters.classList.contains('active')) {
-    button.innerHTML = '<i class="fas fa-times"></i> Приховати фільтри';
+  openModal();
+  
+  setTimeout(optimizeModalForMobile, 100);
+}
+
+// Функція для перемішування масиву
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Функція для адаптації заголовка
+function adjustHeaderTitle() {
+  const headerTitle = document.getElementById("header-title");
+  if (window.innerWidth <= 768) {
+    headerTitle.textContent = "BoltMaster";
   } else {
-    button.innerHTML = '<i class="fas fa-filter"></i> Показати фільтри';
+    headerTitle.textContent = "BoltMaster - Інтернет-магазин інструментів";
   }
 }
 
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
+// Функція для переключення джерела товарів
+function switchSource(source) {
+  currentFilters.source = source;
+  applyFilters();
+  
+  // Обновляем активную вкладку
+  document.querySelectorAll('.source-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  const activeTab = document.querySelector(`.source-tab[onclick="switchSource('${source}')"]`);
+  if (activeTab) {
+    activeTab.classList.add('active');
+  }
 }
 
-// Функція для додавання вкладки модерації відгуків
+// Добавляем вкладку для модерации отзывов
 function addReviewsTabIfNotExists() {
-  const existingTab = document.querySelector('.tab[onclick*="reviews-tab-content"]');
-  if (!existingTab) {
-    const tabsContainer = document.querySelector('.admin-tabs');
-    if (tabsContainer) {
-      const reviewsTab = document.createElement('div');
-      reviewsTab.className = 'tab';
-      reviewsTab.setAttribute('onclick', 'switchTab(\'reviews-tab-content\')');
-      reviewsTab.textContent = 'Модерація відгуків';
-      tabsContainer.appendChild(reviewsTab);
-      
-      const tabContent = document.createElement('div');
-      tabContent.id = 'reviews-tab-content';
-      tabContent.className = 'tab-content';
-      tabContent.innerHTML = `
-        <h3>Модерація відгуків</h3>
-        <div id="reviews-moderation-container"></div>
-      `;
-      document.querySelector('.admin-content').appendChild(tabContent);
-    }
+  const tabsContainer = document.querySelector('.admin-tabs');
+  if (!tabsContainer) return;
+  
+  // Проверяем, существует ли уже вкладка отзывов
+  const existingReviewsTab = tabsContainer.querySelector('[onclick="switchTab(\'reviews-tab-content\')"]');
+  if (existingReviewsTab) return;
+  
+  // Добавляем вкладку отзывов
+  const reviewsTab = document.createElement('div');
+  reviewsTab.className = 'tab';
+  reviewsTab.textContent = 'Модерація відгуків';
+  reviewsTab.onclick = () => switchTab('reviews-tab-content');
+  tabsContainer.appendChild(reviewsTab);
+  
+  // Добавляем контент для вкладки отзывов
+  const tabContents = document.querySelector('.tab-contents');
+  if (tabContents) {
+    const reviewsContent = document.createElement('div');
+    reviewsContent.id = 'reviews-tab-content';
+    reviewsContent.className = 'tab-content';
+    reviewsContent.innerHTML = `
+      <h3>Модерація відгуків</h3>
+      <div id="reviews-moderation-container"></div>
+    `;
+    tabContents.appendChild(reviewsContent);
   }
 }
 
@@ -3526,33 +3569,27 @@ function switchSource(source, element) {
     applyFilters();
 }
 
-// Синхронизация поиска между десктопной и мобильной версией
-function syncSearchFields() {
-    const searchDesktop = document.getElementById('search');
-    const searchMobile = document.getElementById('search-mobile');
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+  initApp();
+  
+  // Синхронизация полей поиска
+  syncSearchFieldsOnLoad();
+  
+  // Загружаем товары из всех JSON файлов
+  loadAllProducts().then(allProducts => {
+    products = preprocessProducts(allProducts);
+    window.currentProducts = products;
+    updateCartCount();
+    renderProducts();
+    renderFeaturedProducts();
+    renderCategories();
+    renderBrands();
+    showNotification(`Товари завантажено з ${PRODUCT_FILES.length} файлів`);
     
-    if (searchDesktop && searchMobile) {
-        // Синхронизация с десктопа на мобильный
-        searchDesktop.addEventListener('input', function() {
-            searchMobile.value = this.value;
-        });
-        
-        // Синхронизация с мобильного на десктоп
-        searchMobile.addEventListener('input', function() {
-            searchDesktop.value = this.value;
-        });
-        
-        // Синхронизация при загрузке
-        searchMobile.value = searchDesktop.value;
-    }
-}
-
-// Вызовите эту функцию при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    syncSearchFields();
-});
-
-// Запуск додатку
-document.addEventListener('DOMContentLoaded', function() {
-    initApp();
+    localStorage.setItem('products_backup', JSON.stringify(products));
+  }).catch(error => {
+    console.error("Помилка завантаження товарів:", error);
+    showNotification("Не вдалося завантажити товари", "error");
+  });
 });

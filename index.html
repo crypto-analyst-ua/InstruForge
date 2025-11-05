@@ -174,16 +174,21 @@
                     </div>
                 </div>
                 
+                <!-- ИЗМЕНЕНИЕ: Добавлен span с классом btn-text для кнопок -->
                 <button onclick="openAuthModal()" class="btn btn-admin" id="login-btn">
-                    <i class="fas fa-user" aria-hidden="true"></i> Увійти
+                    <i class="fas fa-user" aria-hidden="true"></i> 
+                    <span class="btn-text">Увійти</span>
                 </button>
                 
                 <button onclick="promptAdminPassword()" class="btn btn-admin" id="admin-access-btn" style="display: none;">
-                    <i class="fas fa-crown" aria-hidden="true"></i> Адмін
+                    <i class="fas fa-crown" aria-hidden="true"></i> 
+                    <span class="btn-text">Адмін</span>
                 </button>
                 
+                <!-- ИЗМЕНЕНИЕ: Добавлен span с классом btn-text для кнопки корзины -->
                 <button onclick="openCart()" class="btn btn-cart" aria-label="Кошик товарів">
                     <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                    <span class="btn-text">Кошик</span>
                     <span class="cart-count" id="cart-count">0</span>
                 </button>
             </div>
@@ -643,4 +648,4 @@
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
     <script src="script.js"></script>
 </body>
-</html> 
+</html>

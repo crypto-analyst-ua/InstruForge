@@ -238,9 +238,9 @@ header {
   right: -5px;
 }
 
-/* Скрываем текст на маленьких кнопках */
+/* ИЗМЕНЕНИЕ: Показываем текст на маленьких кнопках */
 .btn-small .btn-text {
-  display: none;
+  display: inline !important;
 }
 
 .search-container {
@@ -1840,16 +1840,20 @@ button:focus, input:focus, select:focus, textarea:focus {
     right: -3px;
   }
   
-  /* Скрываем текст в кнопках на мобильных */
-  .btn-admin span,
-  .user-btn span {
-    display: none;
+  /* ИЗМЕНЕНИЕ: Восстанавливаем отображение текста на кнопках администратора */
+  .btn-admin .btn-text {
+    display: inline !important;
   }
   
   .btn-admin {
-    padding: 0.5rem !important;
-    width: 40px !important;
-    min-width: 40px !important;
+    padding: 0.8rem 1.2rem !important;
+    width: auto !important;
+    min-width: auto !important;
+  }
+  
+  /* Скрываем текст в кнопке корзины на мобильных */
+  .btn-cart .btn-text {
+    display: none !important;
   }
 }
 
@@ -1955,6 +1959,21 @@ button:focus, input:focus, select:focus, textarea:focus {
   
   .logo-subtitle {
     font-size: 0.7rem;
+  }
+  
+  /* ИЗМЕНЕНИЕ: Дополнительные стили для кнопок на очень маленьких экранах */
+  .btn {
+    font-size: 0.9rem !important;
+    padding: 0.7rem 1rem !important;
+  }
+  
+  .btn i {
+    margin-right: 0.3rem !important;
+  }
+  
+  .btn-admin {
+    padding: 0.6rem 0.8rem !important;
+    font-size: 0.85rem !important;
   }
 }
 

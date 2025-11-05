@@ -3569,6 +3569,30 @@ function switchSource(source, element) {
     applyFilters();
 }
 
+// Функція для відкриття модального вікна з правилами
+function openRules() {
+  document.getElementById("rules-modal").classList.add("active");
+  document.body.style.overflow = 'hidden';
+}
+
+// Функція для закриття модального вікна з правилами
+function closeRulesModal() {
+  document.getElementById("rules-modal").classList.remove("active");
+  document.body.style.overflow = '';
+}
+
+// Додаємо обробник подій для закриття модального вікна при кліку на фон
+document.addEventListener('DOMContentLoaded', function() {
+  const rulesModal = document.getElementById('rules-modal');
+  if (rulesModal) {
+    rulesModal.addEventListener('click', function(e) {
+      if (e.target === rulesModal) {
+        closeRulesModal();
+      }
+    });
+  }
+});
+
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   initApp();

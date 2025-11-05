@@ -842,7 +842,7 @@ aside h3 {
 }
 
 .about-section li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   line-height: 1.6;
   color: #374151;
 }
@@ -1960,21 +1960,6 @@ button:focus, input:focus, select:focus, textarea:focus {
   .logo-subtitle {
     font-size: 0.7rem;
   }
-  
-  /* ИЗМЕНЕНИЕ: Дополнительные стили для кнопок на очень маленьких экранах */
-  .btn {
-    font-size: 0.9rem !important;
-    padding: 0.7rem 1rem !important;
-  }
-  
-  .btn i {
-    margin-right: 0.3rem !important;
-  }
-  
-  .btn-admin {
-    padding: 0.6rem 0.8rem !important;
-    font-size: 0.85rem !important;
-  }
 }
 
 /* ИСПРАВЛЕНИЕ ДЛЯ МОДАЛЬНОГО ОКНА ЗАКАЗОВ НА МОБИЛЬНЫХ */
@@ -2577,10 +2562,12 @@ button:focus, input:focus, select:focus, textarea:focus {
   text-decoration: none;
 }
 
-.search-container {
+/* Стили для контейнеров поиска с подсказками - ИСПРАВЛЕННАЯ ВЕРСИЯ */
+.search-container, .search-container-mobile {
   position: relative;
 }
 
+/* Стили для подсказок поиска - ИСПРАВЛЕННАЯ ВЕРСИЯ */
 .search-suggestions {
   position: absolute;
   top: 100%;
@@ -2588,11 +2575,19 @@ button:focus, input:focus, select:focus, textarea:focus {
   right: 0;
   background: white;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 1000;
   max-height: 300px;
   overflow-y: auto;
+  display: none;
+  margin-top: 5px;
+}
+
+/* Показываем подсказки при фокусе на поле поиска */
+.search-container:focus-within .search-suggestions,
+.search-container-mobile:focus-within .search-suggestions {
+  display: block;
 }
 
 .search-suggestion {
@@ -2603,10 +2598,98 @@ button:focus, input:focus, select:focus, textarea:focus {
   gap: 8px;
   border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.2s;
+  color: var(--dark);
+}
+
+.search-suggestion:last-child {
+  border-bottom: none;
 }
 
 .search-suggestion:hover {
   background-color: #f8f9fa;
+}
+
+.search-suggestion i {
+  margin-right: 10px;
+  color: var(--gray);
+  flex-shrink: 0;
+}
+
+.search-suggestion .product-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.search-suggestion .product-price {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Улучшения для мобильных устройств */
+@media (max-width: 768px) {
+  .search-suggestions {
+    position: fixed;
+    top: auto;
+    left: 1rem;
+    right: 1rem;
+    max-height: 50vh;
+    z-index: 1001;
+    margin-top: 10px;
+  }
+  
+  /* Гарантируем, что подсказки будут над другими элементами на мобильных */
+  .search-container-mobile:focus-within .search-suggestions {
+    display: block;
+  }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+  .search-suggestions {
+    left: 0.5rem;
+    right: 0.5rem;
+    max-height: 40vh;
+  }
+  
+  .search-suggestion {
+    padding: 15px;
+    font-size: 16px; /* Увеличиваем для удобства касания */
+    min-height: 44px; /* Минимальная высота для касания */
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-suggestion i {
+    font-size: 18px;
+    margin-right: 12px;
+  }
+  
+  .search-suggestion .product-name {
+    font-size: 16px;
+  }
+  
+  .search-suggestion .product-price {
+    font-size: 14px;
+  }
+}
+
+/* Улучшения для очень маленьких экранов */
+@media (max-width: 360px) {
+  .search-suggestions {
+    left: 0.3rem;
+    right: 0.3rem;
+  }
+  
+  .search-suggestion {
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+
+/* Предотвращаем скроллинг страницы когда открыты подсказки на мобильных */
+body.search-suggestions-open {
+  overflow: hidden;
 }
 
 /* Исправления для секции "О магазине" */

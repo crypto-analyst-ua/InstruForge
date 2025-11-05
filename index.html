@@ -154,6 +154,7 @@
                 <div class="search-container">
                     <i class="fas fa-search search-icon" aria-hidden="true"></i>
                     <input type="text" id="search" placeholder="Пошук інструментів..." aria-label="Пошук товарів по каталогу">
+                    <div class="search-suggestions" id="search-suggestions"></div>
                 </div>
                 <select id="category" aria-label="Вибір категорії товарів" style="display: none;">
                     <option value="">Всі категорії</option>
@@ -198,6 +199,7 @@
         <div class="search-container-mobile">
             <i class="fas fa-search search-icon" aria-hidden="true"></i>
             <input type="text" id="search-mobile" placeholder="Пошук інструментів..." aria-label="Пошук товарів по каталогу">
+            <div class="search-suggestions" id="search-suggestions-mobile"></div>
         </div>
     </header>
 
@@ -500,7 +502,7 @@
         </div>
     </div>
 
-    <!-- Лічильник переглядів (тільки для адміністраторів) -->
+    <!-- Лічильник переглядів (только для адміністраторів) -->
     <div id="page-views-container" style="display: none; text-align: center; margin-top: 10px;">
         <img id="page-views" alt="Page Views" style="display: block; margin: 10px auto;"/>
     </div>

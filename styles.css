@@ -3418,3 +3418,8 @@ button:focus, input:focus, select:focus, textarea:focus {
     -webkit-background-clip: initial !important;
     -webkit-text-fill-color: #000000 !important;
 }
+
+/* Скрытие кнопки администратора */
+#admin-access-btn {
+    display: none !important;
+}

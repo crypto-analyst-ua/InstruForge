@@ -301,7 +301,7 @@ function setupSearchHandler() {
       lastSearchValue = value;
       currentFilters.search = value;
       
-      if (value.length >= 2) {
+      if (value.length >= 1) {  // Изменено с 2 на 1 символ
         showSearchSuggestions(value, isMobile);
       } else {
         hideSearchSuggestions(isMobile);
@@ -503,15 +503,15 @@ function hideSearchSuggestions(isMobile = false) {
   }
 }
 
-// Улучшенная предобработка товаров
+// Улучшенная предобработка товаров с весами для поиска
 function preprocessProducts(productsArray) {
   return productsArray.map(product => {
     if (!product || typeof product !== 'object') return product;
     
-    // Создаем расширенный поисковый индекс
+    // Создаем расширенный поисковый индекс с весами
     const searchFields = [
-      product.title || '',
-      product.brand || '',
+      product.title || '', product.title || '', product.title || '', // высокая важность (повторяем 3 раза)
+      product.brand || '', product.brand || '', // средняя важность (повторяем 2 раза)
       product.category || '',
       product.description || '',
       product.specifications || '',
@@ -542,6 +542,48 @@ function preprocessProducts(productsArray) {
     };
   });
 }
+
+// Улучшенная функция поиска с использованием синонимов
+function searchProductsEnhanced(searchTerm) {
+  if (!searchTerm || searchTerm.trim().length < 1) {
+    return products;
+  }
+  
+  const normalizedSearch = normalizeSearchTerm(searchTerm);
+  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
+  
+  if (searchWords.length === 0) {
+    return products;
+  }
+  
+  // Используем расширенный запрос с синонимами
+  const expandedQuery = expandSearchQuery(normalizedSearch);
+  const expandedWords = expandedQuery.split(/\s+/).filter(word => word.length >= 1);
+  
+  return products.filter(product => {
+    if (!product.searchIndex) return false;
+    
+    // Проверяем все исходные слова запроса в searchIndex
+    const allWordsMatch = searchWords.every(word => 
+      product.searchIndex.includes(word)
+    );
+    
+    // Если не все исходные слова найдены, проверяем расширенный запрос
+    if (!allWordsMatch && expandedWords.length > searchWords.length) {
+      return expandedWords.some(word => 
+        product.searchIndex.includes(word)
+      );
+    }
+    
+    return allWordsMatch;
+  });
+}
+
+// Заменяем оригинальную функцию поиска на улучшенную версию
+const originalSearchProducts = searchProducts;
+searchProducts = function(searchTerm) {
+  return searchProductsEnhanced(searchTerm);
+};
 
 // Добавляем CSS для улучшенных подсказок (десктоп и мобильные)
 function addSearchStyles() {

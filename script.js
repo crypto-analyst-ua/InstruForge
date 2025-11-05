@@ -3526,6 +3526,32 @@ function switchSource(source, element) {
     applyFilters();
 }
 
+// Синхронизация поиска между десктопной и мобильной версией
+function syncSearchFields() {
+    const searchDesktop = document.getElementById('search');
+    const searchMobile = document.getElementById('search-mobile');
+    
+    if (searchDesktop && searchMobile) {
+        // Синхронизация с десктопа на мобильный
+        searchDesktop.addEventListener('input', function() {
+            searchMobile.value = this.value;
+        });
+        
+        // Синхронизация с мобильного на десктоп
+        searchMobile.addEventListener('input', function() {
+            searchDesktop.value = this.value;
+        });
+        
+        // Синхронизация при загрузке
+        searchMobile.value = searchDesktop.value;
+    }
+}
+
+// Вызовите эту функцию при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    syncSearchFields();
+});
+
 // Запуск додатку
 document.addEventListener('DOMContentLoaded', function() {
     initApp();

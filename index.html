@@ -138,53 +138,61 @@
 </head>
 <body>
     <header role="banner">
-        <div class="logo">
-            <h1 class="logo-text">
-                <span class="logo-name">InstruForge</span>
-                <span class="logo-subtitle">Інтернет-магазин</span>
-            </h1>
-        </div>
-        <div class="header-controls">
-            <!-- Кнопка-бургер для мобильных фильтров -->
-            <button onclick="toggleMobileFilters()" class="btn btn-mobile-filters" aria-label="Фільтри товарів">
-                <i class="fas fa-bars"></i>
-            </button>
+        <div class="header-top">
+            <div class="logo">
+                <h1 class="logo-text">
+                    <span class="logo-name">InstruForge</span>
+                    <span class="logo-subtitle">Інтернет-магазин</span>
+                </h1>
+            </div>
+            <div class="header-controls">
+                <!-- Кнопка-бургер для мобильных фильтров -->
+                <button onclick="toggleMobileFilters()" class="btn btn-mobile-filters" aria-label="Фільтри товарів">
+                    <i class="fas fa-bars"></i>
+                </button>
 
-            <div class="search-container">
-                <i class="fas fa-search search-icon" aria-hidden="true"></i>
-                <input type="text" id="search" placeholder="Пошук інструментів..." aria-label="Пошук товарів по каталогу">
-            </div>
-            <select id="category" aria-label="Вибір категорії товарів" style="display: none;">
-                <option value="">Всі категорії</option>
-            </select>
-            <button onclick="toggleFavorites()" class="btn" id="favorites-btn" aria-label="Обрані товари">
-                <i class="far fa-heart" aria-hidden="true"></i>
-            </button>
-            
-            <div class="user-menu" id="user-menu" style="display: none;">
-                <div class="user-btn">
-                    <i class="fas fa-user" aria-hidden="true"></i>
-                    <span id="user-name"></span>
+                <div class="search-container">
+                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                    <input type="text" id="search" placeholder="Пошук інструментів..." aria-label="Пошук товарів по каталогу">
                 </div>
-                <div class="user-dropdown">
-                    <a href="#" onclick="openProfile(); return false;">Профіль</a>
-                    <a href="#" onclick="viewOrders(); return false;">Мої замовлення</a>
-                    <a href="#" onclick="logout(); return false;">Вийти</a>
+                <select id="category" aria-label="Вибір категорії товарів" style="display: none;">
+                    <option value="">Всі категорії</option>
+                </select>
+                <button onclick="toggleFavorites()" class="btn" id="favorites-btn" aria-label="Обрані товари">
+                    <i class="far fa-heart" aria-hidden="true"></i>
+                </button>
+                
+                <div class="user-menu" id="user-menu" style="display: none;">
+                    <div class="user-btn">
+                        <i class="fas fa-user" aria-hidden="true"></i>
+                        <span id="user-name"></span>
+                    </div>
+                    <div class="user-dropdown">
+                        <a href="#" onclick="openProfile(); return false;">Профіль</a>
+                        <a href="#" onclick="viewOrders(); return false;">Мої замовлення</a>
+                        <a href="#" onclick="logout(); return false;">Вийти</a>
+                    </div>
                 </div>
+                
+                <button onclick="openAuthModal()" class="btn btn-admin" id="login-btn">
+                    <i class="fas fa-user" aria-hidden="true"></i> Увійти
+                </button>
+                
+                <button onclick="promptAdminPassword()" class="btn btn-admin" id="admin-access-btn" style="display: none;">
+                    <i class="fas fa-crown" aria-hidden="true"></i> Адмін
+                </button>
+                
+                <button onclick="openCart()" class="btn btn-cart" aria-label="Кошик товарів">
+                    <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </button>
             </div>
-            
-            <button onclick="openAuthModal()" class="btn btn-admin" id="login-btn">
-                <i class="fas fa-user" aria-hidden="true"></i> Увійти
-            </button>
-            
-            <button onclick="promptAdminPassword()" class="btn btn-admin" id="admin-access-btn" style="display: none;">
-                <i class="fas fa-crown" aria-hidden="true"></i> Адмін
-            </button>
-            
-            <button onclick="openCart()" class="btn btn-cart" aria-label="Кошик товарів">
-                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
-                <span class="cart-count" id="cart-count">0</span>
-            </button>
+        </div>
+        
+        <!-- Поиск для мобильных устройств -->
+        <div class="search-container-mobile">
+            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+            <input type="text" id="search-mobile" placeholder="Пошук інструментів..." aria-label="Пошук товарів по каталогу">
         </div>
     </header>
 
@@ -635,4 +643,4 @@
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
     <script src="script.js"></script>
 </body>
-</html>
+</html> 

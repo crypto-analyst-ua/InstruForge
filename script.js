@@ -2480,6 +2480,12 @@ function closeModal() {
   modal.classList.remove("active");
   modal.classList.remove("mobile-modal");
   document.body.style.overflow = '';
+  
+  // Отписываемся от слушателя заказов
+  if (window.currentOrdersUnsubscribe) {
+    window.currentOrdersUnsubscribe();
+    window.currentOrdersUnsubscribe = null;
+  }
 }
 
 // Відкриття модального вікна авторизації
@@ -3430,85 +3436,305 @@ function deleteProduct(productId) {
   }
 }
 
-// Функція перегляду замовлень користувача
-function viewOrders() {
-  if (!currentUser) {
-    openAuthModal();
-    showNotification("Увійдіть в систему для перегляду замовлень", "warning");
-    return;
-  }
-  
-  const modalContent = document.getElementById("modal-content");
-  modalContent.innerHTML = `
-    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-    <h3>Мої замовлення</h3>
-    <div id="user-orders-list"></div>
-  `;
-  
-  const ordersList = document.getElementById("user-orders-list");
-  ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
-  
-  db.collection("orders")
-    .where("userId", "==", currentUser.uid)
-    .orderBy("createdAt", "desc")
-    .get()
-    .then((querySnapshot) => {
-      if (querySnapshot.empty) {
-        ordersList.innerHTML = '<p>У вас немає замовлень</p>';
+// ===== ФУНКЦИИ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ =====
+
+// Функция открытия профиля пользователя
+function openProfile() {
+    if (!currentUser) {
+        openAuthModal();
+        showNotification("Увійдіть в систему для перегляду профілю", "warning");
         return;
-      }
-      
-      ordersList.innerHTML = '';
-      
-      querySnapshot.forEach((doc) => {
-        const order = { id: doc.id, ...doc.data() };
-        const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
-        const ttnSection = order.ttn ? `
-          <div class="ttn-info" style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
-            <p><strong>ТТН:</strong> ${order.ttn}</p>
-            <p><a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" style="color: #007bff; text-decoration: none;">
-              <i class="fas fa-external-link-alt"></i> Відстежити посилку
-            </a></p>
-          </div>
-        ` : '';
-        
-        const orderElement = document.createElement('div');
-        orderElement.className = 'user-order-item';
-        orderElement.style.border = '1px solid #eee';
-        orderElement.style.padding = '15px';
-        orderElement.style.marginBottom = '15px';
-        orderElement.style.borderRadius = '8px';
-        
-        orderElement.innerHTML = `
-          <div class="order-header">
-            <h4>Замовлення #${order.id}</h4>
-            <span class="order-date">${orderDate}</span>
-          </div>
-          <div class="order-info">
-            <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
-            <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
-            <p><strong>Спосіб доставки:</strong> ${order.delivery.service}</p>
-            <p><strong>Місто:</strong> ${order.delivery.city}</p>
-            <p><strong>Відділення:</strong> ${order.delivery.warehouse}</p>
-          </div>
-          ${ttnSection}
-          <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі замовлення</button>
-        `;
-        
-        ordersList.appendChild(orderElement);
-      });
-    })
-    .catch((error) => {
-      console.error("Помилка завантаження замовлень: ", error);
-      ordersList.innerHTML = '<p>Помилка завантаження замовлень</p>';
-    });
-  
-  openModal();
-  
-  setTimeout(optimizeModalForMobile, 100);
+    }
+
+    const modalContent = document.getElementById("modal-content");
+    modalContent.innerHTML = `
+        <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
+        <h3>Профіль користувача</h3>
+        <div class="profile-container">
+            <div class="profile-info">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="profile-details">
+                    <p><strong>Ім'я:</strong> <span id="profile-display-name">${currentUser.displayName || 'Не вказано'}</span></p>
+                    <p><strong>Email:</strong> <span id="profile-email">${currentUser.email || 'Не вказано'}</span></p>
+                    <p><strong>ID:</strong> <span id="profile-uid">${currentUser.uid}</span></p>
+                    <p><strong>Дата реєстрації:</strong> <span id="profile-created">${currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString('uk-UA') : 'Невідомо'}</span></p>
+                </div>
+            </div>
+            
+            <div class="profile-actions">
+                <h4>Налаштування профілю</h4>
+                <form onsubmit="updateProfile(event)">
+                    <div class="form-group">
+                        <label>Ім'я та прізвище</label>
+                        <input type="text" id="profile-name-input" value="${currentUser.displayName || ''}" placeholder="Введіть ваше ім'я">
+                    </div>
+                    <div class="form-group">
+                        <label>Новий пароль</label>
+                        <input type="password" id="profile-password-input" placeholder="Залиште порожнім, щоб не змінювати">
+                    </div>
+                    <button type="submit" class="btn btn-detail">Оновити профіль</button>
+                </form>
+            </div>
+            
+            <div class="profile-stats">
+                <h4>Статистика</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="stat-value" id="profile-orders-count">0</span>
+                        <span class="stat-label">Замовлень</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="far fa-heart"></i>
+                        <span class="stat-value" id="profile-favorites-count">${Object.keys(favorites).length}</span>
+                        <span class="stat-label">Обраних товарів</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Загружаем статистику заказов
+    loadUserOrderStats();
+    
+    openModal();
+    setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функція для перемішування масиву
+// Функция обновления профиля
+function updateProfile(event) {
+    event.preventDefault();
+    
+    const newName = document.getElementById('profile-name-input').value.trim();
+    const newPassword = document.getElementById('profile-password-input').value.trim();
+    
+    const promises = [];
+    
+    // Обновляем имя, если оно изменилось
+    if (newName && newName !== currentUser.displayName) {
+        promises.push(
+            currentUser.updateProfile({
+                displayName: newName
+            })
+        );
+    }
+    
+    // Обновляем пароль, если введен новый
+    if (newPassword) {
+        promises.push(
+            currentUser.updatePassword(newPassword)
+        );
+    }
+    
+    if (promises.length === 0) {
+        showNotification("Немає змін для оновлення", "info");
+        return;
+    }
+    
+    Promise.all(promises)
+        .then(() => {
+            showNotification("Профіль успішно оновлено");
+            document.getElementById('user-name').textContent = newName || currentUser.email;
+            document.getElementById('profile-display-name').textContent = newName || 'Не вказано';
+            closeModal();
+        })
+        .catch(error => {
+            console.error("Помилка оновлення профілю: ", error);
+            let errorMessage = "Помилка оновлення профілю";
+            
+            switch (error.code) {
+                case 'auth/requires-recent-login':
+                    errorMessage = "Для зміни пароля потрібно повторно увійти в систему";
+                    break;
+                case 'auth/weak-password':
+                    errorMessage = "Пароль занадто слабкий";
+                    break;
+            }
+            
+            showNotification(errorMessage, "error");
+        });
+}
+
+// Функция загрузки статистики заказов пользователя
+function loadUserOrderStats() {
+    if (!currentUser) return;
+    
+    db.collection("orders")
+        .where("userId", "==", currentUser.uid)
+        .get()
+        .then((querySnapshot) => {
+            const ordersCount = querySnapshot.size;
+            document.getElementById('profile-orders-count').textContent = ordersCount;
+        })
+        .catch((error) => {
+            console.error("Помилка завантаження статистики замовлень: ", error);
+        });
+}
+
+// Функция для получения информации о статусе заказа
+function getOrderStatusInfo(status) {
+    const statusMap = {
+        'new': { class: 'status-new', text: 'Новий', icon: 'fas fa-clock' },
+        'processing': { class: 'status-processing', text: 'В обробці', icon: 'fas fa-cog' },
+        'shipped': { class: 'status-shipped', text: 'Відправлено', icon: 'fas fa-shipping-fast' },
+        'delivered': { class: 'status-delivered', text: 'Доставлено', icon: 'fas fa-check-circle' },
+        'cancelled': { class: 'status-cancelled', text: 'Скасовано', icon: 'fas fa-times-circle' }
+    };
+    
+    return statusMap[status] || statusMap['new'];
+}
+
+// Улучшенная функция просмотра заказов
+function viewOrders() {
+    if (!currentUser) {
+        openAuthModal();
+        showNotification("Увійдіть в систему для перегляду замовлень", "warning");
+        return;
+    }
+    
+    const modalContent = document.getElementById("modal-content");
+    modalContent.innerHTML = `
+        <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
+        <h3>Мої замовлення</h3>
+        <div class="user-orders-container">
+            <div id="user-orders-list" style="max-height: 60vh; overflow-y: auto;"></div>
+        </div>
+    `;
+    
+    const ordersList = document.getElementById("user-orders-list");
+    ordersList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Завантаження замовлень...</div>';
+    
+    // Используем реальное слушание для обновлений в реальном времени
+    const unsubscribe = db.collection("orders")
+        .where("userId", "==", currentUser.uid)
+        .orderBy("createdAt", "desc")
+        .onSnapshot((querySnapshot) => {
+            if (querySnapshot.empty) {
+                ordersList.innerHTML = `
+                    <div class="empty-orders">
+                        <i class="fas fa-box-open"></i>
+                        <h4>У вас немає замовлень</h4>
+                        <p>Після оформлення замовлення воно з'явиться тут</p>
+                        <button class="btn btn-detail" onclick="closeModal(); applyFilters();">Перейти до товарів</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let ordersHTML = '';
+            querySnapshot.forEach((doc) => {
+                const order = { id: doc.id, ...doc.data() };
+                const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
+                const statusInfo = getOrderStatusInfo(order.status);
+                
+                const ttnSection = order.ttn ? `
+                    <div class="order-ttn-info">
+                        <p><strong>ТТН:</strong> ${order.ttn}</p>
+                        <a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" class="track-link">
+                            <i class="fas fa-external-link-alt"></i> Відстежити посилку
+                        </a>
+                    </div>
+                ` : '';
+                
+                ordersHTML += `
+                    <div class="user-order-item">
+                        <div class="order-header">
+                            <div class="order-main-info">
+                                <h4>Замовлення #${order.id}</h4>
+                                <span class="order-date">${orderDate}</span>
+                            </div>
+                            <div class="order-status-badge ${statusInfo.class}">
+                                <i class="${statusInfo.icon}"></i>
+                                ${statusInfo.text}
+                            </div>
+                        </div>
+                        
+                        <div class="order-summary">
+                            <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
+                            <p><strong>Доставка:</strong> ${order.delivery.service}</p>
+                            <p><strong>Оплата:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
+                        </div>
+                        
+                        ${ttnSection}
+                        
+                        <div class="order-actions">
+                            <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
+                                <i class="fas fa-eye"></i> Деталі
+                            </button>
+                            ${order.status === 'new' ? `
+                                <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">
+                                    <i class="fas fa-times"></i> Скасувати
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            ordersList.innerHTML = ordersHTML;
+        }, (error) => {
+            console.error("Помилка завантаження замовлень: ", error);
+            ordersList.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Помилка завантаження замовлень</div>';
+        });
+    
+    // Сохраняем функцию отписки для использования при закрытии модального окна
+    window.currentOrdersUnsubscribe = unsubscribe;
+    
+    openModal();
+    setTimeout(optimizeModalForMobile, 100);
+}
+
+// Функция отмены заказа
+function cancelOrder(orderId) {
+    if (confirm("Ви впевнені, що хочете скасувати це замовлення?")) {
+        db.collection("orders").doc(orderId).update({
+            status: 'cancelled',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+            showNotification("Замовлення скасовано");
+        })
+        .catch((error) => {
+            console.error("Помилка скасування замовлення: ", error);
+            showNotification("Помилка скасування замовлення", "error");
+        });
+    }
+}
+
+// Добавляем вкладку для модерации отзывов в админ-панель, если её нет
+function addReviewsTabIfNotExists() {
+    const adminTabs = document.querySelector('.admin-tabs');
+    if (!adminTabs) return;
+    
+    // Проверяем, есть ли уже вкладка отзывов
+    const existingReviewsTab = adminTabs.querySelector('[onclick*="reviews-tab-content"]');
+    if (existingReviewsTab) return;
+    
+    // Добавляем вкладку отзывов
+    const reviewsTab = document.createElement('div');
+    reviewsTab.className = 'tab';
+    reviewsTab.setAttribute('onclick', "switchTab('reviews-tab-content')");
+    reviewsTab.innerHTML = '<i class="fas fa-comments"></i> Модерація відгуків';
+    adminTabs.appendChild(reviewsTab);
+    
+    // Добавляем контент для вкладки отзывов
+    const tabContents = document.querySelector('.tab-contents');
+    if (tabContents) {
+        const reviewsContent = document.createElement('div');
+        reviewsContent.id = 'reviews-tab-content';
+        reviewsContent.className = 'tab-content';
+        reviewsContent.innerHTML = `
+            <h3>Модерація відгуків</h3>
+            <div id="reviews-moderation-container"></div>
+        `;
+        tabContents.appendChild(reviewsContent);
+    }
+}
+
+// Вспомогательная функция для перемешивания массива
 function shuffleArray(array) {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -3518,60 +3744,20 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-// Функція для адаптації заголовка
+// Функция для адаптации заголовка
 function adjustHeaderTitle() {
-  const headerTitle = document.getElementById("header-title");
+  const headerTitle = document.querySelector('.header-title');
   if (window.innerWidth <= 768) {
-    headerTitle.textContent = "BoltMaster";
+    headerTitle.textContent = 'InstruForge';
   } else {
-    headerTitle.textContent = "BoltMaster - Інтернет-магазин інструментів";
+    headerTitle.textContent = 'InstruForge - Інструменти та обладнання';
   }
 }
 
-// Функція для переключення джерела товарів
+// Переключение источника данных
 function switchSource(source) {
   currentFilters.source = source;
   applyFilters();
-  
-  // Обновляем активную вкладку
-  document.querySelectorAll('.source-tab').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  
-  const activeTab = document.querySelector(`.source-tab[onclick="switchSource('${source}')"]`);
-  if (activeTab) {
-    activeTab.classList.add('active');
-  }
-}
-
-// Добавляем вкладку для модерации отзывов
-function addReviewsTabIfNotExists() {
-  const tabsContainer = document.querySelector('.admin-tabs');
-  if (!tabsContainer) return;
-  
-  // Проверяем, существует ли уже вкладка отзывов
-  const existingReviewsTab = tabsContainer.querySelector('[onclick="switchTab(\'reviews-tab-content\')"]');
-  if (existingReviewsTab) return;
-  
-  // Добавляем вкладку отзывов
-  const reviewsTab = document.createElement('div');
-  reviewsTab.className = 'tab';
-  reviewsTab.textContent = 'Модерація відгуків';
-  reviewsTab.onclick = () => switchTab('reviews-tab-content');
-  tabsContainer.appendChild(reviewsTab);
-  
-  // Добавляем контент для вкладки отзывов
-  const tabContents = document.querySelector('.tab-contents');
-  if (tabContents) {
-    const reviewsContent = document.createElement('div');
-    reviewsContent.id = 'reviews-tab-content';
-    reviewsContent.className = 'tab-content';
-    reviewsContent.innerHTML = `
-      <h3>Модерація відгуків</h3>
-      <div id="reviews-moderation-container"></div>
-    `;
-    tabContents.appendChild(reviewsContent);
-  }
 }
 
 // Функция переключения источника товаров
@@ -3607,51 +3793,146 @@ function switchSource(source, element) {
     applyFilters();
 }
 
-// Функція для відкриття модального вікна з правилами
-function openRules() {
-  document.getElementById("rules-modal").classList.add("active");
-  document.body.style.overflow = 'hidden';
-}
-
-// Функція для закриття модального вікна з правилами
-function closeRulesModal() {
-  document.getElementById("rules-modal").classList.remove("active");
-  document.body.style.overflow = '';
-}
-
-// Додаємо обробник подій для закриття модального вікна при кліку на фон
-document.addEventListener('DOMContentLoaded', function() {
-  const rulesModal = document.getElementById('rules-modal');
-  if (rulesModal) {
-    rulesModal.addEventListener('click', function(e) {
-      if (e.target === rulesModal) {
-        closeRulesModal();
-      }
-    });
-  }
-});
-
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
   
-  // Синхронизация полей поиска
-  syncSearchFieldsOnLoad();
+  // Инициализация EmailJS
+  emailjs.init(EMAILJS_USER_ID);
   
-  // Загружаем товары из всех JSON файлов
-  loadAllProducts().then(allProducts => {
-    products = preprocessProducts(allProducts);
-    window.currentProducts = products;
-    updateCartCount();
-    renderProducts();
-    renderFeaturedProducts();
-    renderCategories();
-    renderBrands();
-    showNotification(`Товари завантажено з ${PRODUCT_FILES.length} файлів`);
-    
-    localStorage.setItem('products_backup', JSON.stringify(products));
-  }).catch(error => {
-    console.error("Помилка завантаження товарів:", error);
-    showNotification("Не вдалося завантажити товари", "error");
+  // Добавляем обработчики событий для мобильного меню
+  document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+    document.getElementById('mobile-menu').classList.toggle('active');
   });
+  
+  document.getElementById('mobile-menu-close').addEventListener('click', function() {
+    document.getElementById('mobile-menu').classList.remove('active');
+  });
+  
+  // Добавляем обработчики для мобильных фильтров
+  document.getElementById('mobile-filters-close').addEventListener('click', closeMobileFilters);
+  document.getElementById('mobile-filters-apply').addEventListener('click', applyMobileFilters);
+  document.getElementById('mobile-filters-reset').addEventListener('click', resetMobileFilters);
+  
+  // Закрытие мобильного меню при клике на ссылку
+  document.querySelectorAll('#mobile-menu a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.remove('active');
+    });
+  });
+  
+  // Добавляем стили для мобильных фильтров, если их еще нет
+  if (!document.getElementById('mobile-filters-styles')) {
+    const style = document.createElement('style');
+    style.id = 'mobile-filters-styles';
+    style.textContent = `
+      .mobile-filters {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      
+      .mobile-filters.active {
+        transform: translateX(0);
+      }
+      
+      .mobile-filters-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .mobile-filters-body {
+        margin-bottom: 20px;
+      }
+      
+      .mobile-filters-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 15px 0;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+      }
+      
+      .mobile-filters-footer .btn {
+        flex: 1;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+});
+
+// Добавляем функцию для обновления заголовка страницы при загрузке
+function updatePageTitle() {
+  const category = currentFilters.category;
+  const search = currentFilters.search;
+  
+  let title = 'InstruForge - Інструменти та обладнання';
+  
+  if (search) {
+    title = `Пошук: "${search}" - InstruForge`;
+  } else if (category) {
+    title = `${translateCategory(category)} - InstruForge`;
+  } else if (showingFavorites) {
+    title = 'Обрані товари - InstruForge';
+  }
+  
+  document.title = title;
+}
+
+// Обновляем заголовок при применении фильтров
+const originalApplyFilters = applyFilters;
+applyFilters = function() {
+  originalApplyFilters();
+  updatePageTitle();
+};
+
+// Обновляем заголовок при переключении в избранное
+const originalToggleFavorites = toggleFavorites;
+toggleFavorites = function() {
+  originalToggleFavorites();
+  updatePageTitle();
+};
+
+// Функция открытия модального окна с правилами магазина
+function openRules() {
+    const modal = document.getElementById("rules-modal");
+    modal.classList.add("active");
+    document.body.style.overflow = 'hidden';
+}
+
+// Функция закрытия модального окна с правилами
+function closeRulesModal() {
+    const modal = document.getElementById("rules-modal");
+    modal.classList.remove("active");
+    document.body.style.overflow = '';
+}
+
+// Закрытие модального окна правил при клике вне контента
+document.addEventListener('click', function(e) {
+    const rulesModal = document.getElementById("rules-modal");
+    if (e.target === rulesModal) {
+        closeRulesModal();
+    }
+});
+
+// Закрытие модального окна правил по ESC
+document.addEventListener('keydown', function(e) {
+    const rulesModal = document.getElementById("rules-modal");
+    if (e.key === 'Escape' && rulesModal.classList.contains('active')) {
+        closeRulesModal();
+    }
 });

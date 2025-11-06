@@ -3550,3 +3550,241 @@ main {
     font-size: 0.7rem;
   }
 }
+
+/* Стили для профиля пользователя */
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar {
+    font-size: 60px;
+    color: #3498db;
+}
+
+.profile-details p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.profile-actions, .profile-stats {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-item i {
+    font-size: 24px;
+    color: #3498db;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+/* Стили для карточек заказов */
+.user-order-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #3498db;
+}
+
+.user-order-card.new {
+    border-left-color: #3498db;
+}
+
+.user-order-card.processing {
+    border-left-color: #f39c12;
+}
+
+.user-order-card.shipped {
+    border-left-color: #9b59b6;
+}
+
+.user-order-card.delivered {
+    border-left-color: #27ae60;
+}
+
+.user-order-card.cancelled {
+    border-left-color: #e74c3c;
+}
+
+.order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.order-id {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.order-date {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.order-card-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-new {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-processing {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.status-shipped {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.status-delivered {
+    background: #e8f5e8;
+    color: #388e3c;
+}
+
+.status-cancelled {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.order-total {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.order-card-delivery p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.order-ttn-info {
+    background: #e3f2fd;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.track-link {
+    color: #1976d2;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.track-link:hover {
+    text-decoration: underline;
+}
+
+.order-card-actions {
+    margin-top: 15px;
+}
+
+/* Состояния пустых страниц */
+.empty-orders, .empty-cart {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+}
+
+.empty-orders i, .empty-cart i {
+    font-size: 60px;
+    margin-bottom: 20px;
+    color: #bdc3c7;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+}
+
+.error-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #e74c3c;
+}
+
+.error-message i {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .profile-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .order-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .order-card-status {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

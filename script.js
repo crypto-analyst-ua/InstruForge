@@ -71,25 +71,16 @@ const categoryTranslations = {
     "Застосувати": "Застосувати"
 };
 
-// Функция для перевода категорий
-function translateCategory(category) {
-    if (!category) return '';
-    return categoryTranslations[category] || category;
-}
+// ===== УЛУЧШЕННАЯ СИСТЕМА ПОИСКА =====
 
-// Додаємо змінні для покращеного пошуку
-let searchTimeout = null;
-const SEARCH_DELAY = 300;
-
-// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
-
-// Кэширование результатов поиска
-const searchCache = new Map();
-const MAX_CACHE_SIZE = 100;
-
-function clearSearchCache() {
-  searchCache.clear();
-}
+// Константы для оптимизации поиска
+const SEARCH_CONFIG = {
+  MAX_RESULTS: 1000,
+  DEBOUNCE_DELAY: 150,
+  MAX_HISTORY: 10,
+  MAX_CACHE_SIZE: 200,
+  MIN_QUERY_LENGTH: 2
+};
 
 // Расширенный словарь синонимов для поиска
 const searchSynonyms = {
@@ -129,45 +120,67 @@ const searchSynonyms = {
   'паяльник': ['паяльний']
 };
 
+// Словарь опечаток
+const searchTypos = {
+  'дрель': ['дриль', 'дрель', 'дрелей', 'дрелю'],
+  'шуруповерт': ['шураповерт', 'шуруповерт', 'шуруповерта', 'шуруповертом'],
+  'болгарка': ['болгарка', 'болгарок', 'болгарку', 'болгаркой'],
+  'перфоратор': ['перфоратор', 'перфоратора', 'перфоратором', 'перфораторов'],
+  'лобзик': ['лобзик', 'лобзика', 'лобзиком', 'лобзиков'],
+  'фрезер': ['фрезер', 'фрезера', 'фрезером', 'фрезеров'],
+  'шлифмашина': ['шлифмашина', 'шлифмашин', 'шлифмашиной', 'шлифмашину'],
+  'насос': ['насос', 'насоса', 'насосом', 'насосов']
+};
+
+// Глобальные переменные для поиска
+let searchTimeout = null;
+const searchCache = new Map();
+let searchLoading = false;
+const SEARCH_HISTORY_KEY = "instruforge_search_history";
+
+// Функція для перевода категорий
+function translateCategory(category) {
+    if (!category) return '';
+    return categoryTranslations[category] || category;
+}
+
+// Функция исправления опечаток
+function fixCommonTypos(query) {
+  if (!query || query.length < 2) return query;
+  
+  let fixedQuery = query.toLowerCase();
+  
+  Object.entries(searchTypos).forEach(([correct, mistakes]) => {
+    mistakes.forEach(mistake => {
+      if (fixedQuery.includes(mistake)) {
+        fixedQuery = fixedQuery.replace(mistake, correct);
+      }
+    });
+  });
+  
+  return fixedQuery;
+}
+
 // Улучшенная нормализация текста
 function normalizeSearchTerm(term) {
   if (!term) return '';
   
   let normalized = term.toLowerCase()
-    // Заменяем украинские буквы на русские аналоги
-    .replace(/[є]/g, 'е')
+    .replace(/[єё]/g, 'е')
     .replace(/[ї]/g, 'и') 
     .replace(/[і]/g, 'и')
     .replace(/[ґ]/g, 'г')
-    // Заменяем русские буквы на украинские аналоги
-    .replace(/[ё]/g, 'е')
     .replace(/[ы]/g, 'и')
     .replace(/[э]/g, 'е')
-    // Удаляем мягкие и твердые знаки
     .replace(/[ъь]/g, '')
-    // Оставляем только буквы, цифры, дефисы, пробелы и апострофы
     .replace(/[^а-яa-z0-9\-\s']/g, '')
-    // Убираем множественные пробелы
     .replace(/\s+/g, ' ')
     .trim();
   
-  return normalized;
-}
-
-// Функция для транслитерации текста
-function transliterateText(text) {
-  const transliterationMap = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
-    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
-    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
-  };
+  // Исправляем опечатки
+  normalized = fixCommonTypos(normalized);
   
-  let result = '';
-  for (let char of text.toLowerCase()) {
-    result += transliterationMap[char] || char;
-  }
-  return result;
+  return normalized;
 }
 
 // Расширение поискового запроса синонимами
@@ -178,20 +191,165 @@ function expandSearchQuery(query) {
   words.forEach(word => {
     const normalizedWord = normalizeSearchTerm(word);
     
-    // Добавляем синонимы
     if (searchSynonyms[normalizedWord]) {
       expanded.push(...searchSynonyms[normalizedWord]);
     }
   });
   
-  // Удаляем дубликаты
   return [...new Set(expanded)].join(' ');
 }
 
-// Улучшенная функция для получения поисковых подсказок
-function getSearchSuggestions(query) {
+// Функция расчета релевантности
+function calculateRelevance(product, searchTerms) {
+  if (!product || !searchTerms) return 0;
+  
+  let score = 0;
+  const searchText = searchTerms.toLowerCase();
+  
+  // Приоритеты совпадений
+  if (product.title && product.title.toLowerCase().includes(searchText)) {
+    score += 100;
+    // Бонус за точное совпадение в начале названия
+    if (product.title.toLowerCase().startsWith(searchText)) score += 50;
+  }
+  
+  if (product.brand && product.brand.toLowerCase().includes(searchText)) score += 50;
+  if (product.category && product.category.toLowerCase().includes(searchText)) score += 30;
+  if (product.description && product.description.toLowerCase().includes(searchText)) score += 10;
+  
+  // Поиск по артикулам и кодам
+  if (product.sku && product.sku.toLowerCase().includes(searchText)) score += 80;
+  
+  // Бонусы за дополнительные параметры
+  if (product.isPopular) score += 20;
+  if (product.isNew) score += 15;
+  if (product.inStock) score += 10;
+  if (product.discount) score += 5;
+  
+  return score;
+}
+
+// Удаление дубликатов в результатах
+function removeDuplicateResults(results) {
+  const seen = new Set();
+  const uniqueResults = [];
+  
+  for (const product of results) {
+    const key = `${product.title}_${product.brand}_${product.price}_${product.sku || ''}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueResults.push(product);
+    }
+  }
+  
+  return uniqueResults;
+}
+
+// Улучшенная функция поиска с ранжированием
+function searchProductsEnhanced(searchTerm) {
+  if (!searchTerm || searchTerm.trim().length < 1) {
+    return products;
+  }
+  
+  const normalizedSearch = normalizeSearchTerm(searchTerm);
+  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
+  
+  if (searchWords.length === 0) {
+    return products;
+  }
+  
+  const expandedQuery = expandSearchQuery(normalizedSearch);
+  const expandedWords = expandedQuery.split(/\s+/).filter(word => word.length >= 1);
+  
+  let results = products.filter(product => {
+    if (!product.searchIndex) return false;
+    
+    // Ищем товары, которые содержат ВСЕ слова из запроса
+    const allWordsMatch = searchWords.every(word => 
+      product.searchIndex.includes(word)
+    );
+    
+    // Если не нашли по всем словам, ищем по расширенному запросу
+    if (!allWordsMatch && expandedWords.length > searchWords.length) {
+      return expandedWords.some(word => 
+        product.searchIndex.includes(word)
+      );
+    }
+    
+    return allWordsMatch;
+  });
+  
+  // Ограничение количества результатов
+  if (results.length > SEARCH_CONFIG.MAX_RESULTS) {
+    results = results.slice(0, SEARCH_CONFIG.MAX_RESULTS);
+  }
+  
+  // Ранжирование по релевантности
+  results.forEach(product => {
+    product.relevanceScore = calculateRelevance(product, searchTerm);
+  });
+  
+  // Сортировка по релевантности
+  results.sort((a, b) => {
+    if (b.relevanceScore !== a.relevanceScore) {
+      return b.relevanceScore - a.relevanceScore;
+    }
+    
+    // Вторичная сортировка
+    if (a.isPopular && !b.isPopular) return -1;
+    if (!a.isPopular && b.isPopular) return 1;
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+    
+    return 0;
+  });
+  
+  // Удаление дубликатов
+  results = removeDuplicateResults(results);
+  
+  return results;
+}
+
+// Основная функция поиска
+function searchProducts(searchTerm) {
+  if (!searchTerm || searchTerm.trim().length < 1) {
+    return products;
+  }
+  
+  return searchProductsEnhanced(searchTerm);
+}
+
+// Управление историей поиска
+function saveToSearchHistory(query) {
+  if (!query || query.trim().length < 2) return;
+  
+  const cleanQuery = query.trim();
+  const history = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+  const newHistory = [cleanQuery, ...history.filter(item => item !== cleanQuery)].slice(0, SEARCH_CONFIG.MAX_HISTORY);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
+}
+
+function getSearchHistory() {
+  return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+}
+
+function clearSearchHistory() {
+  localStorage.removeItem(SEARCH_HISTORY_KEY);
+}
+
+function removeFromSearchHistory(term) {
+  const history = getSearchHistory();
+  const newHistory = history.filter(item => item !== term);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
+}
+
+// Улучшенные подсказки с историей
+function getEnhancedSearchSuggestions(query) {
   try {
-    if (!query || query.length < 1) return [];
+    if (!query || query.length < 1) {
+      // Показываем историю поиска когда поле пустое
+      return getSearchHistorySuggestions();
+    }
     
     const normalizedQuery = normalizeSearchTerm(query);
     
@@ -202,18 +360,17 @@ function getSearchSuggestions(query) {
     const suggestions = [];
     const seen = new Set();
     
-    // Ограничиваем количество проверяемых товаров для производительности
     const maxProductsToCheck = Math.min(products.length, 200);
     
     for (let i = 0; i < maxProductsToCheck; i++) {
       const product = products[i];
       if (!product || typeof product !== 'object') continue;
       
-      // Проверяем только основные поля
       const fieldsToCheck = [
-        { field: 'title', type: 'Назва', icon: '📦', relevance: 10 },
+        { field: 'title', type: 'Назва', icon: '🔧', relevance: 10 },
         { field: 'brand', type: 'Бренд', icon: '🏷️', relevance: 8 },
-        { field: 'category', type: 'Категорія', icon: '📂', relevance: 6 }
+        { field: 'category', type: 'Категорія', icon: '📂', relevance: 6 },
+        { field: 'sku', type: 'Артикул', icon: '#️⃣', relevance: 9 }
       ];
       
       for (const { field, type, icon, relevance } of fieldsToCheck) {
@@ -234,48 +391,60 @@ function getSearchSuggestions(query) {
         }
       }
       
-      if (suggestions.length >= 5) break;
+      if (suggestions.length >= 8) break;
     }
     
-    // Сортируем по релевантности
+    // Добавляем быстрые действия если мало результатов
+    if (suggestions.length < 3) {
+      suggestions.push({
+        type: 'action',
+        icon: '🔍',
+        value: `Знайти "${query}"`,
+        action: 'search',
+        relevance: 100
+      });
+    }
+    
     suggestions.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     
-    // Обновляем кэш
-    if (searchCache.size > MAX_CACHE_SIZE) {
-      const firstKey = searchCache.keys().next().value;
-      searchCache.delete(firstKey);
+    // Очистка кэша
+    if (searchCache.size > SEARCH_CONFIG.MAX_CACHE_SIZE) {
+      const keys = Array.from(searchCache.keys()).slice(0, 20);
+      keys.forEach(key => searchCache.delete(key));
     }
     
-    const finalSuggestions = suggestions.slice(0, 5);
+    const finalSuggestions = suggestions.slice(0, 6);
     searchCache.set(normalizedQuery, finalSuggestions);
     return finalSuggestions;
   } catch (error) {
     console.error("Ошибка в поиске подсказок:", error);
-    return [];
+    return getFallbackSuggestions(query);
   }
 }
 
-// Упрощенная функция фильтрации товаров
-function searchProducts(searchTerm) {
-  if (!searchTerm || searchTerm.trim().length < 1) {
-    return products;
-  }
-  
-  const normalizedSearch = normalizeSearchTerm(searchTerm);
-  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
-  
-  if (searchWords.length === 0) {
-    return products;
-  }
-  
-  return products.filter(product => {
-    if (!product.searchIndex) return false;
-    
-    // Проверяем все слова запроса в searchIndex
-    return searchWords.every(word => 
-      product.searchIndex.includes(word)
-    );
-  });
+// Подсказки из истории поиска
+function getSearchHistorySuggestions() {
+  const history = getSearchHistory();
+  return history.slice(0, 5).map(term => ({
+    type: 'history',
+    icon: '🕒',
+    value: term,
+    action: 'search',
+    relevance: 100
+  }));
+}
+
+// Резервные подсказки при ошибке
+function getFallbackSuggestions(query) {
+  return [
+    {
+      type: 'action',
+      icon: '🔍',
+      value: `Знайти "${query}"`,
+      action: 'search',
+      relevance: 100
+    }
+  ];
 }
 
 // Функция для экранирования HTML
@@ -285,8 +454,195 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
+// Показать историю поиска
+function showSearchHistorySuggestions(isMobile = false) {
+  const history = getSearchHistory();
+  if (history.length === 0) return;
+  
+  const searchContainer = isMobile 
+    ? document.querySelector('.search-container-mobile') 
+    : document.querySelector('.search-container');
+  
+  if (!searchContainer) return;
+  
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  let suggestionsContainer = document.getElementById(suggestionsId);
+  
+  if (!suggestionsContainer) {
+    suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = suggestionsId;
+    suggestionsContainer.className = 'search-suggestions' + (isMobile ? ' mobile-suggestions' : '');
+    searchContainer.appendChild(suggestionsContainer);
+  }
+  
+  suggestionsContainer.innerHTML = '';
+  
+  history.slice(0, 5).forEach((term, index) => {
+    const div = document.createElement('div');
+    div.className = `search-suggestion ${index === 0 ? 'active' : ''}`;
+    div.innerHTML = `
+      <i class="fas fa-history"></i>
+      <span class="suggestion-text">${escapeHtml(term)}</span>
+      <span class="suggestion-type">Історія</span>
+      <button class="clear-history-btn" onclick="event.stopPropagation(); removeFromSearchHistory('${term}')">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    div.addEventListener('click', () => {
+      if (isMobile) {
+        document.getElementById('search-mobile').value = term;
+      } else {
+        document.getElementById('search').value = term;
+      }
+      currentFilters.search = term;
+      applyFilters();
+      hideSearchSuggestions(isMobile);
+    });
+    
+    suggestionsContainer.appendChild(div);
+  });
+  
+  // Кнопка очистки истории
+  const clearHistoryDiv = document.createElement('div');
+  clearHistoryDiv.className = 'search-suggestion suggestion-clear-history';
+  clearHistoryDiv.innerHTML = `
+    <i class="fas fa-trash"></i>
+    <span class="suggestion-text">Очистити історію пошуку</span>
+  `;
+  clearHistoryDiv.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSearchHistory();
+    hideSearchSuggestions(isMobile);
+    showNotification('Історію пошуку очищено');
+  });
+  suggestionsContainer.appendChild(clearHistoryDiv);
+  
+  suggestionsContainer.style.display = 'block';
+}
 
+// Функция показа подсказок
+function showSearchSuggestions(query, isMobile = false) {
+  if (!query || query.length < 1) {
+    showSearchHistorySuggestions(isMobile);
+    return;
+  }
+  
+  const suggestions = getEnhancedSearchSuggestions(query);
+  const searchContainer = isMobile 
+    ? document.querySelector('.search-container-mobile') 
+    : document.querySelector('.search-container');
+  
+  if (!searchContainer) return;
+  
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  let suggestionsContainer = document.getElementById(suggestionsId);
+  
+  if (!suggestionsContainer) {
+    suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = suggestionsId;
+    suggestionsContainer.className = 'search-suggestions' + (isMobile ? ' mobile-suggestions' : '');
+    searchContainer.appendChild(suggestionsContainer);
+  }
+  
+  if (suggestions.length > 0) {
+    suggestionsContainer.innerHTML = '';
+    
+    suggestions.forEach((suggestion, index) => {
+      const div = document.createElement('div');
+      div.className = `search-suggestion ${suggestion.type === 'action' ? 'suggestion-action' : ''} ${index === 0 ? 'active' : ''}`;
+      
+      if (suggestion.type === 'action') {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+        `;
+        
+        div.addEventListener('click', () => {
+          if (suggestion.action === 'search') {
+            const searchValue = suggestion.value.replace(/^Знайти "/, '').replace(/"$/, '');
+            if (isMobile) {
+              document.getElementById('search-mobile').value = searchValue;
+            } else {
+              document.getElementById('search').value = searchValue;
+            }
+            currentFilters.search = searchValue;
+            applyFilters();
+          }
+          hideSearchSuggestions(isMobile);
+        });
+      } else if (suggestion.type === 'history') {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+          <span class="suggestion-type">Історія</span>
+          <button class="clear-history-btn" onclick="event.stopPropagation(); removeFromSearchHistory('${suggestion.value}')">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        
+        div.addEventListener('click', () => {
+          if (isMobile) {
+            document.getElementById('search-mobile').value = suggestion.value;
+          } else {
+            document.getElementById('search').value = suggestion.value;
+          }
+          currentFilters.search = suggestion.value;
+          applyFilters();
+          hideSearchSuggestions(isMobile);
+        });
+      } else {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+          <span class="suggestion-type">${suggestion.type}</span>
+        `;
+        
+        div.addEventListener('click', () => {
+          if (isMobile) {
+            document.getElementById('search-mobile').value = suggestion.value;
+          } else {
+            document.getElementById('search').value = suggestion.value;
+          }
+          currentFilters.search = suggestion.value;
+          applyFilters();
+          hideSearchSuggestions(isMobile);
+          
+          if (suggestion.productId) {
+            showProductDetail(suggestion.productId);
+          }
+        });
+      }
+      
+      div.addEventListener('mouseenter', () => {
+        suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
+          s.classList.remove('active')
+        );
+        div.classList.add('active');
+      });
+      
+      suggestionsContainer.appendChild(div);
+    });
+    
+    suggestionsContainer.style.display = 'block';
+  } else {
+    suggestionsContainer.style.display = 'none';
+  }
+}
+
+// Функция для скрытия подсказок
+function hideSearchSuggestions(isMobile = false) {
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  const suggestionsContainer = document.getElementById(suggestionsId);
+  if (suggestionsContainer) {
+    suggestionsContainer.style.display = 'none';
+    suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
+      s.classList.remove('active')
+    );
+  }
+}
+
+// Настройка обработчиков поиска
 function setupSearchHandler() {
   const searchInput = document.getElementById('search');
   const searchMobileInput = document.getElementById('search-mobile');
@@ -301,14 +657,14 @@ function setupSearchHandler() {
       lastSearchValue = value;
       currentFilters.search = value;
       
-      if (value.length >= 1) {  // Изменено с 2 на 1 символ
+      if (value.length >= 1) {
         showSearchSuggestions(value, isMobile);
       } else {
-        hideSearchSuggestions(isMobile);
+        showSearchHistorySuggestions(isMobile);
       }
       
       applyFilters();
-    }, SEARCH_DELAY);
+    }, SEARCH_CONFIG.DEBOUNCE_DELAY);
   }
   
   // Обработчик для десктопного поиска
@@ -316,9 +672,15 @@ function setupSearchHandler() {
     searchInput.addEventListener('input', function() {
       const currentValue = this.value.trim();
       handleSearch(currentValue, false);
-      // Синхронизируем с мобильным полем
       if (searchMobileInput) {
         searchMobileInput.value = currentValue;
+      }
+    });
+    
+    // Обработчик фокуса - показываем историю
+    searchInput.addEventListener('focus', function() {
+      if (this.value === '') {
+        showSearchHistorySuggestions(false);
       }
     });
     
@@ -374,9 +736,14 @@ function setupSearchHandler() {
     searchMobileInput.addEventListener('input', function() {
       const currentValue = this.value.trim();
       handleSearch(currentValue, true);
-      // Синхронизируем с десктопным полем
       if (searchInput) {
         searchInput.value = currentValue;
+      }
+    });
+    
+    searchMobileInput.addEventListener('focus', function() {
+      if (this.value === '') {
+        showSearchHistorySuggestions(true);
       }
     });
     
@@ -405,7 +772,6 @@ function setupSearchHandler() {
     });
   }
   
-  // Добавьте обработчик для клика вне области поиска
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.search-container') && !e.target.closest('.search-container-mobile')) {
       hideSearchSuggestions(false);
@@ -414,178 +780,7 @@ function setupSearchHandler() {
   });
 }
 
-// Функция для сброса поиска
-function clearSearch() {
-  const searchInput = document.getElementById('search');
-  searchInput.value = '';
-  currentFilters.search = '';
-  hideSearchSuggestions();
-  applyFilters();
-  searchInput.focus();
-}
-
-// Улучшенная функция показа подсказок для десктопа и мобильных
-function showSearchSuggestions(query, isMobile = false) {
-  if (!query || query.length < 1) {
-    hideSearchSuggestions(isMobile);
-    return;
-  }
-  
-  const suggestions = getSearchSuggestions(query);
-  const searchContainer = isMobile 
-    ? document.querySelector('.search-container-mobile') 
-    : document.querySelector('.search-container');
-  
-  if (!searchContainer) return;
-  
-  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
-  let suggestionsContainer = document.getElementById(suggestionsId);
-  
-  if (!suggestionsContainer) {
-    suggestionsContainer = document.createElement('div');
-    suggestionsContainer.id = suggestionsId;
-    suggestionsContainer.className = 'search-suggestions' + (isMobile ? ' mobile-suggestions' : '');
-    searchContainer.appendChild(suggestionsContainer);
-  }
-  
-  if (suggestions.length > 0) {
-    suggestionsContainer.innerHTML = '';
-    
-    suggestions.forEach((suggestion, index) => {
-      const div = document.createElement('div');
-      div.className = `search-suggestion ${index === 0 ? 'active' : ''}`;
-      div.innerHTML = `
-        ${suggestion.icon} 
-        <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
-        <span class="suggestion-type">${suggestion.type}</span>
-      `;
-      
-      div.addEventListener('click', () => {
-        if (isMobile) {
-          document.getElementById('search-mobile').value = suggestion.value;
-        } else {
-          document.getElementById('search').value = suggestion.value;
-        }
-        currentFilters.search = suggestion.value;
-        applyFilters();
-        hideSearchSuggestions(isMobile);
-        
-        if (suggestion.productId) {
-          showProductDetail(suggestion.productId);
-        }
-      });
-      
-      div.addEventListener('mouseenter', () => {
-        suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
-          s.classList.remove('active')
-        );
-        div.classList.add('active');
-      });
-      
-      suggestionsContainer.appendChild(div);
-    });
-    
-    suggestionsContainer.style.display = 'block';
-  } else {
-    suggestionsContainer.style.display = 'none';
-  }
-}
-
-// Функция для скрытия подсказок
-function hideSearchSuggestions(isMobile = false) {
-  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
-  const suggestionsContainer = document.getElementById(suggestionsId);
-  if (suggestionsContainer) {
-    suggestionsContainer.style.display = 'none';
-    suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
-      s.classList.remove('active')
-    );
-  }
-}
-
-// Улучшенная предобработка товаров с весами для поиска
-function preprocessProducts(productsArray) {
-  return productsArray.map(product => {
-    if (!product || typeof product !== 'object') return product;
-    
-    // Создаем расширенный поисковый индекс с весами
-    const searchFields = [
-      product.title || '', product.title || '', product.title || '', // высокая важность (повторяем 3 раза)
-      product.brand || '', product.brand || '', // средняя важность (повторяем 2 раза)
-      product.category || '',
-      product.description || '',
-      product.specifications || '',
-      product.model || '',
-      product.sku || ''
-    ];
-    
-    // Нормализуем каждое поле отдельно
-    const normalizedFields = searchFields.map(field => 
-      normalizeSearchTerm(String(field))
-    );
-    
-    const searchIndex = normalizedFields.join(' ').toLowerCase();
-    
-    return {
-      ...product,
-      searchIndex,
-      title: product.title || 'Без названия',
-      brand: product.brand || '',
-      category: product.category || '',
-      description: product.description || '',
-      price: Number(product.price) || 0,
-      image: product.image || '',
-      inStock: product.inStock !== undefined ? product.inStock : true,
-      specifications: product.specifications || '',
-      model: product.model || '',
-      sku: product.sku || ''
-    };
-  });
-}
-
-// Улучшенная функция поиска с использованием синонимов
-function searchProductsEnhanced(searchTerm) {
-  if (!searchTerm || searchTerm.trim().length < 1) {
-    return products;
-  }
-  
-  const normalizedSearch = normalizeSearchTerm(searchTerm);
-  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
-  
-  if (searchWords.length === 0) {
-    return products;
-  }
-  
-  // Используем расширенный запрос с синонимами
-  const expandedQuery = expandSearchQuery(normalizedSearch);
-  const expandedWords = expandedQuery.split(/\s+/).filter(word => word.length >= 1);
-  
-  return products.filter(product => {
-    if (!product.searchIndex) return false;
-    
-    // Проверяем все исходные слова запроса в searchIndex
-    const allWordsMatch = searchWords.every(word => 
-      product.searchIndex.includes(word)
-    );
-    
-    // Если не все исходные слова найдены, проверяем расширенный запрос
-    if (!allWordsMatch && expandedWords.length > searchWords.length) {
-      return expandedWords.some(word => 
-        product.searchIndex.includes(word)
-      );
-    }
-    
-    return allWordsMatch;
-  });
-}
-
-// Заменяем оригинальную функцию поиска на улучшенную версию
-const originalSearchProducts = searchProducts;
-searchProducts = function(searchTerm) {
-  return searchProductsEnhanced(searchTerm);
-};
-
-// Добавляем CSS для улучшенных подсказок (десктоп и мобильные)
+// Добавление CSS для улучшенного поиска
 function addSearchStyles() {
   const style = document.createElement('style');
   style.textContent = `
@@ -658,36 +853,35 @@ function addSearchStyles() {
       border-radius: 4px;
     }
     
-    .search-loading {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6c757d;
+    .suggestion-action {
+      background-color: #f8f9fa;
+      font-weight: bold;
     }
     
-    .clear-search {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
+    .suggestion-clear-history {
+      border-top: 1px solid #eee;
+      color: #666;
+      font-size: 0.9em;
+    }
+    
+    .clear-history-btn {
       background: none;
       border: none;
-      color: #6c757d;
+      color: #999;
       cursor: pointer;
-      padding: 5px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-left: auto;
     }
     
-    .clear-search:hover {
-      color: #333;
+    .clear-history-btn:hover {
+      background: #f0f0f0;
+      color: #e74c3c;
     }
     
     @media (max-width: 768px) {
       .search-container {
         display: none;
-      }
-      .search-container-mobile {
-        display: block;
       }
     }
     
@@ -700,66 +894,13 @@ function addSearchStyles() {
   document.head.appendChild(style);
 }
 
-// Синхронизация поисковых полей при загрузке
-function syncSearchFieldsOnLoad() {
-  const searchDesktop = document.getElementById('search');
-  const searchMobile = document.getElementById('search-mobile');
-  
-  if (searchDesktop && searchMobile) {
-    // Синхронизация значений при загрузке
-    searchMobile.value = searchDesktop.value;
-    
-    // Обработчик очистки для мобильного поиска
-    searchMobile.addEventListener('input', function() {
-      if (this.value === '') {
-        currentFilters.search = '';
-        applyFilters();
-      }
-    });
-  }
+// Инициализация улучшенного поиска
+function initEnhancedSearch() {
+  addSearchStyles();
+  setupSearchHandler();
 }
 
-// Очистка таймера при закрытии страницы
-function cleanupSearch() {
-  clearTimeout(searchTimeout);
-  searchTimeout = null;
-}
-
-window.addEventListener('beforeunload', cleanupSearch);
-
-// Функция для оптимизации модальных окон на мобильных устройствах
-function optimizeModalForMobile() {
-  const modal = document.getElementById('modal');
-  const modalContent = document.querySelector('.modal-content');
-  
-  if (window.innerWidth <= 768) {
-    modal.classList.add('mobile-modal');
-    document.body.style.overflow = 'hidden';
-    
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-  }
-}
-
-// Функція для завантаження всіх товарів з JSON-файлів
-async function loadAllProducts() {
-  let allProducts = [];
-
-  for (const file of PRODUCT_FILES) {
-    try {
-      const response = await fetch(file);
-      const data = await response.json();
-      allProducts = allProducts.concat(data);
-    } catch (e) {
-      console.warn(`Не вдалося завантажити ${file}`, e);
-    }
-  }
-
-  return allProducts;
-}
+// ===== КОНЕЦ УЛУЧШЕННОЙ СИСТЕМЫ ПОИСКА =====
 
 let products = [];
 let cart = {};
@@ -924,11 +1065,62 @@ async function checkFilesAvailability() {
     });
 }
 
+// Улучшенная предобработка товаров
+function preprocessProducts(productsArray) {
+  console.log("🔧 Предобработка товаров для умного поиска...");
+  
+  const processedProducts = productsArray.map((product, index) => {
+    if (!product || typeof product !== 'object') return product;
+    
+    // Создаем уникальный ID если его нет
+    if (!product.id) {
+      product.id = `product_${Date.now()}_${index}`;
+    }
+    
+    const searchFields = [
+      product.title || '',
+      product.title || '',
+      product.title || '', // высокая важность (повторяем 3 раза)
+      product.brand || '',
+      product.brand || '', // средняя важность (повторяем 2 раза)
+      product.category || '',
+      product.description || '',
+      product.specifications || '',
+      product.model || '',
+      product.sku || ''
+    ];
+    
+    const normalizedFields = searchFields.map(field => 
+      normalizeSearchTerm(String(field || ''))
+    );
+    
+    const searchIndex = normalizedFields.join(' ').toLowerCase();
+    
+    return {
+      ...product,
+      searchIndex,
+      title: product.title || 'Без назви',
+      brand: product.brand || '',
+      category: product.category || '',
+      description: product.description || '',
+      price: Number(product.price) || 0,
+      image: product.image || '',
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      specifications: product.specifications || '',
+      model: product.model || '',
+      sku: product.sku || ''
+    };
+  });
+  
+  console.log(`✅ Обработано ${processedProducts.length} товаров`);
+  return processedProducts;
+}
+
 // Ініціалізація додатка
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
-  addSearchStyles();
+  initEnhancedSearch();
 
   // Показать скелетоны сразу при инициализации
   showEnhancedLoadingSkeleton();
@@ -996,9 +1188,6 @@ function initApp() {
   }
   
   document.getElementById("year").innerText = new Date().getFullYear();
-  
-  setupSearchHandler();
-  syncSearchFieldsOnLoad(); // Добавьте эту строку
   
   document.getElementById('category').addEventListener('change', function() {
     currentFilters.category = this.value;
@@ -1176,7 +1365,7 @@ function loadProducts() {
     })
     .catch((error) => {
       console.error("", error);
-      showNotification("", "error");
+      showNotification("", );
       isProductsLoading = false;
       
       const data = localStorage.getItem('products_backup');
@@ -3791,6 +3980,23 @@ function switchSource(source, element) {
     document.getElementById('products-title').textContent = titles[source] || 'Товари';
     
     applyFilters();
+}
+
+// Функция для оптимизации модальных окон на мобильных устройствах
+function optimizeModalForMobile() {
+  const modal = document.getElementById('modal');
+  const modalContent = document.querySelector('.modal-content');
+  
+  if (window.innerWidth <= 768) {
+    modal.classList.add('mobile-modal');
+    document.body.style.overflow = 'hidden';
+    
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
 }
 
 // Инициализация при загрузке страницы

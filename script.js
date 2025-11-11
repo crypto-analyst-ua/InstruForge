@@ -71,103 +71,561 @@ const categoryTranslations = {
     "Застосувати": "Застосувати"
 };
 
+// ===== УЛУЧШЕННАЯ СИСТЕМА ПОИСКА В СТИЛЕ МАРКЕТПЛЕЙСОВ =====
+
+// Константы для оптимизации поиска
+const SEARCH_CONFIG = {
+  MAX_RESULTS: 1000,
+  DEBOUNCE_DELAY: 150,
+  MAX_HISTORY: 10,
+  MAX_CACHE_SIZE: 200,
+  MIN_QUERY_LENGTH: 2
+};
+
+// Расширенный интеллектуальный словарь для инструментов и оборудования
+const TOOLS_SEARCH_KNOWLEDGE = {
+  // Категории и подкатегории
+  categories: {
+    'дрель': ['аккумуляторная', 'сетевая', 'ударная', 'безударная', 'миксер'],
+    'шуруповерт': ['аккумуляторный', 'сетевой', 'ударный', 'безударный'],
+    'болгарка': ['углошлифовальная', 'ушм', 'маленькая', 'большая'],
+    'перфоратор': ['дрель', 'отбойный', 'сетевой', 'аккумуляторный'],
+    'лобзик': ['электрический', 'ручной', 'аккумуляторный'],
+    'фрезер': ['ручной', 'стационарный', 'кромочный'],
+    'шлифмашина': ['ленточная', 'вибрационная', 'эксцентриковая'],
+    'насос': ['водяной', 'дренажный', 'погружной', 'поверхностный']
+  },
+  
+  // Бренды
+  brands: {
+    'bosch': ['бош', 'bosch professional', 'bosch green'],
+    'makita': ['макита', 'makita japan'],
+    'dewalt': ['дьюолт', 'dewalt professional'],
+    'hitachi': ['хитачи', 'hitachi japan'],
+    'stanley': ['стэнли', 'stanley tools'],
+    'metabo': ['метабо', 'metabo germany']
+  },
+  
+  // Типы инструментов
+  types: {
+    'аккумуляторный': ['беспроводной', 'батарейный', 'cordless'],
+    'сетевой': ['электрический', 'проводной', '220v'],
+    'профессиональный': ['pro', 'professional', 'промышленный'],
+    'бытовой': ['домашний', 'любительский', 'hobby']
+  }
+};
+
+// Умный поисковый индекс
+class SmartSearchIndex {
+  constructor() {
+    this.products = [];
+    this.index = new Map();
+    this.suggestionsCache = new Map();
+  }
+
+  // Индексирование товаров с учетом multiple fields
+  indexProducts(products) {
+    this.products = products;
+    this.index.clear();
+    
+    products.forEach((product, idx) => {
+      const searchableText = this.getSearchableText(product);
+      const words = this.tokenizeText(searchableText);
+      
+      words.forEach(word => {
+        if (!this.index.has(word)) {
+          this.index.set(word, new Set());
+        }
+        this.index.get(word).add(idx);
+      });
+    });
+    
+    console.log(`🔍 Проиндексировано ${products.length} товаров, ${this.index.size} уникальных слов`);
+  }
+
+  // Получение поискового текста из всех полей товара
+  getSearchableText(product) {
+    const fields = [
+      product.title,
+      product.brand,
+      product.category,
+      product.description,
+      product.specifications,
+      product.model,
+      product.sku,
+      product.article
+    ];
+    
+    return fields
+      .filter(Boolean)
+      .map(field => field.toLowerCase())
+      .join(' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Нормализация Unicode
+  }
+
+  // Токенизация текста с извлечением ключевых слов
+  tokenizeText(text) {
+    return text
+      .toLowerCase()
+      .split(/[^\wа-яёїієґ]+/gi)
+      .filter(word => word.length > 2)
+      .flatMap(word => this.expandWordVariants(word))
+      .filter(Boolean);
+  }
+
+  // Расширение вариантов слова (синонимы, транслитерация)
+  expandWordVariants(word) {
+    const variants = new Set([word]);
+    
+    // Транслитерация
+    const translit = this.transliterate(word);
+    if (translit !== word) variants.add(translit);
+    
+    // Синонимы из расширенного словаря
+    if (searchSynonyms[word]) {
+      searchSynonyms[word].forEach(synonym => variants.add(synonym));
+    }
+    
+    // Обратный поиск синонимов
+    Object.entries(searchSynonyms).forEach(([key, synonyms]) => {
+      if (synonyms.includes(word)) variants.add(key);
+    });
+    
+    return Array.from(variants);
+  }
+
+  // Транслитерация кириллицы
+  transliterate(text) {
+    const cyrillic = 'абвгґдеёжзийклмнопрстуфхцчшщъыьэюя';
+    const latin = 'abvhgdeejziyklmnoprstufkchtschtsyyeyuya';
+    
+    return text.split('').map(char => {
+      const index = cyrillic.indexOf(char);
+      return index >= 0 ? latin[index] : char;
+    }).join('');
+  }
+
+  // Основной поиск с ранжированием
+  search(query, options = {}) {
+    if (!query || query.length < SEARCH_CONFIG.MIN_QUERY_LENGTH) {
+      return this.products;
+    }
+
+    const tokens = this.tokenizeText(query);
+    const results = this.findProducts(tokens);
+    const rankedResults = this.rankResults(results, tokens, query);
+    
+    return rankedResults.slice(0, options.limit || SEARCH_CONFIG.MAX_RESULTS);
+  }
+
+  // Поиск товаров по токенам
+  findProducts(tokens) {
+    const productScores = new Map();
+    
+    tokens.forEach(token => {
+      if (this.index.has(token)) {
+        this.index.get(token).forEach(productIdx => {
+          const currentScore = productScores.get(productIdx) || 0;
+          productScores.set(productIdx, currentScore + 1);
+        });
+      }
+    });
+    
+    return Array.from(productScores.entries())
+      .filter(([_, score]) => score > 0)
+      .map(([idx, score]) => ({
+        product: this.products[idx],
+        score,
+        index: idx
+      }));
+  }
+
+  // Ранжирование результатов
+  rankResults(results, tokens, originalQuery) {
+    return results
+      .map(result => {
+        const relevance = this.calculateRelevance(result.product, tokens, originalQuery);
+        return {
+          ...result,
+          relevance: result.score + relevance
+        };
+      })
+      .sort((a, b) => b.relevance - a.relevance)
+      .map(item => item.product);
+  }
+
+  // Расчет релевантности с учетом различных факторов
+  calculateRelevance(product, tokens, originalQuery) {
+    let score = 0;
+    const searchText = this.getSearchableText(product);
+    const originalQueryLower = originalQuery.toLowerCase();
+
+    // Приоритеты полей
+    if (product.title?.toLowerCase().includes(originalQueryLower)) score += 100;
+    if (product.brand?.toLowerCase().includes(originalQueryLower)) score += 80;
+    if (product.category?.toLowerCase().includes(originalQueryLower)) score += 60;
+    if (product.sku?.toLowerCase().includes(originalQueryLower)) score += 90;
+
+    // Точное совпадение в начале названия
+    if (product.title?.toLowerCase().startsWith(originalQueryLower)) score += 50;
+
+    // Популярность и актуальность
+    if (product.isPopular) score += 30;
+    if (product.isNew) score += 25;
+    if (product.inStock) score += 20;
+    if (product.discount) score += 15;
+
+    return score;
+  }
+
+  // Получение умных подсказок
+  getSmartSuggestions(query, limit = 8) {
+    if (!query) return this.getPopularSearches(limit);
+    
+    const cacheKey = query.toLowerCase();
+    if (this.suggestionsCache.has(cacheKey)) {
+      return this.suggestionsCache.get(cacheKey);
+    }
+
+    const suggestions = new Set();
+    const tokens = this.tokenizeText(query);
+
+    // Поиск по брендам
+    this.products.forEach(product => {
+      if (product.brand?.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add({ type: 'brand', value: product.brand, count: 1 });
+      }
+    });
+
+    // Поиск по категориям
+    this.products.forEach(product => {
+      if (product.category?.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add({ type: 'category', value: product.category, count: 1 });
+      }
+    });
+
+    // Поиск по популярным запросам
+    tokens.forEach(token => {
+      if (this.index.has(token)) {
+        this.index.get(token).forEach(idx => {
+          const product = this.products[idx];
+          if (product.title?.toLowerCase().includes(query.toLowerCase())) {
+            suggestions.add({ 
+              type: 'product', 
+              value: product.title, 
+              productId: product.id,
+              count: 1 
+            });
+          }
+        });
+      }
+    });
+
+    const result = Array.from(suggestions)
+      .slice(0, limit)
+      .map(suggestion => ({
+        ...suggestion,
+        icon: this.getSuggestionIcon(suggestion.type)
+      }));
+
+    this.suggestionsCache.set(cacheKey, result);
+    return result;
+  }
+
+  getSuggestionIcon(type) {
+    const icons = {
+      brand: '🏷️',
+      category: '📁',
+      product: '🔧',
+      history: '🕒',
+      popular: '🔥'
+    };
+    return icons[type] || '🔍';
+  }
+
+  getPopularSearches(limit = 5) {
+    return [
+      { type: 'popular', value: 'дрель', icon: '🔥' },
+      { type: 'popular', value: 'шуруповерт', icon: '🔥' },
+      { type: 'popular', value: 'болгарка', icon: '🔥' },
+      { type: 'popular', value: 'перфоратор', icon: '🔥' },
+      { type: 'popular', value: 'насос', icon: '🔥' }
+    ].slice(0, limit);
+  }
+}
+
+// Менеджер поиска с улучшенным UX
+class SearchManager {
+  constructor() {
+    this.searchIndex = new SmartSearchIndex();
+    this.isInitialized = false;
+    this.searchHistory = this.loadSearchHistory();
+  }
+
+  init(products) {
+    this.searchIndex.indexProducts(products);
+    this.isInitialized = true;
+    console.log('🎯 Поисковый менеджер инициализирован');
+  }
+
+  // Основной поиск
+  search(query, options = {}) {
+    if (!this.isInitialized) {
+      console.warn('Поисковый индекс не инициализирован');
+      return [];
+    }
+
+    this.saveToHistory(query);
+    return this.searchIndex.search(query, options);
+  }
+
+  // Получение подсказок
+  getSuggestions(query, limit = 8) {
+    if (!this.isInitialized) return [];
+    return this.searchIndex.getSmartSuggestions(query, limit);
+  }
+
+  // Работа с историей поиска
+  loadSearchHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  saveSearchHistory() {
+    try {
+      localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(this.searchHistory));
+    } catch (error) {
+      console.error('Ошибка сохранения истории поиска:', error);
+    }
+  }
+
+  saveToHistory(query) {
+    if (!query || query.length < SEARCH_CONFIG.MIN_QUERY_LENGTH) return;
+    
+    const cleanQuery = query.trim();
+    this.searchHistory = [
+      cleanQuery,
+      ...this.searchHistory.filter(item => item !== cleanQuery)
+    ].slice(0, SEARCH_CONFIG.MAX_HISTORY);
+    
+    this.saveSearchHistory();
+  }
+
+  clearHistory() {
+    this.searchHistory = [];
+    this.saveSearchHistory();
+  }
+
+  removeFromHistory(query) {
+    this.searchHistory = this.searchHistory.filter(item => item !== query);
+    this.saveSearchHistory();
+  }
+
+  getHistory() {
+    return this.searchHistory.slice(0, 5);
+  }
+}
+
+// Аналитика поиска для улучшения качества
+class SearchAnalytics {
+  constructor() {
+    this.searches = [];
+    this.clicks = [];
+  }
+
+  trackSearch(query, resultsCount) {
+    this.searches.push({
+      query,
+      resultsCount,
+      timestamp: Date.now(),
+      hasResults: resultsCount > 0
+    });
+    
+    // Сохраняем аналитику в localStorage
+    this.saveAnalytics();
+  }
+
+  trackClick(query, productId, position) {
+    this.clicks.push({
+      query,
+      productId,
+      position,
+      timestamp: Date.now()
+    });
+    
+    this.saveAnalytics();
+  }
+
+  saveAnalytics() {
+    try {
+      const analytics = {
+        searches: this.searches.slice(-100), // Последние 100 записей
+        clicks: this.clicks.slice(-100),
+        updatedAt: Date.now()
+      };
+      
+      localStorage.setItem('search_analytics', JSON.stringify(analytics));
+    } catch (error) {
+      console.error('Ошибка сохранения аналитики:', error);
+    }
+  }
+
+  getPopularQueries(limit = 10) {
+    const queryCounts = {};
+    
+    this.searches.forEach(search => {
+      queryCounts[search.query] = (queryCounts[search.query] || 0) + 1;
+    });
+    
+    return Object.entries(queryCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, limit)
+      .map(([query]) => query);
+  }
+}
+
+// Глобальные экземпляры менеджера поиска и аналитики
+const searchManager = new SearchManager();
+const searchAnalytics = new SearchAnalytics();
+
+// Расширенный словарь опечаток и транслитерации для инструментов
+const searchTypos = {
+  // Русские опечатки
+  'дрель': ['дриль', 'дрель', 'дрелей', 'дрелю'],
+  'шуруповерт': ['шураповерт', 'шуруповерт', 'шуруповерта', 'шуруповертом'],
+  'болгарка': ['болгарка', 'болгарок', 'болгарку', 'болгаркой'],
+  'перфоратор': ['перфоратор', 'перфоратора', 'перфоратором', 'перфораторов'],
+  'лобзик': ['лобзик', 'лобзика', 'лобзиком', 'лобзиков'],
+  'фрезер': ['фрезер', 'фрезера', 'фрезером', 'фрезеров'],
+  'шлифмашина': ['шлифмашина', 'шлифмашин', 'шлифмашиной', 'шлифмашину'],
+  'насос': ['насос', 'насоса', 'насосом', 'насосов'],
+  'отвертка': ['отвертка', 'отвертки', 'отверткой', 'отвертку'],
+  'молоток': ['молоток', 'молотка', 'молотком', 'молотков'],
+  'пила': ['пила', 'пилы', 'пилой', 'пилу'],
+  'рубанок': ['рубанок', 'рубанка', 'рубанком', 'рубанков'],
+  'паяльник': ['паяльник', 'паяльника', 'паяльником', 'паяльников'],
+
+  // Украинские опечатки
+  'дриль': ['дрель', 'дриля', 'дрилем', 'дрилів'],
+  'шуруповерт': ['шуруповерт', 'шуруповерта', 'шуруповертом', 'шуруповертів'],
+  'болгарка': ['болгарка', 'болгарки', 'болгаркою', 'болгарок'],
+  'перфоратор': ['перфоратор', 'перфоратора', 'перфоратором', 'перфораторів'],
+  'лобзик': ['лобзик', 'лобзика', 'лобзиком', 'лобзиків'],
+  'фрезер': ['фрезер', 'фрезера', 'фрезером', 'фрезерів'],
+  'шліфмашина': ['шліфмашина', 'шліфмашин', 'шліфмашиною', 'шліфмашин'],
+  'насос': ['насос', 'насоса', 'насосом', 'насосів'],
+  'викрутка': ['викрутка', 'викрутки', 'викруткою', 'викруток'],
+  'молоток': ['молоток', 'молотка', 'молотком', 'молотків'],
+  'пила': ['пила', 'пили', 'пилою', 'пил'],
+  'рубанок': ['рубанок', 'рубанка', 'рубанком', 'рубанків'],
+  'паяльник': ['паяльник', 'паяльника', 'паяльником', 'паяльників'],
+
+  // Транслитерация
+  'drel': ['дрель', 'дриль'],
+  'shurupovert': ['шуруповерт', 'шуруповерт'],
+  'bolgarka': ['болгарка', 'болгарка'],
+  'perforator': ['перфоратор', 'перфоратор'],
+  'lobzik': ['лобзик', 'лобзик'],
+  'frez': ['фрезер', 'фрезер'],
+  'shlif': ['шлифмашина', 'шліфмашина'],
+  'nasos': ['насос', 'насос']
+};
+
+// Словарь синонимов для инструментов и оборудования
+const searchSynonyms = {
+  // Русские синонимы
+  'дрель': ['дрели', 'дрелей', 'сверлильный', 'сверлильная'],
+  'шуруповерт': ['шуруповерты', 'шуруповертов', 'винтоверт', 'винтоверты'],
+  'болгарка': ['ушм', 'углошлифовальная', 'углошлифовальные'],
+  'перфоратор': ['перфораторы', 'перфораторов', 'отбойный молоток'],
+  'лобзик': ['лобзики', 'лобзиков', 'электролобзик'],
+  'фрезер': ['фрезеры', 'фрезеров', 'фрезерный'],
+  'шлифмашина': ['шлифовальная', 'шлифовальные', 'шлифовщик'],
+  'насос': ['насосы', 'насосов', 'помпа', 'помпы'],
+  'отвертка': ['отвертки', 'отверток', 'шуруповерт'],
+  'молоток': ['молотки', 'молотков', 'кувалда', 'кувалды'],
+  'пила': ['пилы', 'пил', 'ножовка', 'ножовки'],
+  'рубанок': ['рубанки', 'рубанков', 'электрорубанок'],
+  'паяльник': ['паяльники', 'паяльников', 'паяльный'],
+  'аккумуляторный': ['беспроводной', 'батарейный', 'cordless'],
+  'сетевой': ['электрический', 'проводной', '220v'],
+  
+  // Украинские синонимы
+  'дриль': ['дрилі', 'дрилів', 'свердлильний', 'свердлильна'],
+  'шуруповерт': ['шуруповерти', 'шуруповертів', 'гвинтокрил', 'гвинтокрили'],
+  'болгарка': ['ушм', 'кутошлифувальна', 'кутошлифувальні'],
+  'перфоратор': ['перфоратори', 'перфораторів', 'відбійний молоток'],
+  'лобзик': ['лобзики', 'лобзиків', 'електролобзик'],
+  'фрезер': ['фрезери', 'фрезерів', 'фрезерний'],
+  'шліфмашина': ['шліфувальна', 'шліфувальні', 'шліфувальник'],
+  'насос': ['насоси', 'насосів', 'помпа', 'помпи'],
+  'викрутка': ['викрутки', 'викруток', 'шуруповерт'],
+  'молоток': ['молотки', 'молотків', 'кувалда', 'кувалди'],
+  'пила': ['пили', 'пил', 'ножівка', 'ножівки'],
+  'рубанок': ['рубанки', 'рубанків', 'електрорубанок'],
+  'паяльник': ['паяльники', 'паяльників', 'паяльний'],
+  'акумуляторний': ['бездротовий', 'батарейний', 'cordless'],
+  'мережевий': ['електричний', 'дротовий', '220v']
+};
+
+// Глобальные переменные для улучшенного поиска
+let searchIndexReady = false;
+let searchLoading = false;
+let searchTimeout = null;
+const searchCache = new Map();
+const MAX_CACHE_SIZE = 100;
+const MAX_SEARCH_RESULTS = 1000;
+const ENHANCED_DEBOUNCE_DELAY = 200;
+const SEARCH_HISTORY_KEY = "instruforge_search_history";
+const MAX_SEARCH_HISTORY = 10;
+
 // Функция для перевода категорий
 function translateCategory(category) {
     if (!category) return '';
     return categoryTranslations[category] || category;
 }
 
-// Додаємо змінні для покращеного пошуку
-let searchTimeout = null;
-const SEARCH_DELAY = 300;
-
-// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
-
-// Кэширование результатов поиска
-const searchCache = new Map();
-const MAX_CACHE_SIZE = 100;
-
-function clearSearchCache() {
-  searchCache.clear();
-}
-
-// Расширенный словарь синонимов для поиска
-const searchSynonyms = {
-  // Русские синонимы
-  'болгарка': ['ушм', 'углошлифовальная'],
-  'ушм': ['болгарка', 'углошлифовальная'],
-  'дрель': ['сверлильный', 'перфоратор'],
-  'шуруповерт': ['дрель', 'винтоверт'],
-  'шуруповёрт': ['дрель', 'винтоверт'],
-  'насос': ['помпа'],
-  'кран': ['вентиль', 'затвор'],
-  'отвертка': ['шуруповерт'],
-  'пила': ['ножовка', 'циркулярка'],
-  'молоток': ['кувалда'],
-  'перфоратор': ['дрель', 'отбойный'],
-  'лобзик': ['пила'],
-  'рубанок': ['строгальный'],
-  'фрезер': ['фрезерный'],
-  'шлифмашина': ['шлифовальный'],
-  'паяльник': ['паяльный'],
+// Функция исправления опечаток
+function fixCommonTypos(query) {
+  if (!query || query.length < 2) return query;
   
-  // Украинские синонимы
-  'болгарка': ['ушм', 'кутошлифувальна'],
-  'ушм': ['болгарка', 'кутошлифувальна'],
-  'дриль': ['свердлильний', 'перфоратор'],
-  'шуруповерт': ['дриль', 'гвинтокрил'],
-  'насос': ['помпа'],
-  'кран': ['вентиль', 'затвор'],
-  'викрутка': ['шуруповерт'],
-  'пила': ['ножівка', 'циркулярка'],
-  'молоток': ['кувалда'],
-  'перфоратор': ['дриль', 'відбійний'],
-  'лобзик': ['пила'],
-  'рубанок': ['стругальний'],
-  'фрезер': ['фрезерний'],
-  'шліфмашина': ['шліфувальний'],
-  'паяльник': ['паяльний']
-};
+  let fixedQuery = query.toLowerCase();
+  
+  // Исправляем опечатки
+  Object.entries(searchTypos).forEach(([correct, mistakes]) => {
+    mistakes.forEach(mistake => {
+      if (fixedQuery.includes(mistake)) {
+        fixedQuery = fixedQuery.replace(mistake, correct);
+      }
+    });
+  });
+  
+  return fixedQuery;
+}
 
 // Улучшенная нормализация текста
 function normalizeSearchTerm(term) {
   if (!term) return '';
   
   let normalized = term.toLowerCase()
-    // Заменяем украинские буквы на русские аналоги
-    .replace(/[є]/g, 'е')
+    .replace(/[єё]/g, 'е')
     .replace(/[ї]/g, 'и') 
     .replace(/[і]/g, 'и')
     .replace(/[ґ]/g, 'г')
-    // Заменяем русские буквы на украинские аналоги
-    .replace(/[ё]/g, 'е')
     .replace(/[ы]/g, 'и')
     .replace(/[э]/g, 'е')
-    // Удаляем мягкие и твердые знаки
     .replace(/[ъь]/g, '')
-    // Оставляем только буквы, цифры, дефисы, пробелы и апострофы
     .replace(/[^а-яa-z0-9\-\s']/g, '')
-    // Убираем множественные пробелы
     .replace(/\s+/g, ' ')
     .trim();
   
-  return normalized;
-}
-
-// Функция для транслитерации текста
-function transliterateText(text) {
-  const transliterationMap = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
-    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
-    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
-  };
+  // Исправляем опечатки
+  normalized = fixCommonTypos(normalized);
   
-  let result = '';
-  for (let char of text.toLowerCase()) {
-    result += transliterationMap[char] || char;
-  }
-  return result;
+  return normalized;
 }
 
 // Расширение поискового запроса синонимами
@@ -178,20 +636,187 @@ function expandSearchQuery(query) {
   words.forEach(word => {
     const normalizedWord = normalizeSearchTerm(word);
     
-    // Добавляем синонимы
     if (searchSynonyms[normalizedWord]) {
       expanded.push(...searchSynonyms[normalizedWord]);
     }
   });
   
-  // Удаляем дубликаты
   return [...new Set(expanded)].join(' ');
 }
 
-// Улучшенная функция для получения поисковых подсказок
-function getSearchSuggestions(query) {
+// Функция расчета релевантности
+function calculateRelevance(product, searchTerms) {
+  if (!product || !searchTerms) return 0;
+  
+  let score = 0;
+  const searchText = searchTerms.toLowerCase();
+  
+  // Приоритеты совпадений
+  if (product.title && product.title.toLowerCase().includes(searchText)) {
+    score += 100;
+    // Бонус за точное совпадение в начале названия
+    if (product.title.toLowerCase().startsWith(searchText)) score += 50;
+  }
+  
+  if (product.brand && product.brand.toLowerCase().includes(searchText)) score += 50;
+  if (product.category && product.category.toLowerCase().includes(searchText)) score += 30;
+  if (product.description && product.description.toLowerCase().includes(searchText)) score += 10;
+  
+  // Поиск по артикулам и кодам
+  if (product.sku && product.sku.toLowerCase().includes(searchText)) score += 80;
+  if (product.article && product.article.toLowerCase().includes(searchText)) score += 80;
+  
+  // Бонусы за дополнительные параметры
+  if (product.isPopular) score += 20;
+  if (product.isNew) score += 15;
+  if (product.inStock) score += 10;
+  if (product.discount) score += 5;
+  
+  return score;
+}
+
+// Улучшенная предобработка товаров
+function preprocessProducts(productsArray) {
+  console.log("🔧 Предобработка товаров для умного поиска...");
+  
+  const processedProducts = productsArray.map((product, index) => {
+    if (!product || typeof product !== 'object') return product;
+    
+    // Создаем уникальный ID если его нет
+    if (!product.id) {
+      product.id = `product_${Date.now()}_${index}`;
+    }
+    
+    const searchFields = [
+      product.title || '',
+      product.brand || '',
+      product.category || '',
+      product.description || '',
+      product.specifications || '',
+      product.model || '',
+      product.sku || '',
+      product.article || ''
+    ];
+    
+    const normalizedFields = searchFields.map(field => 
+      normalizeSearchTerm(String(field || ''))
+    );
+    
+    const searchIndex = normalizedFields.join(' ').toLowerCase();
+    
+    return {
+      ...product,
+      searchIndex,
+      title: product.title || 'Без назви',
+      brand: product.brand || '',
+      category: product.category || '',
+      description: product.description || '',
+      price: Number(product.price) || 0,
+      image: product.image || '',
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      specifications: product.specifications || '',
+      model: product.model || '',
+      sku: product.sku || '',
+      article: product.article || '',
+      // Добавляем новые поля для улучшенного поиска
+      rating: product.rating || 0,
+      reviewCount: product.reviewCount || 0
+    };
+  });
+  
+  console.log(`✅ Обработано ${processedProducts.length} товаров`);
+  return processedProducts;
+}
+
+// Управление историей поиска
+function saveToSearchHistory(query) {
+  if (!query || query.trim().length < 2) return;
+  
+  const cleanQuery = query.trim();
+  const history = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+  const newHistory = [cleanQuery, ...history.filter(item => item !== cleanQuery)].slice(0, MAX_SEARCH_HISTORY);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
+}
+
+function getSearchHistory() {
+  return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+}
+
+function clearSearchHistory() {
+  localStorage.removeItem(SEARCH_HISTORY_KEY);
+}
+
+function removeFromSearchHistory(term) {
+  const history = getSearchHistory();
+  const newHistory = history.filter(item => item !== term);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
+  
+  // Обновляем отображение
+  const searchInput = document.getElementById('search');
+  if (searchInput && searchInput.value === '') {
+    showSearchHistorySuggestions(false);
+  }
+  
+  const searchMobileInput = document.getElementById('search-mobile');
+  if (searchMobileInput && searchMobileInput.value === '') {
+    showSearchHistorySuggestions(true);
+  }
+}
+
+// Индикатор загрузки поиска
+function showSearchLoading(isMobile = false) {
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  const suggestionsContainer = document.getElementById(suggestionsId);
+  
+  if (suggestionsContainer) {
+    suggestionsContainer.innerHTML = '<div class="search-loading">🔍 Поиск...</div>';
+    suggestionsContainer.style.display = 'block';
+  }
+  
+  searchLoading = true;
+}
+
+function hideSearchLoading(isMobile = false) {
+  searchLoading = false;
+}
+
+// Аналитика поиска
+function trackSearchMetrics(query, resultsCount, selectedSuggestion = null) {
+  searchAnalytics.trackSearch(query, resultsCount);
+}
+
+// Безопасный поиск с обработкой ошибок
+function safeSearch(query) {
   try {
-    if (!query || query.length < 1) return [];
+    if (!query || typeof query !== 'string') {
+      return [];
+    }
+    
+    // Сохраняем в историю
+    saveToSearchHistory(query);
+    
+    // Трекинг метрик
+    const results = searchProductsEnhanced(query);
+    trackSearchMetrics(query, results.length);
+    
+    return results;
+  } catch (error) {
+    console.error('Search error:', error);
+    
+    // Fallback: простой поиск по заголовку
+    return products.filter(p => 
+      p.title?.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 50);
+  }
+}
+
+// Улучшенные подсказки с историей и действиями
+function getEnhancedSearchSuggestions(query) {
+  try {
+    if (!query || query.length < 1) {
+      // Показываем историю поиска когда поле пустое
+      return getSearchHistorySuggestions();
+    }
     
     const normalizedQuery = normalizeSearchTerm(query);
     
@@ -202,18 +827,17 @@ function getSearchSuggestions(query) {
     const suggestions = [];
     const seen = new Set();
     
-    // Ограничиваем количество проверяемых товаров для производительности
     const maxProductsToCheck = Math.min(products.length, 200);
     
     for (let i = 0; i < maxProductsToCheck; i++) {
       const product = products[i];
       if (!product || typeof product !== 'object') continue;
       
-      // Проверяем только основные поля
       const fieldsToCheck = [
-        { field: 'title', type: 'Назва', icon: '📦', relevance: 10 },
+        { field: 'title', type: 'Назва', icon: '🔧', relevance: 10 },
         { field: 'brand', type: 'Бренд', icon: '🏷️', relevance: 8 },
-        { field: 'category', type: 'Категорія', icon: '📂', relevance: 6 }
+        { field: 'category', type: 'Категорія', icon: '📂', relevance: 6 },
+        { field: 'sku', type: 'Артикул', icon: '#️⃣', relevance: 9 }
       ];
       
       for (const { field, type, icon, relevance } of fieldsToCheck) {
@@ -234,29 +858,85 @@ function getSearchSuggestions(query) {
         }
       }
       
-      if (suggestions.length >= 5) break;
+      if (suggestions.length >= 8) break;
     }
     
-    // Сортируем по релевантности
+    // Добавляем быстрые действия если мало результатов
+    if (suggestions.length < 3) {
+      suggestions.push({
+        type: 'action',
+        icon: '🔍',
+        value: `Знайти "${query}"`,
+        action: 'search',
+        relevance: 100
+      });
+    }
+    
     suggestions.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     
-    // Обновляем кэш
-    if (searchCache.size > MAX_CACHE_SIZE) {
-      const firstKey = searchCache.keys().next().value;
-      searchCache.delete(firstKey);
-    }
+    // Очистка кэша
+    cleanupSearchCache();
     
-    const finalSuggestions = suggestions.slice(0, 5);
+    const finalSuggestions = suggestions.slice(0, 6);
     searchCache.set(normalizedQuery, finalSuggestions);
     return finalSuggestions;
   } catch (error) {
     console.error("Ошибка в поиске подсказок:", error);
-    return [];
+    return getFallbackSuggestions(query);
   }
 }
 
-// Упрощенная функция фильтрации товаров
-function searchProducts(searchTerm) {
+// Подсказки из истории поиска
+function getSearchHistorySuggestions() {
+  const history = getSearchHistory();
+  return history.slice(0, 5).map(term => ({
+    type: 'history',
+    icon: '🕒',
+    value: term,
+    action: 'search',
+    relevance: 100
+  }));
+}
+
+// Резервные подсказки при ошибке
+function getFallbackSuggestions(query) {
+  return [
+    {
+      type: 'action',
+      icon: '🔍',
+      value: `Знайти "${query}"`,
+      action: 'search',
+      relevance: 100
+    }
+  ];
+}
+
+// Очистка кэша поиска
+function cleanupSearchCache() {
+  if (searchCache.size > MAX_CACHE_SIZE) {
+    const keys = Array.from(searchCache.keys()).slice(0, 20);
+    keys.forEach(key => searchCache.delete(key));
+  }
+}
+
+// Удаление дубликатов в результатах
+function removeDuplicateResults(results) {
+  const seen = new Set();
+  const uniqueResults = [];
+  
+  for (const product of results) {
+    const key = `${product.title}_${product.brand}_${product.price}_${product.sku || ''}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueResults.push(product);
+    }
+  }
+  
+  return uniqueResults;
+}
+
+// Улучшенная функция поиска с ранжированием
+function searchProductsEnhanced(searchTerm) {
   if (!searchTerm || searchTerm.trim().length < 1) {
     return products;
   }
@@ -268,14 +948,117 @@ function searchProducts(searchTerm) {
     return products;
   }
   
-  return products.filter(product => {
+  const expandedQuery = expandSearchQuery(normalizedSearch);
+  const expandedWords = expandedQuery.split(/\s+/).filter(word => word.length >= 1);
+  
+  let results = products.filter(product => {
     if (!product.searchIndex) return false;
     
-    // Проверяем все слова запроса в searchIndex
-    return searchWords.every(word => 
+    // Ищем товары, которые содержат ВСЕ слова из запроса
+    const allWordsMatch = searchWords.every(word => 
       product.searchIndex.includes(word)
     );
+    
+    // Если не нашли по всем словам, ищем по расширенному запросу
+    if (!allWordsMatch && expandedWords.length > searchWords.length) {
+      return expandedWords.some(word => 
+        product.searchIndex.includes(word)
+      );
+    }
+    
+    return allWordsMatch;
   });
+  
+  // Ограничение количества результатов
+  if (results.length > MAX_SEARCH_RESULTS) {
+    results = results.slice(0, MAX_SEARCH_RESULTS);
+  }
+  
+  // Ранжирование по релевантности
+  results.forEach(product => {
+    product.relevanceScore = calculateRelevance(product, searchTerm);
+  });
+  
+  // Сортировка по релевантности
+  results.sort((a, b) => {
+    if (b.relevanceScore !== a.relevanceScore) {
+      return b.relevanceScore - a.relevanceScore;
+    }
+    
+    // Вторичная сортировка
+    if (a.isPopular && !b.isPopular) return -1;
+    if (!a.isPopular && b.isPopular) return 1;
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+    
+    return 0;
+  });
+  
+  // Удаление дубликатов
+  results = removeDuplicateResults(results);
+  
+  return results;
+}
+
+// Основная функция поиска
+function searchProducts(searchTerm) {
+  return safeSearch(searchTerm);
+}
+
+// Голосовой поиск
+function setupVoiceSearch() {
+  const VoiceSearch = {
+    isSupported: false,
+    recognition: null,
+    
+    init() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        this.isSupported = true;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+        this.recognition.lang = 'uk-UA'; // Украинский язык по умолчанию
+        
+        this.recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          this.handleVoiceResult(transcript);
+        };
+        
+        this.recognition.onerror = (event) => {
+          console.error('Voice recognition error:', event.error);
+          showNotification('Помилка розпізнавання голосу', 'error');
+        };
+      }
+    },
+    
+    start() {
+      if (!this.isSupported) {
+        showNotification('Голосовий пошук не підтримується вашим браузером', 'warning');
+        return;
+      }
+      
+      try {
+        this.recognition.start();
+        showNotification('Слухаю... Говоріть now', 'info');
+      } catch (error) {
+        console.error('Error starting voice recognition:', error);
+      }
+    },
+    
+    handleVoiceResult(transcript) {
+      const searchInput = document.getElementById('search') || document.getElementById('search-mobile');
+      if (searchInput) {
+        searchInput.value = transcript;
+        currentFilters.search = transcript;
+        applyFilters();
+        showNotification(`Пошук за запитом: "${transcript}"`);
+      }
+    }
+  };
+  
+  VoiceSearch.init();
+  return VoiceSearch;
 }
 
 // Функция для экранирования HTML
@@ -285,153 +1068,81 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// ===== УЛУЧШЕННЫЕ ФУНКЦИИ ПОИСКА ДЛЯ ДЕСКТОПА И МОБИЛЬНЫХ =====
-
-function setupSearchHandler() {
-  const searchInput = document.getElementById('search');
-  const searchMobileInput = document.getElementById('search-mobile');
-  let lastSearchValue = '';
+// Показать историю поиска
+function showSearchHistorySuggestions(isMobile = false) {
+  const history = getSearchHistory();
+  if (history.length === 0) return;
   
-  function handleSearch(value, isMobile = false) {
-    if (value === lastSearchValue) return;
+  const searchContainer = isMobile 
+    ? document.querySelector('.search-container-mobile') 
+    : document.querySelector('.search-container');
+  
+  if (!searchContainer) return;
+  
+  const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
+  let suggestionsContainer = document.getElementById(suggestionsId);
+  
+  if (!suggestionsContainer) {
+    suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = suggestionsId;
+    suggestionsContainer.className = 'search-suggestions' + (isMobile ? ' mobile-suggestions' : '');
+    searchContainer.appendChild(suggestionsContainer);
+  }
+  
+  suggestionsContainer.innerHTML = '';
+  
+  history.slice(0, 5).forEach((term, index) => {
+    const div = document.createElement('div');
+    div.className = `search-suggestion ${index === 0 ? 'active' : ''}`;
+    div.innerHTML = `
+      <i class="fas fa-history"></i>
+      <span class="suggestion-text">${escapeHtml(term)}</span>
+      <span class="suggestion-type">Історія</span>
+      <button class="clear-history-btn" onclick="event.stopPropagation(); removeFromSearchHistory('${term}')">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
     
-    clearTimeout(searchTimeout);
-    
-    searchTimeout = setTimeout(() => {
-      lastSearchValue = value;
-      currentFilters.search = value;
-      
-      if (value.length >= 1) {  // Изменено с 2 на 1 символ
-        showSearchSuggestions(value, isMobile);
+    div.addEventListener('click', () => {
+      if (isMobile) {
+        document.getElementById('search-mobile').value = term;
       } else {
-        hideSearchSuggestions(isMobile);
+        document.getElementById('search').value = term;
       }
-      
+      currentFilters.search = term;
       applyFilters();
-    }, SEARCH_DELAY);
-  }
-  
-  // Обработчик для десктопного поиска
-  if (searchInput) {
-    searchInput.addEventListener('input', function() {
-      const currentValue = this.value.trim();
-      handleSearch(currentValue, false);
-      // Синхронизируем с мобильным полем
-      if (searchMobileInput) {
-        searchMobileInput.value = currentValue;
-      }
+      hideSearchSuggestions(isMobile);
     });
     
-    searchInput.addEventListener('keydown', function(e) {
-      const suggestionsContainer = document.getElementById('search-suggestions');
-      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
-      
-      const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
-      let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
-      
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          if (!activeSuggestion) {
-            suggestions[0]?.classList.add('active');
-          } else {
-            activeSuggestion.classList.remove('active');
-            const next = activeSuggestion.nextElementSibling || suggestions[0];
-            next.classList.add('active');
-          }
-          break;
-          
-        case 'ArrowUp':
-          e.preventDefault();
-          if (!activeSuggestion) {
-            suggestions[suggestions.length - 1]?.classList.add('active');
-          } else {
-            activeSuggestion.classList.remove('active');
-            const prev = activeSuggestion.previousElementSibling || suggestions[suggestions.length - 1];
-            prev.classList.add('active');
-          }
-          break;
-          
-        case 'Enter':
-          e.preventDefault();
-          if (activeSuggestion) {
-            activeSuggestion.click();
-          }
-          break;
-          
-        case 'Escape':
-          hideSearchSuggestions(false);
-          this.value = '';
-          currentFilters.search = '';
-          applyFilters();
-          break;
-      }
-    });
-  }
-  
-  // Обработчик для мобильного поиска
-  if (searchMobileInput) {
-    searchMobileInput.addEventListener('input', function() {
-      const currentValue = this.value.trim();
-      handleSearch(currentValue, true);
-      // Синхронизируем с десктопным полем
-      if (searchInput) {
-        searchInput.value = currentValue;
-      }
-    });
-    
-    searchMobileInput.addEventListener('keydown', function(e) {
-      const suggestionsContainer = document.getElementById('search-suggestions-mobile');
-      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
-      
-      const suggestions = suggestionsContainer.querySelectorAll('.search-suggestion');
-      let activeSuggestion = suggestionsContainer.querySelector('.search-suggestion.active');
-      
-      switch (e.key) {
-        case 'Enter':
-          e.preventDefault();
-          if (activeSuggestion) {
-            activeSuggestion.click();
-          }
-          break;
-          
-        case 'Escape':
-          hideSearchSuggestions(true);
-          this.value = '';
-          currentFilters.search = '';
-          applyFilters();
-          break;
-      }
-    });
-  }
-  
-  // Добавьте обработчик для клика вне области поиска
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.search-container') && !e.target.closest('.search-container-mobile')) {
-      hideSearchSuggestions(false);
-      hideSearchSuggestions(true);
-    }
+    suggestionsContainer.appendChild(div);
   });
+  
+  // Кнопка очистки истории
+  const clearHistoryDiv = document.createElement('div');
+  clearHistoryDiv.className = 'search-suggestion suggestion-clear-history';
+  clearHistoryDiv.innerHTML = `
+    <i class="fas fa-trash"></i>
+    <span class="suggestion-text">Очистити історію пошуку</span>
+  `;
+  clearHistoryDiv.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSearchHistory();
+    hideSearchSuggestions(isMobile);
+    showNotification('Історію пошуку очищено');
+  });
+  suggestionsContainer.appendChild(clearHistoryDiv);
+  
+  suggestionsContainer.style.display = 'block';
 }
 
-// Функция для сброса поиска
-function clearSearch() {
-  const searchInput = document.getElementById('search');
-  searchInput.value = '';
-  currentFilters.search = '';
-  hideSearchSuggestions();
-  applyFilters();
-  searchInput.focus();
-}
-
-// Улучшенная функция показа подсказок для десктопа и мобильных
+// Функция показа подсказок
 function showSearchSuggestions(query, isMobile = false) {
   if (!query || query.length < 1) {
-    hideSearchSuggestions(isMobile);
+    showSearchHistorySuggestions(isMobile);
     return;
   }
   
-  const suggestions = getSearchSuggestions(query);
+  const suggestions = getEnhancedSearchSuggestions(query);
   const searchContainer = isMobile 
     ? document.querySelector('.search-container-mobile') 
     : document.querySelector('.search-container');
@@ -453,34 +1164,69 @@ function showSearchSuggestions(query, isMobile = false) {
     
     suggestions.forEach((suggestion, index) => {
       const div = document.createElement('div');
-      div.className = `search-suggestion ${index === 0 ? 'active' : ''}`;
-      div.innerHTML = `
-        ${suggestion.icon} 
-        <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
-        <span class="suggestion-type">${suggestion.type}</span>
-      `;
+      div.className = `search-suggestion ${suggestion.type === 'action' ? 'suggestion-action' : ''} ${index === 0 ? 'active' : ''}`;
       
-      div.addEventListener('click', () => {
-        if (isMobile) {
-          document.getElementById('search-mobile').value = suggestion.value;
-        } else {
-          document.getElementById('search').value = suggestion.value;
-        }
-        currentFilters.search = suggestion.value;
-        applyFilters();
-        hideSearchSuggestions(isMobile);
+      if (suggestion.type === 'action') {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+        `;
         
-        if (suggestion.productId) {
-          showProductDetail(suggestion.productId);
-        }
-      });
-      
-      div.addEventListener('mouseenter', () => {
-        suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
-          s.classList.remove('active')
-        );
-        div.classList.add('active');
-      });
+        div.addEventListener('click', () => {
+          if (suggestion.action === 'search') {
+            const searchValue = suggestion.value.replace(/^Знайти "/, '').replace(/"$/, '');
+            if (isMobile) {
+              document.getElementById('search-mobile').value = searchValue;
+            } else {
+              document.getElementById('search').value = searchValue;
+            }
+            currentFilters.search = searchValue;
+            applyFilters();
+          }
+          hideSearchSuggestions(isMobile);
+        });
+      } else if (suggestion.type === 'history') {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+          <span class="suggestion-type">Історія</span>
+          <button class="clear-history-btn" onclick="event.stopPropagation(); removeFromSearchHistory('${suggestion.value}')">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        
+        div.addEventListener('click', () => {
+          if (isMobile) {
+            document.getElementById('search-mobile').value = suggestion.value;
+          } else {
+            document.getElementById('search').value = suggestion.value;
+          }
+          currentFilters.search = suggestion.value;
+          applyFilters();
+          hideSearchSuggestions(isMobile);
+        });
+      } else {
+        div.innerHTML = `
+          ${suggestion.icon} 
+          <span class="suggestion-text">${escapeHtml(suggestion.value)}</span>
+          <span class="suggestion-type">${suggestion.type}</span>
+        `;
+        
+        div.addEventListener('click', () => {
+          if (isMobile) {
+            document.getElementById('search-mobile').value = suggestion.value;
+          } else {
+            document.getElementById('search').value = suggestion.value;
+          }
+          currentFilters.search = suggestion.value;
+          applyFilters();
+          hideSearchSuggestions(isMobile);
+          
+          if (suggestion.productId) {
+            showProductDetail(suggestion.productId);
+          }
+        });
+      }
       
       suggestionsContainer.appendChild(div);
     });
@@ -497,95 +1243,189 @@ function hideSearchSuggestions(isMobile = false) {
   const suggestionsContainer = document.getElementById(suggestionsId);
   if (suggestionsContainer) {
     suggestionsContainer.style.display = 'none';
-    suggestionsContainer.querySelectorAll('.search-suggestion').forEach(s => 
-      s.classList.remove('active')
-    );
   }
 }
 
-// Улучшенная предобработка товаров с весами для поиска
-function preprocessProducts(productsArray) {
-  return productsArray.map(product => {
-    if (!product || typeof product !== 'object') return product;
-    
-    // Создаем расширенный поисковый индекс с весами
-    const searchFields = [
-      product.title || '', product.title || '', product.title || '', // высокая важность (повторяем 3 раза)
-      product.brand || '', product.brand || '', // средняя важность (повторяем 2 раза)
-      product.category || '',
-      product.description || '',
-      product.specifications || '',
-      product.model || '',
-      product.sku || ''
-    ];
-    
-    // Нормализуем каждое поле отдельно
-    const normalizedFields = searchFields.map(field => 
-      normalizeSearchTerm(String(field))
-    );
-    
-    const searchIndex = normalizedFields.join(' ').toLowerCase();
-    
-    return {
-      ...product,
-      searchIndex,
-      title: product.title || 'Без названия',
-      brand: product.brand || '',
-      category: product.category || '',
-      description: product.description || '',
-      price: Number(product.price) || 0,
-      image: product.image || '',
-      inStock: product.inStock !== undefined ? product.inStock : true,
-      specifications: product.specifications || '',
-      model: product.model || '',
-      sku: product.sku || ''
-    };
-  });
-}
-
-// Улучшенная функция поиска с использованием синонимов
-function searchProductsEnhanced(searchTerm) {
-  if (!searchTerm || searchTerm.trim().length < 1) {
-    return products;
-  }
-  
-  const normalizedSearch = normalizeSearchTerm(searchTerm);
-  const searchWords = normalizedSearch.split(/\s+/).filter(word => word.length >= 1);
-  
-  if (searchWords.length === 0) {
-    return products;
-  }
-  
-  // Используем расширенный запрос с синонимами
-  const expandedQuery = expandSearchQuery(normalizedSearch);
-  const expandedWords = expandedQuery.split(/\s+/).filter(word => word.length >= 1);
-  
-  return products.filter(product => {
-    if (!product.searchIndex) return false;
-    
-    // Проверяем все исходные слова запроса в searchIndex
-    const allWordsMatch = searchWords.every(word => 
-      product.searchIndex.includes(word)
-    );
-    
-    // Если не все исходные слова найдены, проверяем расширенный запрос
-    if (!allWordsMatch && expandedWords.length > searchWords.length) {
-      return expandedWords.some(word => 
-        product.searchIndex.includes(word)
-      );
+// Добавление кнопки голосового поиска
+function addVoiceSearchButton() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .voice-search-btn {
+      position: absolute;
+      right: 45px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
     }
     
-    return allWordsMatch;
+    .voice-search-btn:hover {
+      background: #f0f0f0;
+      color: #007bff;
+    }
+    
+    .voice-search-btn.listening {
+      color: #e74c3c;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: translateY(-50%) scale(1); }
+      50% { transform: translateY(-50%) scale(1.1); }
+      100% { transform: translateY(-50%) scale(1); }
+    }
+    
+    .search-loading {
+      padding: 10px;
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .suggestion-action {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    
+    .suggestion-clear-history {
+      border-top: 1px solid #eee;
+      color: #666;
+      font-size: 0.9em;
+    }
+    
+    .clear-history-btn {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-left: auto;
+    }
+    
+    .clear-history-btn:hover {
+      background: #f0f0f0;
+      color: #e74c3c;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Добавляем кнопки в поля поиска
+  const searchInput = document.getElementById('search');
+  const searchMobileInput = document.getElementById('search-mobile');
+  
+  [searchInput, searchMobileInput].forEach((input, index) => {
+    if (!input) return;
+    
+    const isMobile = index === 1;
+    const voiceBtn = document.createElement('button');
+    voiceBtn.type = 'button';
+    voiceBtn.className = 'voice-search-btn';
+    voiceBtn.innerHTML = '🎤';
+    voiceBtn.title = 'Голосовий пошук';
+    
+    voiceBtn.addEventListener('click', () => {
+      voiceBtn.classList.add('listening');
+      const voiceSearch = setupVoiceSearch();
+      voiceSearch.start();
+      
+      // Снимаем класс listening через 5 секунд
+      setTimeout(() => {
+        voiceBtn.classList.remove('listening');
+      }, 5000);
+    });
+    
+    input.parentNode.style.position = 'relative';
+    input.parentNode.appendChild(voiceBtn);
   });
 }
 
-// Заменяем оригинальную функцию поиска на улучшенную версию
-const originalSearchProducts = searchProducts;
-searchProducts = function(searchTerm) {
-  return searchProductsEnhanced(searchTerm);
-};
+// Настройка обработчиков поиска
+function setupSearchHandler() {
+  const searchInput = document.getElementById('search');
+  const searchMobileInput = document.getElementById('search-mobile');
+  let lastSearchValue = '';
+  
+  // Инициализация голосового поиска
+  const voiceSearch = setupVoiceSearch();
+  
+  // Добавляем кнопку голосового поиска
+  addVoiceSearchButton();
+  
+  function handleSearch(value, isMobile = false) {
+    if (value === lastSearchValue) return;
+    
+    clearTimeout(searchTimeout);
+    
+    // Показываем индикатор загрузки
+    if (value.length >= 1) {
+      showSearchLoading(isMobile);
+    }
+    
+    searchTimeout = setTimeout(() => {
+      lastSearchValue = value;
+      currentFilters.search = value;
+      
+      if (value.length >= 1) {
+        showSearchSuggestions(value, isMobile);
+      } else {
+        showSearchHistorySuggestions(isMobile);
+      }
+      
+      applyFilters();
+      hideSearchLoading(isMobile);
+    }, ENHANCED_DEBOUNCE_DELAY);
+  }
+  
+  // Обработчик для десктопного поиска
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const currentValue = this.value.trim();
+      handleSearch(currentValue, false);
+      if (searchMobileInput) {
+        searchMobileInput.value = currentValue;
+      }
+    });
+    
+    // Обработчик фокуса - показываем историю
+    searchInput.addEventListener('focus', function() {
+      if (this.value === '') {
+        showSearchHistorySuggestions(false);
+      }
+    });
+  }
+  
+  // Обработчик для мобильного поиска
+  if (searchMobileInput) {
+    searchMobileInput.addEventListener('input', function() {
+      const currentValue = this.value.trim();
+      handleSearch(currentValue, true);
+      if (searchInput) {
+        searchInput.value = currentValue;
+      }
+    });
+    
+    searchMobileInput.addEventListener('focus', function() {
+      if (this.value === '') {
+        showSearchHistorySuggestions(true);
+      }
+    });
+  }
+  
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-container') && !e.target.closest('.search-container-mobile')) {
+      hideSearchSuggestions(false);
+      hideSearchSuggestions(true);
+    }
+  });
+}
 
-// Добавляем CSS для улучшенных подсказок (десктоп и мобильные)
+// Добавление CSS для поиска
 function addSearchStyles() {
   const style = document.createElement('style');
   style.textContent = `
@@ -635,13 +1475,8 @@ function addSearchStyles() {
       transition: background-color 0.2s;
     }
     
-    .search-suggestion:hover,
-    .search-suggestion.active {
+    .search-suggestion:hover {
       background-color: #f8f9fa;
-    }
-    
-    .search-suggestion:last-child {
-      border-bottom: none;
     }
     
     .suggestion-text {
@@ -658,36 +1493,72 @@ function addSearchStyles() {
       border-radius: 4px;
     }
     
-    .search-loading {
+    .voice-search-btn {
       position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6c757d;
-    }
-    
-    .clear-search {
-      position: absolute;
-      right: 10px;
+      right: 45px;
       top: 50%;
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: #6c757d;
+      color: #666;
       cursor: pointer;
       padding: 5px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
     }
     
-    .clear-search:hover {
-      color: #333;
+    .voice-search-btn:hover {
+      background: #f0f0f0;
+      color: #007bff;
+    }
+    
+    .voice-search-btn.listening {
+      color: #e74c3c;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: translateY(-50%) scale(1); }
+      50% { transform: translateY(-50%) scale(1.1); }
+      100% { transform: translateY(-50%) scale(1); }
+    }
+    
+    .search-loading {
+      padding: 10px;
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .suggestion-action {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    
+    .suggestion-clear-history {
+      border-top: 1px solid #eee;
+      color: #666;
+      font-size: 0.9em;
+    }
+    
+    .clear-history-btn {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-left: auto;
+    }
+    
+    .clear-history-btn:hover {
+      background: #f0f0f0;
+      color: #e74c3c;
     }
     
     @media (max-width: 768px) {
       .search-container {
         display: none;
-      }
-      .search-container-mobile {
-        display: block;
       }
     }
     
@@ -700,67 +1571,22 @@ function addSearchStyles() {
   document.head.appendChild(style);
 }
 
-// Синхронизация поисковых полей при загрузке
-function syncSearchFieldsOnLoad() {
-  const searchDesktop = document.getElementById('search');
-  const searchMobile = document.getElementById('search-mobile');
+// Инициализация улучшенного поиска
+function initEnhancedSearch() {
+  addSearchStyles();
+  setupSearchHandler();
   
-  if (searchDesktop && searchMobile) {
-    // Синхронизация значений при загрузке
-    searchMobile.value = searchDesktop.value;
-    
-    // Обработчик очистки для мобильного поиска
-    searchMobile.addEventListener('input', function() {
-      if (this.value === '') {
-        currentFilters.search = '';
-        applyFilters();
-      }
-    });
+  // Гарантируем предобработку товаров
+  if (products.length > 0 && !searchIndexReady) {
+    products = preprocessProducts(products);
+    searchManager.init(products);
+    searchIndexReady = true;
   }
 }
 
-// Очистка таймера при закрытии страницы
-function cleanupSearch() {
-  clearTimeout(searchTimeout);
-  searchTimeout = null;
-}
+// ===== КОНЕЦ УЛУЧШЕННОЙ СИСТЕМЫ ПОИСКА =====
 
-window.addEventListener('beforeunload', cleanupSearch);
-
-// Функция для оптимизации модальных окон на мобильных устройствах
-function optimizeModalForMobile() {
-  const modal = document.getElementById('modal');
-  const modalContent = document.querySelector('.modal-content');
-  
-  if (window.innerWidth <= 768) {
-    modal.classList.add('mobile-modal');
-    document.body.style.overflow = 'hidden';
-    
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-  }
-}
-
-// Функція для завантаження всіх товарів з JSON-файлів
-async function loadAllProducts() {
-  let allProducts = [];
-
-  for (const file of PRODUCT_FILES) {
-    try {
-      const response = await fetch(file);
-      const data = await response.json();
-      allProducts = allProducts.concat(data);
-    } catch (e) {
-      console.warn(`Не вдалося завантажити ${file}`, e);
-    }
-  }
-
-  return allProducts;
-}
-
+// ОСНОВНЫЕ ПЕРЕМЕННЫЕ ПРИЛОЖЕНИЯ
 let products = [];
 let cart = {};
 let favorites = {};
@@ -928,7 +1754,8 @@ async function checkFilesAvailability() {
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
-  addSearchStyles();
+  // Инициализация улучшенного поиска
+  initEnhancedSearch();
 
   // Показать скелетоны сразу при инициализации
   showEnhancedLoadingSkeleton();
@@ -960,6 +1787,11 @@ function initApp() {
       .then(jsonProducts => {
         products = preprocessProducts(jsonProducts);
         window.currentProducts = products;
+        
+        // Инициализация поискового менеджера после загрузки товаров
+        searchManager.init(products);
+        searchIndexReady = true;
+        
         updateCartCount();
         renderProducts();
         renderFeaturedProducts();
@@ -996,9 +1828,6 @@ function initApp() {
   }
   
   document.getElementById("year").innerText = new Date().getFullYear();
-  
-  setupSearchHandler();
-  syncSearchFieldsOnLoad(); // Добавьте эту строку
   
   document.getElementById('category').addEventListener('change', function() {
     currentFilters.category = this.value;
@@ -1049,6 +1878,8 @@ function initApp() {
     document.getElementById('mobile-sort').value = document.getElementById('sort').value;
   }, 1000);
 }
+
+// Остальные функции приложения остаются без изменений...
 
 // Функции для мобильных фильтров
 function toggleMobileFilters() {
@@ -1176,7 +2007,7 @@ function loadProducts() {
     })
     .catch((error) => {
       console.error("", error);
-      showNotification("", "error");
+      showNotification("");
       isProductsLoading = false;
       
       const data = localStorage.getItem('products_backup');
@@ -3780,12 +4611,12 @@ function switchSource(source, element) {
     
     const titles = {
         'all': 'Всі товари',
-        'products1.json': 'Інструменти',
-        'products2.json': 'Насоси та сантехніка',
-        'products3.json': 'Кріплення та витратні матеріали',
-        'products4.json': 'Електроінструменти',
-        'products5.json': 'Спеціальні товари',
-        'products6.json': 'Швидкий ремонт'
+        'products1.json': 'Обладнання та інструменти',
+        'products2.json': 'Миючі засоби для техніки та дому',
+        'products3.json': 'Маслобаза для техніки та обладнання',
+        'products4.json': 'Дрібниці для дому',
+        'products5.json': 'Речі на кожен день',
+        'products6.json': 'Матеріали для швидкого ремонту'
     };
     
     document.getElementById('products-title').textContent = titles[source] || 'Товари';
@@ -3793,12 +4624,88 @@ function switchSource(source, element) {
     applyFilters();
 }
 
+// Функция для оптимизации модальных окон на мобильных устройствах
+function optimizeModalForMobile() {
+  const modal = document.getElementById('modal');
+  const modalContent = document.querySelector('.modal-content');
+  
+  if (window.innerWidth <= 768) {
+    modal.classList.add('mobile-modal');
+    document.body.style.overflow = 'hidden';
+    
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+}
+
+// Функция для обновления заголовка страницы при загрузке
+function updatePageTitle() {
+  const category = currentFilters.category;
+  const search = currentFilters.search;
+  
+  let title = 'InstruForge - Інструменти та обладнання';
+  
+  if (search) {
+    title = `Пошук: "${search}" - InstruForge`;
+  } else if (category) {
+    title = `${translateCategory(category)} - InstruForge`;
+  } else if (showingFavorites) {
+    title = 'Обрані товари - InstruForge';
+  }
+  
+  document.title = title;
+}
+
+// Обновляем заголовок при применении фильтров
+const originalApplyFilters = applyFilters;
+applyFilters = function() {
+  originalApplyFilters();
+  updatePageTitle();
+};
+
+// Обновляем заголовок при переключении в избранное
+const originalToggleFavorites = toggleFavorites;
+toggleFavorites = function() {
+  originalToggleFavorites();
+  updatePageTitle();
+};
+
+// Функция открытия модального окна с правилами магазина
+function openRules() {
+    const modal = document.getElementById("rules-modal");
+    modal.classList.add("active");
+    document.body.style.overflow = 'hidden';
+}
+
+// Функция закрытия модального окна с правилами
+function closeRulesModal() {
+    const modal = document.getElementById("rules-modal");
+    modal.classList.remove("active");
+    document.body.style.overflow = '';
+}
+
+// Закрытие модального окна правил при клике вне контента
+document.addEventListener('click', function(e) {
+    const rulesModal = document.getElementById("rules-modal");
+    if (e.target === rulesModal) {
+        closeRulesModal();
+    }
+});
+
+// Закрытие модального окна правил по ESC
+document.addEventListener('keydown', function(e) {
+    const rulesModal = document.getElementById("rules-modal");
+    if (e.key === 'Escape' && rulesModal.classList.contains('active')) {
+        closeRulesModal();
+    }
+});
+
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
-  
-  // Инициализация EmailJS
-  emailjs.init(EMAILJS_USER_ID);
   
   // Добавляем обработчики событий для мобильного меню
   document.getElementById('mobile-menu-btn').addEventListener('click', function() {
@@ -3873,66 +4780,4 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
   }
-});
-
-// Добавляем функцию для обновления заголовка страницы при загрузке
-function updatePageTitle() {
-  const category = currentFilters.category;
-  const search = currentFilters.search;
-  
-  let title = 'InstruForge - Інструменти та обладнання';
-  
-  if (search) {
-    title = `Пошук: "${search}" - InstruForge`;
-  } else if (category) {
-    title = `${translateCategory(category)} - InstruForge`;
-  } else if (showingFavorites) {
-    title = 'Обрані товари - InstruForge';
-  }
-  
-  document.title = title;
-}
-
-// Обновляем заголовок при применении фильтров
-const originalApplyFilters = applyFilters;
-applyFilters = function() {
-  originalApplyFilters();
-  updatePageTitle();
-};
-
-// Обновляем заголовок при переключении в избранное
-const originalToggleFavorites = toggleFavorites;
-toggleFavorites = function() {
-  originalToggleFavorites();
-  updatePageTitle();
-};
-
-// Функция открытия модального окна с правилами магазина
-function openRules() {
-    const modal = document.getElementById("rules-modal");
-    modal.classList.add("active");
-    document.body.style.overflow = 'hidden';
-}
-
-// Функция закрытия модального окна с правилами
-function closeRulesModal() {
-    const modal = document.getElementById("rules-modal");
-    modal.classList.remove("active");
-    document.body.style.overflow = '';
-}
-
-// Закрытие модального окна правил при клике вне контента
-document.addEventListener('click', function(e) {
-    const rulesModal = document.getElementById("rules-modal");
-    if (e.target === rulesModal) {
-        closeRulesModal();
-    }
-});
-
-// Закрытие модального окна правил по ESC
-document.addEventListener('keydown', function(e) {
-    const rulesModal = document.getElementById("rules-modal");
-    if (e.key === 'Escape' && rulesModal.classList.contains('active')) {
-        closeRulesModal();
-    }
 });

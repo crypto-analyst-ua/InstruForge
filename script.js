@@ -138,6 +138,10 @@ const searchCache = new Map();
 let searchLoading = false;
 const SEARCH_HISTORY_KEY = "instruforge_search_history";
 
+// Переменные для аудио-поиска
+let recognition = null;
+let isListening = false;
+
 // Функція для перевода категорий
 function translateCategory(category) {
     if (!category) return '';
@@ -335,6 +339,11 @@ function getSearchHistory() {
 
 function clearSearchHistory() {
   localStorage.removeItem(SEARCH_HISTORY_KEY);
+  showNotification('Історію пошуку очищено');
+  
+  // Обновляем отображение подсказок, если они открыты
+  hideSearchSuggestions(false);
+  hideSearchSuggestions(true);
 }
 
 function removeFromSearchHistory(term) {
@@ -457,7 +466,6 @@ function escapeHtml(text) {
 // Показать историю поиска
 function showSearchHistorySuggestions(isMobile = false) {
   const history = getSearchHistory();
-  if (history.length === 0) return;
   
   const searchContainer = isMobile 
     ? document.querySelector('.search-container-mobile') 
@@ -476,6 +484,31 @@ function showSearchHistorySuggestions(isMobile = false) {
   }
   
   suggestionsContainer.innerHTML = '';
+  
+  // Добавляем заголовок истории поиска
+  if (history.length > 0) {
+    const historyHeader = document.createElement('div');
+    historyHeader.className = 'search-suggestion-header';
+    historyHeader.innerHTML = `
+      <span>Історія пошуку</span>
+      <button class="clear-all-history-btn" onclick="event.stopPropagation(); clearSearchHistory()">
+        <i class="fas fa-trash"></i> Очистити все
+      </button>
+    `;
+    suggestionsContainer.appendChild(historyHeader);
+  }
+  
+  if (history.length === 0) {
+    const emptyHistory = document.createElement('div');
+    emptyHistory.className = 'search-suggestion';
+    emptyHistory.innerHTML = `
+      <i class="fas fa-history"></i>
+      <span class="suggestion-text">Історія пошуку порожня</span>
+    `;
+    suggestionsContainer.appendChild(emptyHistory);
+    suggestionsContainer.style.display = 'block';
+    return;
+  }
   
   history.slice(0, 5).forEach((term, index) => {
     const div = document.createElement('div');
@@ -502,21 +535,6 @@ function showSearchHistorySuggestions(isMobile = false) {
     
     suggestionsContainer.appendChild(div);
   });
-  
-  // Кнопка очистки истории
-  const clearHistoryDiv = document.createElement('div');
-  clearHistoryDiv.className = 'search-suggestion suggestion-clear-history';
-  clearHistoryDiv.innerHTML = `
-    <i class="fas fa-trash"></i>
-    <span class="suggestion-text">Очистити історію пошуку</span>
-  `;
-  clearHistoryDiv.addEventListener('click', (e) => {
-    e.stopPropagation();
-    clearSearchHistory();
-    hideSearchSuggestions(isMobile);
-    showNotification('Історію пошуку очищено');
-  });
-  suggestionsContainer.appendChild(clearHistoryDiv);
   
   suggestionsContainer.style.display = 'block';
 }
@@ -642,6 +660,159 @@ function hideSearchSuggestions(isMobile = false) {
   }
 }
 
+// ===== АУДИО ПОИСК =====
+
+// Инициализация аудио поиска
+function initVoiceSearch() {
+  // Проверяем поддержку браузером
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    console.log('Браузер не поддерживает распознавание речи');
+    return;
+  }
+
+  // Создаем объект распознавания речи
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  
+  // Настройки распознавания
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'uk-UA'; // Украинский язык
+
+  // Обработчики событий
+  recognition.onstart = function() {
+    isListening = true;
+    updateVoiceSearchUI(true);
+    showNotification('Слухаю... Говоріть now', 'info');
+  };
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    
+    // Вставляем результат в поле поиска
+    const searchInput = document.getElementById('search');
+    const searchMobileInput = document.getElementById('search-mobile');
+    
+    if (searchInput) {
+      searchInput.value = transcript;
+      searchInput.dispatchEvent(new Event('input'));
+    }
+    
+    if (searchMobileInput) {
+      searchMobileInput.value = transcript;
+      searchMobileInput.dispatchEvent(new Event('input'));
+    }
+    
+    // Сохраняем в историю поиска
+    saveToSearchHistory(transcript);
+    
+    showNotification(`Знайдено за запитом: "${transcript}"`, 'success');
+  };
+
+  recognition.onerror = function(event) {
+    isListening = false;
+    updateVoiceSearchUI(false);
+    
+    let errorMessage = 'Помилка розпізнавання мови';
+    switch (event.error) {
+      case 'no-speech':
+        errorMessage = 'Мова не розпізнана. Спробуйте ще раз.';
+        break;
+      case 'audio-capture':
+        errorMessage = 'Мікрофон не знайдено або відсутній дозвіл.';
+        break;
+      case 'not-allowed':
+        errorMessage = 'Дозвіл на використання мікрофона не надано.';
+        break;
+      default:
+        errorMessage = `Помилка: ${event.error}`;
+    }
+    
+    showNotification(errorMessage, 'error');
+  };
+
+  recognition.onend = function() {
+    isListening = false;
+    updateVoiceSearchUI(false);
+  };
+}
+
+// Функция для запуска/остановки аудио поиска
+function toggleVoiceSearch(isMobile = false) {
+  if (!recognition) {
+    showNotification('Аудіопошук не підтримується вашим браузером', 'error');
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+    isListening = false;
+    updateVoiceSearchUI(false);
+    showNotification('Аудіопошук зупинено', 'info');
+  } else {
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error('Ошибка запуска распознавания:', error);
+      showNotification('Помилка запуску аудіопошуку', 'error');
+    }
+  }
+}
+
+// Обновление UI для аудио поиска
+function updateVoiceSearchUI(listening) {
+  const voiceButtons = document.querySelectorAll('.voice-search-btn');
+  
+  voiceButtons.forEach(btn => {
+    if (listening) {
+      btn.classList.add('listening');
+      btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+      btn.title = 'Зупинити аудіопошук';
+    } else {
+      btn.classList.remove('listening');
+      btn.innerHTML = '<i class="fas fa-microphone"></i>';
+      btn.title = 'Голосовий пошук';
+    }
+  });
+}
+
+// Добавление кнопок аудио поиска в UI
+function addVoiceSearchButtons() {
+  // Для десктопной версии
+  const searchContainer = document.querySelector('.search-container');
+  if (searchContainer) {
+    const voiceBtn = document.createElement('button');
+    voiceBtn.type = 'button';
+    voiceBtn.className = 'voice-search-btn';
+    voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+    voiceBtn.title = 'Голосовий пошук';
+    voiceBtn.onclick = () => toggleVoiceSearch(false);
+    
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+      searchInput.parentNode.insertBefore(voiceBtn, searchInput.nextSibling);
+    }
+  }
+
+  // Для мобильной версии
+  const searchMobileContainer = document.querySelector('.search-container-mobile');
+  if (searchMobileContainer) {
+    const voiceBtnMobile = document.createElement('button');
+    voiceBtnMobile.type = 'button';
+    voiceBtnMobile.className = 'voice-search-btn mobile';
+    voiceBtnMobile.innerHTML = '<i class="fas fa-microphone"></i>';
+    voiceBtnMobile.title = 'Голосовий пошук';
+    voiceBtnMobile.onclick = () => toggleVoiceSearch(true);
+    
+    const searchMobileInput = document.getElementById('search-mobile');
+    if (searchMobileInput) {
+      searchMobileInput.parentNode.insertBefore(voiceBtnMobile, searchMobileInput.nextSibling);
+    }
+  }
+}
+
+// ===== КОНЕЦ АУДИО ПОИСКА =====
+
 // Настройка обработчиков поиска
 function setupSearchHandler() {
   const searchInput = document.getElementById('search');
@@ -718,6 +889,9 @@ function setupSearchHandler() {
           e.preventDefault();
           if (activeSuggestion) {
             activeSuggestion.click();
+          } else {
+            // Сохраняем поиск в историю при нажатии Enter
+            saveToSearchHistory(this.value);
           }
           break;
           
@@ -759,6 +933,9 @@ function setupSearchHandler() {
           e.preventDefault();
           if (activeSuggestion) {
             activeSuggestion.click();
+          } else {
+            // Сохраняем поиск в историю при нажатии Enter
+            saveToSearchHistory(this.value);
           }
           break;
           
@@ -879,14 +1056,97 @@ function addSearchStyles() {
       color: #e74c3c;
     }
     
+    .search-suggestion-header {
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.8em;
+      font-weight: 600;
+      color: #6c757d;
+    }
+    
+    .clear-all-history-btn {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 0.75em;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    
+    .clear-all-history-btn:hover {
+      background: #f8d7da;
+    }
+    
+    /* Стили для аудио поиска */
+    .voice-search-btn {
+      position: absolute;
+      right: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+    
+    .voice-search-btn:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .voice-search-btn.listening {
+      background: #e74c3c;
+      color: white;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .voice-search-btn.mobile {
+      right: 40px;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+      }
+    }
+    
+    /* Адаптация полей поиска под кнопки */
+    .search-container input,
+    .search-container-mobile input {
+      padding-right: 80px !important;
+    }
+    
     @media (max-width: 768px) {
       .search-container {
+        display: none;
+      }
+      
+      .voice-search-btn:not(.mobile) {
         display: none;
       }
     }
     
     @media (min-width: 769px) {
       .search-container-mobile {
+        display: none;
+      }
+      
+      .voice-search-btn.mobile {
         display: none;
       }
     }
@@ -898,6 +1158,8 @@ function addSearchStyles() {
 function initEnhancedSearch() {
   addSearchStyles();
   setupSearchHandler();
+  initVoiceSearch();
+  addVoiceSearchButtons();
 }
 
 // ===== КОНЕЦ УЛУЧШЕННОЙ СИСТЕМЫ ПОИСКА =====

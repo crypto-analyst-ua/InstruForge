@@ -323,7 +323,7 @@ function searchProducts(searchTerm) {
   return searchProductsEnhanced(searchTerm);
 }
 
-// Управление историей поиска
+// Управление истории поиска
 function saveToSearchHistory(query) {
   if (!query || query.trim().length < 2) return;
   
@@ -1767,6 +1767,9 @@ function getFilteredProducts() {
       filteredProducts.sort((a, b) => {
         if (a.isPopular && !b.isPopular) return -1;
         if (!a.isPopular && b.isPopular) return 1;
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        
         return 0;
       });
       break;
@@ -2678,7 +2681,9 @@ function removeFromCart(productId) {
   openCart();
 }
 
-// ===== ОФОРМЛЕННЯ ЗАМОВЛЕННЯ =====
+// ===== ДОБАВЛЕНИЕ КОММЕНТАРИЕВ К ЗАКАЗАМ И ВОЗМОЖНОСТИ ОТМЕНЫ =====
+
+// В функции checkout() добавляем поле для комментария
 function checkout() {
   if (!currentUser) {
     closeModal();
@@ -2737,6 +2742,12 @@ function checkout() {
         </div>
       </div>
       
+      <!-- ДОБАВЛЕНО ПОЛЕ КОММЕНТАРИЯ -->
+      <div class="form-group">
+        <label>Коментар до замовлення (необов'язково)</label>
+        <textarea id="order-comment" placeholder="Ваші побажання щодо замовлення..." rows="3"></textarea>
+      </div>
+      
       <div class="order-summary">
         <h4>Ваше замовлення</h4>
         <div class="order-items">
@@ -2767,7 +2778,7 @@ function checkout() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// ===== ЗБЕРЕЖЕННЯ ЗАМОВЛЕННЯ В FIREBASE =====
+// В функции placeOrder() добавляем сохранение комментария
 function placeOrder(event) {
   event.preventDefault();
   
@@ -2782,6 +2793,8 @@ function placeOrder(event) {
   const phone = document.getElementById('order-phone').value.trim();
   const email = document.getElementById('order-email').value.trim();
   const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  // ДОБАВЛЕНО: Получаем комментарий
+  const comment = document.getElementById('order-comment') ? document.getElementById('order-comment').value.trim() : '';
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
@@ -2829,6 +2842,8 @@ function placeOrder(event) {
     total: calculateCartTotal(),
     delivery: deliveryDetails,
     paymentMethod,
+    // ДОБАВЛЕНО: Сохраняем комментарий
+    comment: comment,
     status: 'new',
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -2883,6 +2898,14 @@ function calculateCartTotal() {
 function showOrderConfirmation(orderId, order) {
   const modalContent = document.getElementById("modal-content");
   
+  // ДОБАВЛЕНО: Отображение комментария если он есть
+  const commentSection = order.comment ? `
+    <div class="comment-section" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+      <h4>Ваш коментар:</h4>
+      <p>"${order.comment}"</p>
+    </div>
+  ` : '';
+  
   modalContent.innerHTML = `
     <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
     <div class="order-confirmation">
@@ -2901,9 +2924,11 @@ function showOrderConfirmation(orderId, order) {
           <p>Доставка здійснюється за тарифами перевізника. Вартість доставки розраховується окремо та оплачується при отриманні замовлення.</p>
         </div>
         <p><strong>Місто:</strong> ${order.delivery.city}</p>
-        <p><strong>Відділенние:</strong> ${order.delivery.warehouse}</p>
+        <p><strong>Відділення:</strong> ${order.delivery.warehouse}</p>
         <p><strong>Спосіб оплати:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
         <p><strong>Сума товарів:</strong> ${formatPrice(order.total)} ₴</p>
+        
+        ${commentSection}
         
         <div class="manager-notice" style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
           <i class="fas fa-phone" style="color: #007bff; margin-right: 10px;"></i>
@@ -3067,7 +3092,7 @@ function register(event) {
     });
 }
 
-// Функція перевірки пароля адміністратора
+// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ПАРОЛЯ АДМИНИСТРАТОРА =====
 function verifyAdminPassword() {
   const password = document.getElementById("admin-password").value;
   if (password === ADMIN_PASSWORD) {
@@ -3077,31 +3102,43 @@ function verifyAdminPassword() {
       return;
     }
     
-    // Зберігаємо користувача як адміністратора
-    const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
-    admins[currentUser.uid] = true;
-    localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
-    
-    document.getElementById("admin-panel").style.display = "block";
-    adminMode = true;
-    showNotification("Права адміністратора отримані");
-    closeModal();
-    
-    // Завантажуємо замовлення для адмін-панелі
-    loadAdminOrders();
-    
-    // Показуємо лічильник переглядів
-    document.getElementById("page-views-container").style.display = "block";
-    setupPageCounter();
-    
-    // Добавляем вкладку для модерации отзывов
-    addReviewsTabIfNotExists();
+    // Зберігаємо користувача як адміністратора в Firestore
+    const adminRef = db.collection("admins").doc(currentUser.uid);
+    adminRef.set({
+      email: currentUser.email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+      // Также сохраняем в localStorage для быстрого доступа в UI
+      const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
+      admins[currentUser.uid] = true;
+      localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
+      
+      document.getElementById("admin-panel").style.display = "block";
+      adminMode = true;
+      showNotification("Права адміністратора отримані");
+      closeModal();
+      
+      // Завантажуємо замовлення для адмін-панелі
+      loadAdminOrders();
+      
+      // Показуємо лічильник переглядів
+      document.getElementById("page-views-container").style.display = "block";
+      setupPageCounter();
+      
+      // Добавляем вкладку для модерации отзывов
+      addReviewsTabIfNotExists();
+    })
+    .catch((error) => {
+      console.error("Помилка збереження прав адміністратора: ", error);
+      showNotification("Помилка збереження прав адміністратора", "error");
+    });
   } else {
     showNotification("Невірний пароль адміністратора", "error");
   }
 }
 
-// Функція для введення пароля адміністратора
+// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ВВОДА ПАРОЛЯ АДМИНИСТРАТОРА =====
 function promptAdminPassword() {
   const password = prompt("Введіть пароль адміністратора:");
   if (password === ADMIN_PASSWORD) {
@@ -3111,24 +3148,36 @@ function promptAdminPassword() {
       return;
     }
     
-    // Зберігаємо користувача як адміністратора
-    const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
-    admins[currentUser.uid] = true;
-    localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
-    
-    document.getElementById("admin-panel").style.display = "block";
-    adminMode = true;
-    showNotification("Права адміністратора отримані");
-    
-    // Завантажуємо замовлення для адмін-панелі
-    loadAdminOrders();
-    
-    // Показуємо лічильник переглядів
-    document.getElementById("page-views-container").style.display = "block";
-    setupPageCounter();
-    
-    // Добавляем вкладку для модерации отзывов
-    addReviewsTabIfNotExists();
+    // Зберігаємо користувача як адміністратора в Firestore
+    const adminRef = db.collection("admins").doc(currentUser.uid);
+    adminRef.set({
+      email: currentUser.email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+      // Также сохраняем в localStorage для быстрого доступа в UI
+      const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
+      admins[currentUser.uid] = true;
+      localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
+      
+      document.getElementById("admin-panel").style.display = "block";
+      adminMode = true;
+      showNotification("Права адміністратора отримані");
+      
+      // Завантажуємо замовлення для адмін-панелі
+      loadAdminOrders();
+      
+      // Показуємо лічильник переглядів
+      document.getElementById("page-views-container").style.display = "block";
+      setupPageCounter();
+      
+      // Добавляем вкладку для модерации отзывов
+      addReviewsTabIfNotExists();
+    })
+    .catch((error) => {
+      console.error("Помилка збереження прав адміністратора: ", error);
+      showNotification("Помилка збереження прав адміністратора", "error");
+    });
   } else if (password) {
     showNotification("Невірний пароль адміністратора", "error");
   }
@@ -3243,6 +3292,7 @@ function loadAdminOrders() {
           </div>
           <div class="order-info">
             <p><strong>Клієнт:</strong> ${order.userName} (${order.userEmail}, ${order.userPhone})</p>
+            ${order.comment ? `<p><strong>Коментар:</strong> ${order.comment}</p>` : ''}
             <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
             <p><strong>Доставка:</strong> ${order.delivery.service}</p>
             <p><strong>Статус:</strong> <span class="order-status ${statusClass}">${statusText}</span></p>
@@ -3410,6 +3460,14 @@ function viewOrderDetails(orderId) {
       const updatedDate = order.updatedAt ? order.updatedAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
       const ttnDate = order.ttnAddedAt ? order.ttnAddedAt.toDate().toLocaleString('uk-UA') : '';
       
+      // ДОБАВЛЕНО: Секция комментария
+      const commentSection = order.comment ? `
+        <div class="comment-section" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <h4>Коментар клієнта:</h4>
+          <p>"${order.comment}"</p>
+        </div>
+      ` : '';
+      
       const ttnSection = order.ttn ? `
         <div class="ttn-section" style="margin: 1rem 0; padding: 1rem; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #007bff;">
           <h4>Інформація про відправлення</h4>
@@ -3434,12 +3492,26 @@ function viewOrderDetails(orderId) {
         </div>
       ` : '';
       
+      // ДОБАВЛЕНО: Улучшенная кнопка отмены заказа
+      const cancelButton = !adminMode && order.status === 'new' ? `
+        <div style="margin: 1rem 0;">
+          <button class="btn btn-danger" onclick="cancelOrder('${order.id}')" style="background: #e74c3c; color: white; padding: 10px 20px;">
+            <i class="fas fa-times"></i> Скасувати замовлення
+          </button>
+          <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+            Ви можете скасувати замовлення, доки воно не передане в обробку
+          </p>
+        </div>
+      ` : '';
+      
       modalContent.innerHTML = `
         <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
         <h3>Деталі замовлення #${order.id}</h3>
         <div class="order-details">
           ${ttnSection}
           ${ttnButton}
+          ${cancelButton}
+          ${commentSection}
           
           <div class="customer-info">
             <h4>Інформація про клієнта</h4>
@@ -3561,6 +3633,78 @@ function deleteReview(reviewId) {
         showNotification("Помилка видалення відгуку", "error");
       });
   }
+}
+
+// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ОТМЕНЫ ЗАКАЗА =====
+function cancelOrder(orderId) {
+    if (!currentUser) {
+        showNotification("Увійдіть в систему для скасування замовлення", "warning");
+        return;
+    }
+    
+    if (!confirm("Ви впевнені, що хочете скасувати це замовлення?")) {
+        return;
+    }
+
+    showNotification("Скасування замовлення...", "info");
+
+    // Сначала получаем данные заказа
+    db.collection("orders").doc(orderId).get()
+        .then((doc) => {
+            if (!doc.exists) {
+                showNotification("Замовлення не знайдено", "error");
+                return;
+            }
+            
+            const order = doc.data();
+            
+            // Проверяем права доступа
+            if (!adminMode && order.userId !== currentUser.uid) {
+                showNotification("Ви не можете скасувати це замовлення", "error");
+                return;
+            }
+            
+            // Проверяем, можно ли отменить заказ
+            if (order.status !== 'new') {
+                showNotification("Неможливо скасувати замовлення з поточним статусом: " + getStatusText(order.status), "error");
+                return;
+            }
+            
+            // Выполняем отмену
+            return performOrderCancellation(orderId, order);
+        })
+        .then(() => {
+            // Успешная отмена
+            showNotification("Замовлення успішно скасовано");
+            
+            // Обновляем интерфейс в зависимости от контекста
+            setTimeout(() => {
+                if (adminMode) {
+                    loadAdminOrders();
+                } else {
+                    // Закрываем модальное окно и обновляем список заказов
+                    closeModal();
+                    viewOrders();
+                }
+            }, 1000);
+        })
+        .catch((error) => {
+            console.error("Помилка скасування замовлення: ", error);
+            showNotification("Помилка скасування замовлення", "error");
+        });
+}
+
+// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ВЫПОЛНЕНИЯ ОТМЕНЫ =====
+function performOrderCancellation(orderId, order) {
+    const updateData = {
+        status: 'cancelled',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+        cancelledBy: adminMode ? 'admin' : 'user',
+        cancelledById: currentUser.uid
+    };
+    
+    return db.collection("orders").doc(orderId).update(updateData);
 }
 
 // Збереження URL фіду
@@ -4089,6 +4233,20 @@ function viewOrders() {
                     </div>
                 ` : '';
                 
+                // ДОБАВЛЕНО: Комментарий к заказу
+                const commentSection = order.comment ? `
+                    <div class="order-comment">
+                        <p><strong>Ваш коментар:</strong> "${order.comment}"</p>
+                    </div>
+                ` : '';
+                
+                // ДОБАВЛЕНО: Кнопка отмены только для заказов со статусом "new"
+                const cancelButton = order.status === 'new' ? `
+                    <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">
+                        <i class="fas fa-times"></i> Скасувати
+                    </button>
+                ` : '';
+                
                 ordersHTML += `
                     <div class="user-order-item">
                         <div class="order-header">
@@ -4108,17 +4266,14 @@ function viewOrders() {
                             <p><strong>Оплата:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
                         </div>
                         
+                        ${commentSection}
                         ${ttnSection}
                         
                         <div class="order-actions">
                             <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">
                                 <i class="fas fa-eye"></i> Деталі
                             </button>
-                            ${order.status === 'new' ? `
-                                <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">
-                                    <i class="fas fa-times"></i> Скасувати
-                                </button>
-                            ` : ''}
+                            ${cancelButton}
                         </div>
                     </div>
                 `;
@@ -4135,24 +4290,6 @@ function viewOrders() {
     
     openModal();
     setTimeout(optimizeModalForMobile, 100);
-}
-
-// Функция отмены заказа
-function cancelOrder(orderId) {
-    if (confirm("Ви впевнені, що хочете скасувати це замовлення?")) {
-        db.collection("orders").doc(orderId).update({
-            status: 'cancelled',
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-            showNotification("Замовлення скасовано");
-        })
-        .catch((error) => {
-            console.error("Помилка скасування замовлення: ", error);
-            showNotification("Помилка скасування замовлення", "error");
-        });
-    }
 }
 
 // Добавляем вкладку для модерации отзывов в админ-панель, если её нет

@@ -53,6 +53,37 @@
         -webkit-background-clip: initial !important;
         -webkit-text-fill-color: #000000 !important;
     }
+    
+    /* Стили для иконок контактов в футере */
+    .contact-info div {
+        margin: 8px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .contact-info i {
+        width: 20px;
+        margin-right: 10px;
+        text-align: center;
+        font-size: 1.2em;
+    }
+
+    .contact-info a {
+        color: #fff;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .contact-info a:hover {
+        color: #3498db;
+        text-decoration: underline;
+    }
+
+    /* Специфичные цвета для мессенджеров */
+    .contact-info .fa-whatsapp { color: #25D366; }
+    .contact-info .fa-viber { color: #7360F2; }
+    .contact-info .fa-telegram { color: #0088cc; }
+    .contact-info .fa-phone-alt { color: #2ecc71; }
 </style>
 
     <!-- Объединенная JSON-LD Schema -->
@@ -528,8 +559,9 @@
         <div class="footer-section">
             <h4>Контакти</h4>
             <div class="contact-info">
-                <div><i class="fab fa-whatsapp" aria-hidden="true"></i> <a href="https://wa.me/380684296978" target="_blank" rel="noopener">WhatsApp: +380684296978</a></div>
-                <div><i class="fab fa-viber" aria-hidden="true"></i> <a href="viber://chat?number=+380684296978" target="_blank" rel="noopener">Viber: +380684296978</a></div>
+                <div><i class="fab fa-whatsapp" aria-hidden="true"></i> <a href="https://wa.me/380684296978" target="_blank" rel="noopener">WhatsApp</a></div>
+                <div><i class="fab fa-viber" aria-hidden="true"></i> <a href="viber://chat?number=+380684296978" target="_blank" rel="noopener">Viber</a></div>
+                <div><i class="fab fa-telegram" aria-hidden="true"></i> <a href="https://t.me/Voanarhes" target="_blank" rel="noopener">Telegram</a></div>
             </div>
         </div>
         

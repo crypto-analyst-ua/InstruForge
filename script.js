@@ -46,19 +46,14 @@ const AD_BANNERS = [
     id: 1,
     type: 'text',
     title: '🔒 Безпечна покупка та швидка доставка',
-    text: '✅ Вас неможливо обманути. Ви спочатку отримуєте та перевіряєте товар — і лише потім сплачуєте. 🏭 Прямі поставки від виробників та офіційних постачальників. 🚚 Доставка Новою Поштою по всій Україні. 💰 Чесні ціни без завищень. 📝 Повернення протягом 14 днів без проблем, як передбачено законом — ви завжди захищені.',
-    backgroundColor: 'linear-gradient(135deg, #2DD4BF, #06B6D4)', // бірюзово-голубий градієнт
-    textColor: '#FFFFFF'
-  },
-  {
-    id: 2,
-    type: 'text',
-    title: '🛠️ Професійні інструменти',
-    text: 'Широкий вибір професійних інструментів від провідних брендів. Гарантія якості та найкращі ціни на ринку.',
-    backgroundColor: 'linear-gradient(135deg, #DC2626, #EA580C)', // Привлекательный красно-оранжевый градиент
+    text: '🛡️ Ви нічим не ризикуєте: спочатку отримуєте та перевіряєте товар — і лише потім оплачуєте. 🏭 Прямі поставки від виробників та офіційних постачальників. 🚚 Доставка Новою Поштою по всій Україні. 💰 Чесні ціни без завищень. 📄 Повернення протягом 14 днів без зайвих питань — ви захищені законом.',
+    backgroundColor: 'linear-gradient(135deg, #34D399, #22D3EE)',
     textColor: '#FFFFFF'
   }
 ];
+
+// Глобальная переменная для отслеживания показанных баннеров
+let shownBannerIds = new Set();
 
 // Ініціалізація Firebase
 firebase.initializeApp(firebaseConfig);
@@ -206,8 +201,28 @@ function canShowAds() {
 
 function getRandomAdBanner() {
   if (!AD_BANNERS.length) return null;
-  const randomIndex = Math.floor(Math.random() * AD_BANNERS.length);
-  return AD_BANNERS[randomIndex];
+  
+  // Фильтруем баннеры, которые еще не были показаны
+  const availableBanners = AD_BANNERS.filter(banner => !shownBannerIds.has(banner.id));
+  
+  // Если все баннеры уже были показаны, сбрасываем список
+  if (availableBanners.length === 0) {
+    shownBannerIds.clear();
+    return AD_BANNERS[Math.floor(Math.random() * AD_BANNERS.length)];
+  }
+  
+  // Выбираем случайный баннер из доступных
+  const randomIndex = Math.floor(Math.random() * availableBanners.length);
+  const selectedBanner = availableBanners[randomIndex];
+  
+  // Добавляем ID в список показанных
+  shownBannerIds.add(selectedBanner.id);
+  
+  return selectedBanner;
+}
+
+function resetShownBanners() {
+  shownBannerIds.clear();
 }
 
 function getAdProducts(count = 4) {
@@ -225,6 +240,10 @@ function getAdProducts(count = 4) {
 
 function renderAdBanner(ad, positionClass = '') {
   if (!ad) return '';
+  
+  // Проверяем, не был ли этот баннер уже отображен на странице
+  const existingAd = document.querySelector(`.ad-container[data-ad-id="${ad.id}"]`);
+  if (existingAd) return '';
   
   if (ad.type === 'banner') {
     return `
@@ -294,6 +313,23 @@ function renderAdProducts(products, positionClass = '') {
   `;
 }
 
+function checkForDuplicateAds() {
+  const adContainers = document.querySelectorAll('.ad-container');
+  const seenIds = new Set();
+  
+  adContainers.forEach(container => {
+    const adId = container.getAttribute('data-ad-id');
+    if (adId) {
+      if (seenIds.has(adId)) {
+        // Удаляем дубликат
+        container.remove();
+      } else {
+        seenIds.add(adId);
+      }
+    }
+  });
+}
+
 function insertAdsIntoProductGrid() {
   if (!canShowAds()) return;
   
@@ -303,36 +339,50 @@ function insertAdsIntoProductGrid() {
   const productCards = grid.querySelectorAll('.card');
   if (productCards.length < ADS_CONFIG.MIN_PRODUCTS_TO_SHOW_ADS) return;
   
+  // Очищаем предыдущие рекламные блоки
+  const existingAds = grid.querySelectorAll('.ad-container');
+  existingAds.forEach(ad => ad.remove());
+  
   const positions = {
     after_first_row: Math.min(4, productCards.length),
     after_mid_page: Math.floor(productCards.length / 2),
     before_pagination: productCards.length - 2
   };
   
-  if (ADS_CONFIG.AD_POSITIONS.includes('after_first_row')) {
-    const adBanner = getRandomAdBanner();
-    if (adBanner) {
-      const adHTML = renderAdBanner(adBanner, 'ad-after-first-row');
-      const position = positions.after_first_row;
+  // Обрабатываем каждую позицию
+  ADS_CONFIG.AD_POSITIONS.forEach((position, index) => {
+    const positionIndex = positions[position];
+    
+    if (positionIndex && productCards[positionIndex]) {
+      let adHTML = '';
       
-      if (productCards[position]) {
-        productCards[position].insertAdjacentHTML('afterend', adHTML);
+      // Чередуем типы рекламы
+      if (index % 2 === 0) {
+        // Текстовый баннер
+        const adBanner = getRandomAdBanner();
+        if (adBanner) {
+          adHTML = renderAdBanner(adBanner, `ad-${position.replace(/_/g, '-')}`);
+        }
+      } else {
+        // Рекламные товары
+        const adProducts = getAdProducts(2);
+        if (adProducts.length > 0) {
+          adHTML = renderAdProducts(adProducts, `ad-${position.replace(/_/g, '-')}`);
+        }
+      }
+      
+      // Вставляем рекламу
+      if (adHTML) {
+        const currentCards = grid.querySelectorAll('.card');
+        if (currentCards[positionIndex]) {
+          currentCards[positionIndex].insertAdjacentHTML('afterend', adHTML);
+        }
       }
     }
-  }
+  });
   
-  if (ADS_CONFIG.AD_POSITIONS.includes('after_mid_page')) {
-    const adProducts = getAdProducts(2);
-    if (adProducts.length > 0) {
-      const adHTML = renderAdProducts(adProducts, 'ad-middle');
-      const position = positions.after_mid_page;
-      
-      const currentCards = grid.querySelectorAll('.card');
-      if (currentCards[position]) {
-        currentCards[position].insertAdjacentHTML('afterend', adHTML);
-      }
-    }
-  }
+  // Проверяем и удаляем дубликаты
+  setTimeout(checkForDuplicateAds, 100);
 }
 
 function addAdStyles() {
@@ -2722,6 +2772,12 @@ function loadProducts() {
 
 function changePage(page) {
   currentPage = page;
+  
+  // Сбрасываем показанные баннеры при переходе на первую страницу
+  if (page === 1) {
+    resetShownBanners();
+  }
+  
   showLoadingSkeleton();
   
   setTimeout(() => {
@@ -3195,6 +3251,9 @@ function applyFilters() {
   }
   
   currentPage = 1;
+  
+  // Сбрасываем показанные баннеры при применении фильтров
+  resetShownBanners();
   
   if (isProductsLoading) {
     showEnhancedLoadingSkeleton();

@@ -142,7 +142,31 @@ const SEARCH_HISTORY_KEY = "instruforge_search_history";
 let recognition = null;
 let isListening = false;
 
-// ===== ФУНКЦИЯ ДЛЯ ВХОДА ЧЕРЕЗ GOOGLE =====
+// ===== УЛУЧШЕННАЯ СИСТЕМА РЕКОМЕНДАЦИЙ =====
+const RECOMMENDATION_CONFIG = {
+  MAX_RECOMMENDATIONS: 4,
+  VIEW_HISTORY_LIMIT: 20,
+  CART_HISTORY_LIMIT: 10,
+  PURCHASE_HISTORY_LIMIT: 10
+};
+
+// Типы рекомендаций
+const RECOMMENDATION_TYPES = {
+  RELATED: 'related',           // Похожие товары
+  FREQUENTLY_BOUGHT: 'frequent', // Часто покупают вместе
+  TRENDING: 'trending',         // Популярные сейчас
+  PERSONALIZED: 'personalized', // Персональные рекомендации
+  CART_SUGGESTIONS: 'cart_suggestions' // Для корзины
+};
+
+// История поведения пользователя
+let userBehavior = {
+  viewedProducts: [],
+  addedToCart: [],
+  purchasedProducts: []
+};
+
+// ===== ФУНКЦІЯ ДЛЯ ВХОДА ЧЕРЕЗ GOOGLE =====
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     
@@ -1473,11 +1497,706 @@ function preprocessProducts(productsArray) {
   return processedProducts;
 }
 
+// Инициализация истории поведения
+function initUserBehavior() {
+  userBehavior = {
+    viewedProducts: JSON.parse(localStorage.getItem('user_viewed_products') || '[]'),
+    addedToCart: JSON.parse(localStorage.getItem('user_cart_history') || '[]'),
+    purchasedProducts: JSON.parse(localStorage.getItem('user_purchased_products') || '[]')
+  };
+}
+
+// Отслеживание поведения пользователя
+function trackUserBehavior(action, productId) {
+  if (!productId) return;
+  
+  let storageKey = '';
+  let limit = 0;
+  
+  switch(action) {
+    case 'view':
+      storageKey = 'user_viewed_products';
+      limit = RECOMMENDATION_CONFIG.VIEW_HISTORY_LIMIT;
+      break;
+    case 'add_to_cart':
+      storageKey = 'user_cart_history';
+      limit = RECOMMENDATION_CONFIG.CART_HISTORY_LIMIT;
+      break;
+    case 'purchase':
+      storageKey = 'user_purchased_products';
+      limit = RECOMMENDATION_CONFIG.PURCHASE_HISTORY_LIMIT;
+      break;
+  }
+  
+  if (storageKey) {
+    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const newHistory = [productId, ...history.filter(id => id !== productId)].slice(0, limit);
+    localStorage.setItem(storageKey, JSON.stringify(newHistory));
+    userBehavior[storageKey.replace('user_', '').replace('_history', '')] = newHistory;
+  }
+}
+
+// Получение похожих товаров
+function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return [];
+  
+  let relatedProducts = [];
+  
+  // 1. Поиск по категории
+  if (product.category) {
+    relatedProducts = products.filter(p => 
+      p.id !== productId && 
+      p.category === product.category
+    );
+  }
+  
+  // 2. Поиск по бренду
+  if (product.brand && relatedProducts.length < count) {
+    const brandProducts = products.filter(p => 
+      p.id !== productId && 
+      p.brand === product.brand &&
+      !relatedProducts.some(rp => rp.id === p.id)
+    );
+    relatedProducts = [...relatedProducts, ...brandProducts];
+  }
+  
+  // 3. Поиск по ключевым словам в названии
+  if (relatedProducts.length < count && product.title) {
+    const keywords = product.title.toLowerCase().split(' ');
+    const keywordProducts = products.filter(p => 
+      p.id !== productId &&
+      !relatedProducts.some(rp => rp.id === p.id) &&
+      keywords.some(keyword => p.title.toLowerCase().includes(keyword))
+    );
+    relatedProducts = [...relatedProducts, ...keywordProducts];
+  }
+  
+  // 4. Добавление случайных товаров если мало похожих
+  if (relatedProducts.length < count) {
+    const remainingCount = count - relatedProducts.length;
+    const randomProducts = products.filter(p => 
+      p.id !== productId &&
+      !relatedProducts.some(rp => rp.id === p.id)
+    );
+    relatedProducts = [...relatedProducts, ...shuffleArray(randomProducts).slice(0, remainingCount)];
+  }
+  
+  return shuffleArray(relatedProducts).slice(0, count);
+}
+
+// Получение товаров, которые часто покупают вместе
+function getFrequentlyBoughtTogether(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
+  // В реальном приложении здесь должна быть аналитика покупок
+  // Пока используем упрощенную логику
+  
+  const product = products.find(p => p.id === productId);
+  if (!product) return [];
+  
+  // Ищем товары из той же категории, которые часто были в корзине вместе
+  const cartHistory = userBehavior.addedToCart;
+  const productsInSameCategory = products.filter(p => 
+    p.id !== productId && 
+    p.category === product.category
+  );
+  
+  // Сортируем по популярности (isPopular) и новизне (isNew)
+  const recommendations = productsInSameCategory
+    .sort((a, b) => {
+      if (a.isPopular && !b.isPopular) return -1;
+      if (!a.isPopular && b.isPopular) return 1;
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
+      return 0;
+    })
+    .slice(0, count);
+  
+  return recommendations;
+}
+
+// Получение трендовых товаров
+function getTrendingProducts(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
+  return products
+    .filter(p => p.isPopular || p.isNew || (p.discount && p.discount > 0))
+    .sort((a, b) => {
+      // Приоритет: акции -> новинки -> популярные
+      if (a.discount && !b.discount) return -1;
+      if (!a.discount && b.discount) return 1;
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
+      return 0;
+    })
+    .slice(0, count);
+}
+
+// Персональные рекомендации на основе истории
+function getPersonalizedRecommendations(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
+  if (userBehavior.viewedProducts.length === 0 && 
+      userBehavior.addedToCart.length === 0) {
+    return getTrendingProducts(count);
+  }
+  
+  // Анализируем наиболее просматриваемые категории
+  const categoryCounts = {};
+  const allInteractions = [...userBehavior.viewedProducts, ...userBehavior.addedToCart];
+  
+  allInteractions.forEach(productId => {
+    const product = products.find(p => p.id === productId);
+    if (product && product.category) {
+      categoryCounts[product.category] = (categoryCounts[product.category] || 0) + 1;
+    }
+  });
+  
+  // Находим самую популярную категорию
+  const favoriteCategory = Object.keys(categoryCounts).reduce((a, b) => 
+    categoryCounts[a] > categoryCounts[b] ? a : b, ''
+  );
+  
+  if (favoriteCategory) {
+    return products
+      .filter(p => p.category === favoriteCategory && !allInteractions.includes(p.id))
+      .sort((a, b) => {
+        if (a.isPopular && !b.isPopular) return -1;
+        if (!a.isPopular && b.isPopular) return 1;
+        return 0;
+      })
+      .slice(0, count);
+  }
+  
+  return getTrendingProducts(count);
+}
+
+// Рекомендации для корзины
+function getCartSuggestions(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
+  const cartProductIds = Object.keys(cart);
+  if (cartProductIds.length === 0) {
+    return getTrendingProducts(count);
+  }
+  
+  // Анализируем категории товаров в корзине
+  const cartCategories = {};
+  cartProductIds.forEach(productId => {
+    const product = products.find(p => p.id === productId);
+    if (product && product.category) {
+      cartCategories[product.category] = (cartCategories[product.category] || 0) + 1;
+    }
+  });
+  
+  // Находим самую частую категорию
+  const mostCommonCategory = Object.keys(cartCategories).reduce((a, b) => 
+    cartCategories[a] > cartCategories[b] ? a : b, ''
+  );
+  
+  let suggestions = [];
+  
+  // 1. Товары из той же категории
+  if (mostCommonCategory) {
+    suggestions = products.filter(p => 
+      p.category === mostCommonCategory && 
+      !cartProductIds.includes(p.id)
+    ).slice(0, Math.ceil(count / 2));
+  }
+  
+  // 2. Популярные акционные товары
+  const discountProducts = products
+    .filter(p => p.discount > 0 && !cartProductIds.includes(p.id))
+    .slice(0, Math.ceil(count / 2));
+  
+  suggestions = [...suggestions, ...discountProducts];
+  
+  return shuffleArray(suggestions).slice(0, count);
+}
+
+// Рендер блока "Может вас заинтересовать"
+function renderRelatedProducts(productId, containerId = 'related-products') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const relatedProducts = getRelatedProducts(productId);
+  
+  if (relatedProducts.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="recommendation-block">
+      <div class="recommendation-header">
+        <h3><i class="fas fa-lightbulb"></i> Може вас зацікавити</h3>
+      </div>
+      <div class="recommendation-products">
+        ${relatedProducts.map(product => `
+          <div class="recommendation-product-card" onclick="showProductDetail('${product.id}')">
+            ${product.discount ? `<div class="recommendation-badge discount">-${product.discount}%</div>` : ''}
+            ${product.isNew ? '<div class="recommendation-badge new">Новинка</div>' : ''}
+            <img src="${product.image || 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                 alt="${product.title}" 
+                 loading="lazy">
+            <div class="recommendation-product-info">
+              <h4>${product.title.length > 50 ? product.title.substring(0, 50) + '...' : product.title}</h4>
+              <div class="recommendation-price">
+                <span>${formatPrice(product.price)} ₴</span>
+                ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+              </div>
+              <button class="btn btn-buy" onclick="event.stopPropagation(); addToCart('${product.id}')">
+                <i class="fas fa-shopping-cart"></i> Купити
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.style.display = 'block';
+}
+
+// Рендер блока "Люди также ищут"
+function renderPeopleAlsoSearch(containerId = 'people-also-search') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  // Получаем популярные поисковые запросы из истории
+  const searchHistory = getSearchHistory();
+  if (searchHistory.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  // Берем 4 самых популярных запроса
+  const popularSearches = searchHistory.slice(0, 4);
+  
+  container.innerHTML = `
+    <div class="recommendation-block">
+      <div class="recommendation-header">
+        <h3><i class="fas fa-search"></i> Люди також шукають</h3>
+        <p>Популярні запити інших покупців</p>
+      </div>
+      <div class="search-tags">
+        ${popularSearches.map(search => `
+          <div class="search-tag" onclick="document.getElementById('search').value = '${search}'; currentFilters.search = '${search}'; applyFilters()">
+            <i class="fas fa-search"></i> ${search}
+          </div>
+        `).join('')}
+      </div>
+      <div class="trending-products">
+        ${getTrendingProducts(3).map(product => `
+          <div class="trending-product" onclick="showProductDetail('${product.id}')">
+            <img src="${product.image || 'https://via.placeholder.com/60x60?text=No+Image'}" 
+                 alt="${product.title}">
+            <div class="trending-product-info">
+              <span class="trending-product-title">${product.title.substring(0, 30)}...</span>
+              <span class="trending-product-price">${formatPrice(product.price)} ₴</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.style.display = 'block';
+}
+
+// Рендер блока "Доповніть ваше замовлення" для корзины
+function renderCartSuggestions(containerId = 'cart-suggestions') {
+  const container = document.getElementById(containerId);
+  if (!container || Object.keys(cart).length === 0) {
+    if (container) container.style.display = 'none';
+    return;
+  }
+  
+  const cartSuggestions = getCartSuggestions();
+  
+  if (cartSuggestions.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="recommendation-block">
+      <div class="recommendation-header">
+        <h3><i class="fas fa-cart-plus"></i> Доповніть ваше замовлення</h3>
+      </div>
+      <div class="recommendation-products">
+        ${cartSuggestions.map(product => `
+          <div class="recommendation-product-card" onclick="showProductDetail('${product.id}')">
+            ${product.discount ? `<div class="recommendation-badge discount">-${product.discount}%</div>` : ''}
+            <img src="${product.image || 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                 alt="${product.title}" 
+                 loading="lazy">
+            <div class="recommendation-product-info">
+              <h4>${product.title.length > 50 ? product.title.substring(0, 50) + '...' : product.title}</h4>
+              <div class="recommendation-price">
+                <span>${formatPrice(product.price)} ₴</span>
+                ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+              </div>
+              <button class="btn btn-buy" onclick="event.stopPropagation(); addToCart('${product.id}')">
+                <i class="fas fa-shopping-cart"></i> Додати
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.style.display = 'block';
+}
+
+// Рендер блока "Персональні рекомендації"
+function renderPersonalizedRecommendations(containerId = 'personalized-recommendations') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const personalizedProducts = getPersonalizedRecommendations();
+  
+  if (personalizedProducts.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="recommendation-block">
+      <div class="recommendation-header">
+        <h3><i class="fas fa-user-check"></i> Персональні рекомендації</h3>
+        <p>Спеціально для вас на основі ваших переглядів</p>
+      </div>
+      <div class="recommendation-products">
+        ${personalizedProducts.map(product => `
+          <div class="recommendation-product-card" onclick="showProductDetail('${product.id}')">
+            ${product.discount ? `<div class="recommendation-badge discount">-${product.discount}%</div>` : ''}
+            ${product.isNew ? '<div class="recommendation-badge new">Новинка</div>' : ''}
+            <img src="${product.image || 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                 alt="${product.title}" 
+                 loading="lazy">
+            <div class="recommendation-product-info">
+              <h4>${product.title.length > 50 ? product.title.substring(0, 50) + '...' : product.title}</h4>
+              <div class="recommendation-price">
+                <span>${formatPrice(product.price)} ₴</span>
+                ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+              </div>
+              <button class="btn btn-buy" onclick="event.stopPropagation(); addToCart('${product.id}')">
+                <i class="fas fa-shopping-cart"></i> Купити
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.style.display = 'block';
+}
+
+// Рендер всех рекомендаций на главной
+function renderAllRecommendations() {
+  renderPersonalizedRecommendations();
+  renderTrendingProducts();
+  renderPeopleAlsoSearch();
+}
+
+// Рендер трендовых товаров
+function renderTrendingProducts(containerId = 'trending-products') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const trendingProducts = getTrendingProducts(6);
+  
+  if (trendingProducts.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="recommendation-block">
+      <div class="recommendation-header">
+        <h3><i class="fas fa-fire"></i> Гарячі пропозиції</h3>
+        <p>Найпопулярніші товари серед покупців</p>
+      </div>
+      <div class="recommendation-products">
+        ${trendingProducts.map(product => `
+          <div class="recommendation-product-card" onclick="showProductDetail('${product.id}')">
+            ${product.discount ? `<div class="recommendation-badge discount">-${product.discount}%</div>` : ''}
+            ${product.isNew ? '<div class="recommendation-badge new">Новинка</div>' : ''}
+            <img src="${product.image || 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                 alt="${product.title}" 
+                 loading="lazy">
+            <div class="recommendation-product-info">
+              <h4>${product.title.length > 50 ? product.title.substring(0, 50) + '...' : product.title}</h4>
+              <div class="recommendation-price">
+                <span>${formatPrice(product.price)} ₴</span>
+                ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+              </div>
+              <button class="btn btn-buy" onclick="event.stopPropagation(); addToCart('${product.id}')">
+                <i class="fas fa-shopping-cart"></i> Купити
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.style.display = 'block';
+}
+
+// Стили для системы рекомендаций
+function addRecommendationStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .recommendation-container {
+      margin: 30px 0;
+    }
+    
+    .recommendation-block {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 4px solid #007bff;
+    }
+    
+    .recommendation-header {
+      margin-bottom: 20px;
+    }
+    
+    .recommendation-header h3 {
+      color: #2c3e50;
+      margin: 0 0 5px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.3rem;
+    }
+    
+    .recommendation-header p {
+      color: #666;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    
+    .recommendation-products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+    }
+    
+    .recommendation-product-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .recommendation-product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    
+    .recommendation-product-card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    
+    .recommendation-product-info {
+      padding: 15px;
+    }
+    
+    .recommendation-product-info h4 {
+      margin: 0 0 10px 0;
+      font-size: 0.95rem;
+      color: #2c3e50;
+      height: 40px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    
+    .recommendation-price {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .recommendation-price span {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #2c3e50;
+    }
+    
+    .recommendation-price .old-price {
+      font-size: 0.9rem;
+      color: #95a5a6;
+      text-decoration: line-through;
+    }
+    
+    .recommendation-badge {
+      position: absolute;
+      top: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      z-index: 2;
+    }
+    
+    .recommendation-badge.discount {
+      left: 10px;
+      background: #e74c3c;
+      color: white;
+    }
+    
+    .recommendation-badge.new {
+      right: 10px;
+      background: #2ecc71;
+      color: white;
+    }
+    
+    .search-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .search-tag {
+      background: white;
+      border: 2px solid #007bff;
+      color: #007bff;
+      padding: 8px 15px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    
+    .search-tag:hover {
+      background: #007bff;
+      color: white;
+    }
+    
+    .trending-products {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .trending-product {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    
+    .trending-product:hover {
+      transform: translateX(5px);
+      background: #f0f7ff;
+    }
+    
+    .trending-product img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    
+    .trending-product-info {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    
+    .trending-product-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+    
+    .trending-product-price {
+      font-weight: bold;
+      color: #007bff;
+      font-size: 1rem;
+    }
+    
+    .recommendation-product-card .btn-buy {
+      width: 100%;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      .recommendation-products {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+      }
+      
+      .recommendation-product-card img {
+        height: 140px;
+      }
+      
+      .recommendation-product-info h4 {
+        height: 35px;
+        font-size: 0.85rem;
+      }
+      
+      .search-tags {
+        justify-content: center;
+      }
+      
+      .search-tag {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+      }
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .recommendation-block {
+      animation: fadeIn 0.5s ease-out;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Инициализация системы рекомендаций
+function initRecommendationSystem() {
+  addRecommendationStyles();
+  initUserBehavior();
+  
+  // Показываем рекомендации при загрузке главной
+  if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    setTimeout(renderAllRecommendations, 1000);
+  }
+}
+
 // Ініціалізація додатка
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
   initEnhancedSearch();
+  initRecommendationSystem(); // Добавляем инициализацию рекомендаций
 
   // Показать скелетоны сразу при инициализации
   showEnhancedLoadingSkeleton();
@@ -2344,6 +3063,9 @@ function addToCart(productId) {
   
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   
+  // Отслеживаем добавление в корзину
+  trackUserBehavior('add_to_cart', productId);
+  
   updateCartCount();
   showNotification("Товар додано до кошика");
 }
@@ -2377,7 +3099,7 @@ function toggleFavorite(productId) {
   showNotification(favorites[productId] ? "Додано в обране" : "Видалено з обраного");
 }
 
-// Переключення режиму відображення обраного
+// Переключенние режима відображення обраного
 function toggleFavorites() {
   showingFavorites = !showingFavorites;
   
@@ -2550,15 +3272,21 @@ function showProductDetail(productId) {
         <p>Увійдіть, щоб залишити відгук</p>
       `}
     </div>
+    
+    <!-- Блок "Може вас зацікавити" -->
+    <div id="related-products" class="recommendation-container"></div>
   `;
   
   loadReviews(product.id);
+  renderRelatedProducts(productId, 'related-products');
+  
+  // Отслеживаем просмотр товара
+  trackUserBehavior('view', productId);
   
   currentRating = 0;
   updateRatingStars();
   
   openModal();
-  
   setTimeout(optimizeModalForMobile, 100);
 }
 
@@ -2674,6 +3402,9 @@ function addToCartWithQuantity(productId) {
   
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   
+  // Отслеживаем добавление в корзину
+  trackUserBehavior('add_to_cart', productId);
+  
   updateCartCount();
   showNotification("Товар додано до кошика");
   closeModal();
@@ -2703,7 +3434,10 @@ function openCart() {
         <h3>Кошик порожній</h3>
         <p>Додайте товари з каталогу</p>
       </div>
+      <!-- Блок рекомендаций даже для пустой корзины -->
+      <div id="cart-suggestions" class="recommendation-container"></div>
     `;
+    renderCartSuggestions('cart-suggestions');
   } else {
     let total = 0;
     let cartItemsHTML = '';
@@ -2742,11 +3476,14 @@ function openCart() {
         <div class="cart-total">Разом: ${formatPrice(total)} ₴</div>
         <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
       </div>
+      <!-- Блок "Доповніть ваше замовлення" -->
+      <div id="cart-suggestions" class="recommendation-container"></div>
     `;
+    
+    renderCartSuggestions('cart-suggestions');
   }
   
   openModal();
-  
   setTimeout(optimizeModalForMobile, 100);
 }
 

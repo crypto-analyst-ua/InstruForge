@@ -23,6 +23,43 @@ const PRODUCT_FILES = [
     'products6.json'
 ];
 
+// ===== СИСТЕМА РЕКЛАМЫ =====
+const ADS_CONFIG = {
+  ENABLED: true,
+  MIN_PRODUCTS_TO_SHOW_ADS: 10,
+  AD_POSITIONS: [
+    'after_first_row',
+    'after_mid_page',
+    'before_pagination'
+  ],
+  AD_TYPES: {
+    PRODUCTS: 'products',
+    BANNER: 'banner',
+    TEXT: 'text'
+  },
+  AD_REFRESH_INTERVAL: 30 * 60 * 1000
+};
+
+// Рекламний баннер
+const AD_BANNERS = [
+  {
+    id: 1,
+    type: 'text',
+    title: '🔒 Безпечна покупка та швидка доставка',
+    text: '✅ Вас неможливо обманути. Ви спочатку отримуєте та перевіряєте товар — і лише потім сплачуєте. 🏭 Прямі поставки від виробників та офіційних постачальників. 🚚 Доставка Новою Поштою по всій Україні. 💰 Чесні ціни без завищень. 📝 Повернення протягом 14 днів без проблем, як передбачено законом — ви завжди захищені.',
+    backgroundColor: 'linear-gradient(135deg, #2DD4BF, #06B6D4)', // бірюзово-голубий градієнт
+    textColor: '#FFFFFF'
+  },
+  {
+    id: 2,
+    type: 'text',
+    title: '🛠️ Професійні інструменти',
+    text: 'Широкий вибір професійних інструментів від провідних брендів. Гарантія якості та найкращі ціни на ринку.',
+    backgroundColor: 'linear-gradient(135deg, #DC2626, #EA580C)', // Привлекательный красно-оранжевый градиент
+    textColor: '#FFFFFF'
+  }
+];
+
 // Ініціалізація Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -72,8 +109,6 @@ const categoryTranslations = {
 };
 
 // ===== УЛУЧШЕННАЯ СИСТЕМА ПОИСКА =====
-
-// Константы для оптимизации поиска
 const SEARCH_CONFIG = {
   MAX_RESULTS: 1000,
   DEBOUNCE_DELAY: 150,
@@ -82,9 +117,7 @@ const SEARCH_CONFIG = {
   MIN_QUERY_LENGTH: 2
 };
 
-// Расширенный словарь синонимов для поиска
 const searchSynonyms = {
-  // Русские синонимы
   'болгарка': ['ушм', 'углошлифовальная'],
   'ушм': ['болгарка', 'углошлифовальная'],
   'дрель': ['сверлильный', 'перфоратор'],
@@ -101,8 +134,6 @@ const searchSynonyms = {
   'фрезер': ['фрезерный'],
   'шлифмашина': ['шлифовальный'],
   'паяльник': ['паяльный'],
-  
-  // Украинские синонимы
   'болгарка': ['ушм', 'кутошлифувальна'],
   'ушм': ['болгарка', 'кутошлифувальна'],
   'дриль': ['свердлильний', 'перфоратор'],
@@ -120,7 +151,6 @@ const searchSynonyms = {
   'паяльник': ['паяльний']
 };
 
-// Словарь опечаток
 const searchTypos = {
   'дрель': ['дриль', 'дрель', 'дрелей', 'дрелю'],
   'шуруповерт': ['шураповерт', 'шуруповерт', 'шуруповерта', 'шуруповертом'],
@@ -132,13 +162,11 @@ const searchTypos = {
   'насос': ['насос', 'насоса', 'насосом', 'насосов']
 };
 
-// Глобальные переменные для поиска
 let searchTimeout = null;
 const searchCache = new Map();
 let searchLoading = false;
 const SEARCH_HISTORY_KEY = "instruforge_search_history";
 
-// Переменные для аудио-поиска
 let recognition = null;
 let isListening = false;
 
@@ -150,36 +178,394 @@ const RECOMMENDATION_CONFIG = {
   PURCHASE_HISTORY_LIMIT: 10
 };
 
-// Типы рекомендаций
 const RECOMMENDATION_TYPES = {
-  RELATED: 'related',           // Похожие товары
-  FREQUENTLY_BOUGHT: 'frequent', // Часто покупают вместе
-  TRENDING: 'trending',         // Популярные сейчас
-  PERSONALIZED: 'personalized', // Персональные рекомендации
-  CART_SUGGESTIONS: 'cart_suggestions' // Для корзины
+  RELATED: 'related',
+  FREQUENTLY_BOUGHT: 'frequent',
+  TRENDING: 'trending',
+  PERSONALIZED: 'personalized',
+  CART_SUGGESTIONS: 'cart_suggestions'
 };
 
-// История поведения пользователя
 let userBehavior = {
   viewedProducts: [],
   addedToCart: [],
   purchasedProducts: []
 };
 
+// ===== РЕКЛАМНЫЕ ФУНКЦИИ =====
+function canShowAds() {
+  if (!ADS_CONFIG.ENABLED) return false;
+  
+  const productsLoaded = products && products.length > 0;
+  const enoughProducts = products.length >= ADS_CONFIG.MIN_PRODUCTS_TO_SHOW_ADS;
+  const notOnProductDetail = !window.location.href.includes('product.html');
+  const notInAdminMode = !adminMode;
+  
+  return productsLoaded && enoughProducts && notOnProductDetail && notInAdminMode;
+}
+
+function getRandomAdBanner() {
+  if (!AD_BANNERS.length) return null;
+  const randomIndex = Math.floor(Math.random() * AD_BANNERS.length);
+  return AD_BANNERS[randomIndex];
+}
+
+function getAdProducts(count = 4) {
+  return products
+    .filter(product => product.isPopular || (product.discount && product.discount > 0))
+    .sort((a, b) => {
+      if (a.discount && !b.discount) return -1;
+      if (!a.discount && b.discount) return 1;
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
+      return 0;
+    })
+    .slice(0, count);
+}
+
+function renderAdBanner(ad, positionClass = '') {
+  if (!ad) return '';
+  
+  if (ad.type === 'banner') {
+    return `
+      <div class="ad-container ${positionClass}" data-ad-id="${ad.id}">
+        <a href="${ad.link || '#'}" class="ad-banner" target="_blank" 
+           style="background: ${ad.backgroundColor}; color: ${ad.textColor};">
+          <div class="ad-banner-content">
+            <h3>${ad.title}</h3>
+            <p>${ad.text}</p>
+          </div>
+          <img src="${ad.image}" alt="${ad.title}" class="ad-banner-image">
+        </a>
+        <div class="ad-label">Реклама</div>
+      </div>
+    `;
+  }
+  
+  if (ad.type === 'text') {
+    return `
+      <div class="ad-container ${positionClass}" data-ad-id="${ad.id}">
+        <div class="ad-text" style="background: ${ad.backgroundColor}; color: ${ad.textColor};">
+          <h3>${ad.title}</h3>
+          <p>${ad.text}</p>
+          ${ad.link ? `<a href="${ad.link}" class="ad-text-link">Детальніше →</a>` : ''}
+        </div>
+        <div class="ad-label">Реклама</div>
+      </div>
+    `;
+  }
+  
+  return '';
+}
+
+function renderAdProducts(products, positionClass = '') {
+  if (!products || products.length === 0) return '';
+  
+  return `
+    <div class="ad-container ${positionClass}">
+      <div class="ad-products">
+        <div class="ad-header">
+          <h3><i class="fas fa-star"></i> Рекомендуємо</h3>
+          <p>Популярні товари серед покупців</p>
+        </div>
+        <div class="ad-products-grid">
+          ${products.map(product => `
+            <div class="ad-product-card" onclick="showProductDetail('${product.id}')">
+              ${product.discount ? `<div class="ad-badge">-${product.discount}%</div>` : ''}
+              <img src="${product.image || 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                   alt="${product.title}" 
+                   loading="lazy">
+              <div class="ad-product-info">
+                <h4>${product.title.length > 40 ? product.title.substring(0, 40) + '...' : product.title}</h4>
+                <div class="ad-product-price">
+                  <span>${formatPrice(product.price)} ₴</span>
+                  ${product.oldPrice ? `<span class="old-price">${formatPrice(product.oldPrice)} ₴</span>` : ''}
+                </div>
+                <button class="btn btn-buy" onclick="event.stopPropagation(); addToCart('${product.id}')">
+                  <i class="fas fa-shopping-cart"></i> Купити
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="ad-label">Рекламні пропозиції</div>
+    </div>
+  `;
+}
+
+function insertAdsIntoProductGrid() {
+  if (!canShowAds()) return;
+  
+  const grid = document.getElementById('product-grid');
+  if (!grid) return;
+  
+  const productCards = grid.querySelectorAll('.card');
+  if (productCards.length < ADS_CONFIG.MIN_PRODUCTS_TO_SHOW_ADS) return;
+  
+  const positions = {
+    after_first_row: Math.min(4, productCards.length),
+    after_mid_page: Math.floor(productCards.length / 2),
+    before_pagination: productCards.length - 2
+  };
+  
+  if (ADS_CONFIG.AD_POSITIONS.includes('after_first_row')) {
+    const adBanner = getRandomAdBanner();
+    if (adBanner) {
+      const adHTML = renderAdBanner(adBanner, 'ad-after-first-row');
+      const position = positions.after_first_row;
+      
+      if (productCards[position]) {
+        productCards[position].insertAdjacentHTML('afterend', adHTML);
+      }
+    }
+  }
+  
+  if (ADS_CONFIG.AD_POSITIONS.includes('after_mid_page')) {
+    const adProducts = getAdProducts(2);
+    if (adProducts.length > 0) {
+      const adHTML = renderAdProducts(adProducts, 'ad-middle');
+      const position = positions.after_mid_page;
+      
+      const currentCards = grid.querySelectorAll('.card');
+      if (currentCards[position]) {
+        currentCards[position].insertAdjacentHTML('afterend', adHTML);
+      }
+    }
+  }
+}
+
+function addAdStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .ad-container {
+      position: relative;
+      margin: 20px 0;
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+    
+    .ad-label {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      z-index: 2;
+    }
+    
+    .ad-banner {
+      display: block;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .ad-banner:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    
+    .ad-banner-content {
+      position: absolute;
+      top: 50%;
+      left: 30px;
+      transform: translateY(-50%);
+      z-index: 1;
+      max-width: 50%;
+    }
+    
+    .ad-banner-content h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.8rem;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    }
+    
+    .ad-banner-content p {
+      margin: 0;
+      font-size: 1.2rem;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .ad-banner-image {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+    }
+    
+    .ad-text {
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .ad-text h3 {
+      margin: 0 0 15px 0;
+      font-size: 1.5rem;
+    }
+    
+    .ad-text p {
+      margin: 0 0 20px 0;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    
+    .ad-text-link {
+      display: inline-block;
+      color: inherit;
+      text-decoration: underline;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    
+    .ad-products {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .ad-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    
+    .ad-header h3 {
+      color: #2c3e50;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .ad-header p {
+      color: #666;
+      margin: 0;
+    }
+    
+    .ad-products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    
+    .ad-product-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .ad-product-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .ad-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #e74c3c;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      z-index: 2;
+    }
+    
+    .ad-product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .ad-product-info {
+      padding: 15px;
+    }
+    
+    .ad-product-info h4 {
+      margin: 0 0 10px 0;
+      font-size: 0.95rem;
+      color: #2c3e50;
+      height: 40px;
+      overflow: hidden;
+    }
+    
+    .ad-product-price {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .ad-product-price span {
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #2c3e50;
+    }
+    
+    .ad-product-price .old-price {
+      font-size: 0.9rem;
+      color: #95a5a6;
+      text-decoration: line-through;
+    }
+    
+    @media (max-width: 768px) {
+      .ad-banner-content {
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+        max-width: 100%;
+        padding: 20px;
+        text-align: center;
+        background: rgba(0,0,0,0.7);
+      }
+      
+      .ad-banner-content h3 {
+        font-size: 1.3rem;
+      }
+      
+      .ad-banner-content p {
+        font-size: 1rem;
+      }
+      
+      .ad-banner-image {
+        height: 200px;
+      }
+      
+      .ad-products-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .ad-after-first-row {
+        margin-top: 20px;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // ===== ФУНКЦІЯ ДЛЯ ВХОДА ЧЕРЕЗ GOOGLE =====
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     
-    // Добавляем дополнительные scopes при необходимости
     provider.addScope('profile');
     provider.addScope('email');
     
     auth.signInWithPopup(provider)
         .then((result) => {
-            // Успешный вход
             const user = result.user;
-            
-            // Проверяем, новый ли это пользователь
             const isNewUser = result.additionalUserInfo?.isNewUser || false;
             
             if (isNewUser) {
@@ -189,8 +575,6 @@ function signInWithGoogle() {
             }
             
             closeModal();
-            
-            // Проверяем права администратора после входа
             checkAdminStatus(user.uid);
         })
         .catch((error) => {
@@ -213,13 +597,11 @@ function signInWithGoogle() {
         });
 }
 
-// Функція для перевода категорий
 function translateCategory(category) {
     if (!category) return '';
     return categoryTranslations[category] || category;
 }
 
-// Функция исправления опечаток
 function fixCommonTypos(query) {
   if (!query || query.length < 2) return query;
   
@@ -236,7 +618,6 @@ function fixCommonTypos(query) {
   return fixedQuery;
 }
 
-// Улучшенная нормализация текста
 function normalizeSearchTerm(term) {
   if (!term) return '';
   
@@ -252,13 +633,11 @@ function normalizeSearchTerm(term) {
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Исправляем опечатки
   normalized = fixCommonTypos(normalized);
   
   return normalized;
 }
 
-// Расширение поискового запроса синонимами
 function expandSearchQuery(query) {
   const words = query.split(' ');
   const expanded = [...words];
@@ -274,17 +653,14 @@ function expandSearchQuery(query) {
   return [...new Set(expanded)].join(' ');
 }
 
-// Функция расчета релевантности
 function calculateRelevance(product, searchTerms) {
   if (!product || !searchTerms) return 0;
   
   let score = 0;
   const searchText = searchTerms.toLowerCase();
   
-  // Приоритеты совпадений
   if (product.title && product.title.toLowerCase().includes(searchText)) {
     score += 100;
-    // Бонус за точное совпадение в начале названия
     if (product.title.toLowerCase().startsWith(searchText)) score += 50;
   }
   
@@ -292,10 +668,8 @@ function calculateRelevance(product, searchTerms) {
   if (product.category && product.category.toLowerCase().includes(searchText)) score += 30;
   if (product.description && product.description.toLowerCase().includes(searchText)) score += 10;
   
-  // Поиск по артикулам и кодам
   if (product.sku && product.sku.toLowerCase().includes(searchText)) score += 80;
   
-  // Бонусы за дополнительные параметры
   if (product.isPopular) score += 20;
   if (product.isNew) score += 15;
   if (product.inStock) score += 10;
@@ -304,7 +678,6 @@ function calculateRelevance(product, searchTerms) {
   return score;
 }
 
-// Удаление дубликатов в результатах
 function removeDuplicateResults(results) {
   const seen = new Set();
   const uniqueResults = [];
@@ -320,7 +693,6 @@ function removeDuplicateResults(results) {
   return uniqueResults;
 }
 
-// Улучшенная функция поиска с ранжированием
 function searchProductsEnhanced(searchTerm) {
   if (!searchTerm || searchTerm.trim().length < 1) {
     return products;
@@ -339,12 +711,10 @@ function searchProductsEnhanced(searchTerm) {
   let results = products.filter(product => {
     if (!product.searchIndex) return false;
     
-    // Ищем товары, которые содержат ВСЕ слова из запроса
     const allWordsMatch = searchWords.every(word => 
       product.searchIndex.includes(word)
     );
     
-    // Если не нашли по всем словам, ищем по расширенному запросу
     if (!allWordsMatch && expandedWords.length > searchWords.length) {
       return expandedWords.some(word => 
         product.searchIndex.includes(word)
@@ -354,23 +724,19 @@ function searchProductsEnhanced(searchTerm) {
     return allWordsMatch;
   });
   
-  // Ограничение количества результатов
   if (results.length > SEARCH_CONFIG.MAX_RESULTS) {
     results = results.slice(0, SEARCH_CONFIG.MAX_RESULTS);
   }
   
-  // Ранжирование по релевантности
   results.forEach(product => {
     product.relevanceScore = calculateRelevance(product, searchTerm);
   });
   
-  // Сортировка по релевантности
   results.sort((a, b) => {
     if (b.relevanceScore !== a.relevanceScore) {
       return b.relevanceScore - a.relevanceScore;
     }
     
-    // Вторичная сортировка
     if (a.isPopular && !b.isPopular) return -1;
     if (!a.isPopular && b.isPopular) return 1;
     if (a.isNew && !b.isNew) return -1;
@@ -379,13 +745,11 @@ function searchProductsEnhanced(searchTerm) {
     return 0;
   });
   
-  // Удаление дубликатов
   results = removeDuplicateResults(results);
   
   return results;
 }
 
-// Основная функция поиска
 function searchProducts(searchTerm) {
   if (!searchTerm || searchTerm.trim().length < 1) {
     return products;
@@ -394,7 +758,6 @@ function searchProducts(searchTerm) {
   return searchProductsEnhanced(searchTerm);
 }
 
-// Управление истории поиска
 function saveToSearchHistory(query) {
   if (!query || query.trim().length < 2) return;
   
@@ -412,7 +775,6 @@ function clearSearchHistory() {
   localStorage.removeItem(SEARCH_HISTORY_KEY);
   showNotification('Історію пошуку очищено');
   
-  // Обновляем отображение подсказок, если они открыты
   hideSearchSuggestions(false);
   hideSearchSuggestions(true);
 }
@@ -423,11 +785,9 @@ function removeFromSearchHistory(term) {
   localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
 }
 
-// Улучшенные подсказки с историей
 function getEnhancedSearchSuggestions(query) {
   try {
     if (!query || query.length < 1) {
-      // Показываем историю поиска когда поле пустое
       return getSearchHistorySuggestions();
     }
     
@@ -474,7 +834,6 @@ function getEnhancedSearchSuggestions(query) {
       if (suggestions.length >= 8) break;
     }
     
-    // Добавляем быстрые действия если мало результатов
     if (suggestions.length < 3) {
       suggestions.push({
         type: 'action',
@@ -487,7 +846,6 @@ function getEnhancedSearchSuggestions(query) {
     
     suggestions.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     
-    // Очистка кэша
     if (searchCache.size > SEARCH_CONFIG.MAX_CACHE_SIZE) {
       const keys = Array.from(searchCache.keys()).slice(0, 20);
       keys.forEach(key => searchCache.delete(key));
@@ -502,7 +860,6 @@ function getEnhancedSearchSuggestions(query) {
   }
 }
 
-// Подсказки из истории поиска
 function getSearchHistorySuggestions() {
   const history = getSearchHistory();
   return history.slice(0, 5).map(term => ({
@@ -514,7 +871,6 @@ function getSearchHistorySuggestions() {
   }));
 }
 
-// Резервные подсказки при ошибке
 function getFallbackSuggestions(query) {
   return [
     {
@@ -527,14 +883,12 @@ function getFallbackSuggestions(query) {
   ];
 }
 
-// Функция для экранирования HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Показать историю поиска
 function showSearchHistorySuggestions(isMobile = false) {
   const history = getSearchHistory();
   
@@ -556,7 +910,6 @@ function showSearchHistorySuggestions(isMobile = false) {
   
   suggestionsContainer.innerHTML = '';
   
-  // Добавляем заголовок истории поиска
   if (history.length > 0) {
     const historyHeader = document.createElement('div');
     historyHeader.className = 'search-suggestion-header';
@@ -610,7 +963,6 @@ function showSearchHistorySuggestions(isMobile = false) {
   suggestionsContainer.style.display = 'block';
 }
 
-// Функция показа подсказок
 function showSearchSuggestions(query, isMobile = false) {
   if (!query || query.length < 1) {
     showSearchHistorySuggestions(isMobile);
@@ -719,7 +1071,6 @@ function showSearchSuggestions(query, isMobile = false) {
   }
 }
 
-// Функция для скрытия подсказок
 function hideSearchSuggestions(isMobile = false) {
   const suggestionsId = isMobile ? 'search-suggestions-mobile' : 'search-suggestions';
   const suggestionsContainer = document.getElementById(suggestionsId);
@@ -731,26 +1082,19 @@ function hideSearchSuggestions(isMobile = false) {
   }
 }
 
-// ===== АУДИО ПОИСК =====
-
-// Инициализация аудио поиска
 function initVoiceSearch() {
-  // Проверяем поддержку браузером
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     console.log('Браузер не поддерживает распознавание речи');
     return;
   }
 
-  // Создаем объект распознавания речи
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
   
-  // Настройки распознавания
   recognition.continuous = false;
   recognition.interimResults = false;
-  recognition.lang = 'uk-UA'; // Украинский язык
+  recognition.lang = 'uk-UA';
 
-  // Обработчики событий
   recognition.onstart = function() {
     isListening = true;
     updateVoiceSearchUI(true);
@@ -760,7 +1104,6 @@ function initVoiceSearch() {
   recognition.onresult = function(event) {
     const transcript = event.results[0][0].transcript;
     
-    // Вставляем результат в поле поиска
     const searchInput = document.getElementById('search');
     const searchMobileInput = document.getElementById('search-mobile');
     
@@ -774,7 +1117,6 @@ function initVoiceSearch() {
       searchMobileInput.dispatchEvent(new Event('input'));
     }
     
-    // Сохраняем в историю поиска
     saveToSearchHistory(transcript);
     
     showNotification(`Знайдено за запитом: "${transcript}"`, 'success');
@@ -808,7 +1150,6 @@ function initVoiceSearch() {
   };
 }
 
-// Функция для запуска/остановки аудио поиска
 function toggleVoiceSearch(isMobile = false) {
   if (!recognition) {
     showNotification('Аудіопошук не підтримується вашим браузером', 'error');
@@ -830,7 +1171,6 @@ function toggleVoiceSearch(isMobile = false) {
   }
 }
 
-// Обновление UI для аудио поиска
 function updateVoiceSearchUI(listening) {
   const voiceButtons = document.querySelectorAll('.voice-search-btn');
   
@@ -847,9 +1187,7 @@ function updateVoiceSearchUI(listening) {
   });
 }
 
-// Добавление кнопок аудио поиска в UI
 function addVoiceSearchButtons() {
-  // Для десктопной версии
   const searchContainer = document.querySelector('.search-container');
   if (searchContainer) {
     const voiceBtn = document.createElement('button');
@@ -865,7 +1203,6 @@ function addVoiceSearchButtons() {
     }
   }
 
-  // Для мобильной версии
   const searchMobileContainer = document.querySelector('.search-container-mobile');
   if (searchMobileContainer) {
     const voiceBtnMobile = document.createElement('button');
@@ -882,9 +1219,6 @@ function addVoiceSearchButtons() {
   }
 }
 
-// ===== КОНЕЦ АУДИО ПОИСКА =====
-
-// Настройка обработчиков поиска
 function setupSearchHandler() {
   const searchInput = document.getElementById('search');
   const searchMobileInput = document.getElementById('search-mobile');
@@ -909,7 +1243,6 @@ function setupSearchHandler() {
     }, SEARCH_CONFIG.DEBOUNCE_DELAY);
   }
   
-  // Обработчик для десктопного поиска
   if (searchInput) {
     searchInput.addEventListener('input', function() {
       const currentValue = this.value.trim();
@@ -919,7 +1252,6 @@ function setupSearchHandler() {
       }
     });
     
-    // Обработчик фокуса - показываем историю
     searchInput.addEventListener('focus', function() {
       if (this.value === '') {
         showSearchHistorySuggestions(false);
@@ -961,7 +1293,6 @@ function setupSearchHandler() {
           if (activeSuggestion) {
             activeSuggestion.click();
           } else {
-            // Сохраняем поиск в историю при нажатии Enter
             saveToSearchHistory(this.value);
           }
           break;
@@ -976,7 +1307,6 @@ function setupSearchHandler() {
     });
   }
   
-  // Обработчик для мобильного поиска
   if (searchMobileInput) {
     searchMobileInput.addEventListener('input', function() {
       const currentValue = this.value.trim();
@@ -1005,7 +1335,6 @@ function setupSearchHandler() {
           if (activeSuggestion) {
             activeSuggestion.click();
           } else {
-            // Сохраняем поиск в историю при нажатии Enter
             saveToSearchHistory(this.value);
           }
           break;
@@ -1028,7 +1357,6 @@ function setupSearchHandler() {
   });
 }
 
-// Добавление CSS для улучшенного поиска
 function addSearchStyles() {
   const style = document.createElement('style');
   style.textContent = `
@@ -1106,12 +1434,6 @@ function addSearchStyles() {
       font-weight: bold;
     }
     
-    .suggestion-clear-history {
-      border-top: 1px solid #eee;
-      color: #666;
-      font-size: 0.9em;
-    }
-    
     .clear-history-btn {
       background: none;
       border: none;
@@ -1153,7 +1475,6 @@ function addSearchStyles() {
       background: #f8d7da;
     }
     
-    /* Стили для аудио поиска */
     .voice-search-btn {
       position: absolute;
       right: 40px;
@@ -1196,7 +1517,6 @@ function addSearchStyles() {
       }
     }
     
-    /* Адаптация полей поиска под кнопки */
     .search-container input,
     .search-container-mobile input {
       padding-right: 80px !important;
@@ -1222,7 +1542,6 @@ function addSearchStyles() {
       }
     }
     
-    /* Стили для Google кнопки */
     .btn-google {
       background-color: #4285F4;
       color: white;
@@ -1273,15 +1592,12 @@ function addSearchStyles() {
   document.head.appendChild(style);
 }
 
-// Инициализация улучшенного поиска
 function initEnhancedSearch() {
   addSearchStyles();
   setupSearchHandler();
   initVoiceSearch();
   addVoiceSearchButtons();
 }
-
-// ===== КОНЕЦ УЛУЧШЕННОЙ СИСТЕМЫ ПОИСКА =====
 
 let products = [];
 let cart = {};
@@ -1303,10 +1619,8 @@ let currentFilters = {
   source: ''
 };
 
-// Глобальная переменная для рейтинга
 let currentRating = 0;
 
-// Функція для налаштування лічильника переглядів
 function setupPageCounter() {
   const params = new URLSearchParams({
       style: 'flat-square',
@@ -1315,10 +1629,7 @@ function setupPageCounter() {
       logo: 'firebase'
   });
 
-  // Беремо шлях поточної сторінки
   const currentPath = window.location.pathname;
-
-  // Робимо лічильник для boltmaster-2025.web.app
   const counterURL = `https://hits.sh/boltmaster-2025.web.app${currentPath}.svg?${params.toString()}`;
   const pageViewsElement = document.getElementById('page-views');
   if (pageViewsElement) {
@@ -1326,7 +1637,6 @@ function setupPageCounter() {
   }
 }
 
-// Функція отправки email с данными заказа
 function sendOrderEmail(orderId, order) {
   let itemsList = '';
   for (const [productId, quantity] of Object.entries(order.items)) {
@@ -1366,10 +1676,9 @@ function sendOrderEmail(orderId, order) {
     });
 }
 
-// Функція для завантаження товарів з JSON файлу
 function loadProductsFromJson() {
   isProductsLoading = true;
-  renderProducts(); // Показать скелетоны при начале загрузки
+  renderProducts();
   
   const promises = PRODUCT_FILES.map(file => 
       fetch(file)
@@ -1421,7 +1730,6 @@ function loadProductsFromJson() {
       });
 }
 
-// Функция проверки доступности JSON файлов
 async function checkFilesAvailability() {
     const availability = {};
     
@@ -1446,14 +1754,12 @@ async function checkFilesAvailability() {
     });
 }
 
-// Улучшенная предобработка товаров
 function preprocessProducts(productsArray) {
   console.log("🔧 Предобработка товаров для умного поиска...");
   
   const processedProducts = productsArray.map((product, index) => {
     if (!product || typeof product !== 'object') return product;
     
-    // Создаем уникальный ID если его нет
     if (!product.id) {
       product.id = `product_${Date.now()}_${index}`;
     }
@@ -1461,9 +1767,9 @@ function preprocessProducts(productsArray) {
     const searchFields = [
       product.title || '',
       product.title || '',
-      product.title || '', // высокая важность (повторяем 3 раза)
+      product.title || '',
       product.brand || '',
-      product.brand || '', // средняя важность (повторяем 2 раза)
+      product.brand || '',
       product.category || '',
       product.description || '',
       product.specifications || '',
@@ -1497,7 +1803,6 @@ function preprocessProducts(productsArray) {
   return processedProducts;
 }
 
-// Инициализация истории поведения
 function initUserBehavior() {
   userBehavior = {
     viewedProducts: JSON.parse(localStorage.getItem('user_viewed_products') || '[]'),
@@ -1506,7 +1811,6 @@ function initUserBehavior() {
   };
 }
 
-// Отслеживание поведения пользователя
 function trackUserBehavior(action, productId) {
   if (!productId) return;
   
@@ -1536,14 +1840,12 @@ function trackUserBehavior(action, productId) {
   }
 }
 
-// Получение похожих товаров
 function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
   const product = products.find(p => p.id === productId);
   if (!product) return [];
   
   let relatedProducts = [];
   
-  // 1. Поиск по категории
   if (product.category) {
     relatedProducts = products.filter(p => 
       p.id !== productId && 
@@ -1551,7 +1853,6 @@ function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMME
     );
   }
   
-  // 2. Поиск по бренду
   if (product.brand && relatedProducts.length < count) {
     const brandProducts = products.filter(p => 
       p.id !== productId && 
@@ -1561,7 +1862,6 @@ function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMME
     relatedProducts = [...relatedProducts, ...brandProducts];
   }
   
-  // 3. Поиск по ключевым словам в названии
   if (relatedProducts.length < count && product.title) {
     const keywords = product.title.toLowerCase().split(' ');
     const keywordProducts = products.filter(p => 
@@ -1572,7 +1872,6 @@ function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMME
     relatedProducts = [...relatedProducts, ...keywordProducts];
   }
   
-  // 4. Добавление случайных товаров если мало похожих
   if (relatedProducts.length < count) {
     const remainingCount = count - relatedProducts.length;
     const randomProducts = products.filter(p => 
@@ -1585,22 +1884,16 @@ function getRelatedProducts(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMME
   return shuffleArray(relatedProducts).slice(0, count);
 }
 
-// Получение товаров, которые часто покупают вместе
 function getFrequentlyBoughtTogether(productId, count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
-  // В реальном приложении здесь должна быть аналитика покупок
-  // Пока используем упрощенную логику
-  
   const product = products.find(p => p.id === productId);
   if (!product) return [];
   
-  // Ищем товары из той же категории, которые часто были в корзине вместе
   const cartHistory = userBehavior.addedToCart;
   const productsInSameCategory = products.filter(p => 
     p.id !== productId && 
     p.category === product.category
   );
   
-  // Сортируем по популярности (isPopular) и новизне (isNew)
   const recommendations = productsInSameCategory
     .sort((a, b) => {
       if (a.isPopular && !b.isPopular) return -1;
@@ -1614,12 +1907,10 @@ function getFrequentlyBoughtTogether(productId, count = RECOMMENDATION_CONFIG.MA
   return recommendations;
 }
 
-// Получение трендовых товаров
 function getTrendingProducts(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
   return products
     .filter(p => p.isPopular || p.isNew || (p.discount && p.discount > 0))
     .sort((a, b) => {
-      // Приоритет: акции -> новинки -> популярные
       if (a.discount && !b.discount) return -1;
       if (!a.discount && b.discount) return 1;
       if (a.isNew && !b.isNew) return -1;
@@ -1629,14 +1920,12 @@ function getTrendingProducts(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) 
     .slice(0, count);
 }
 
-// Персональные рекомендации на основе истории
 function getPersonalizedRecommendations(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
   if (userBehavior.viewedProducts.length === 0 && 
       userBehavior.addedToCart.length === 0) {
     return getTrendingProducts(count);
   }
   
-  // Анализируем наиболее просматриваемые категории
   const categoryCounts = {};
   const allInteractions = [...userBehavior.viewedProducts, ...userBehavior.addedToCart];
   
@@ -1647,7 +1936,6 @@ function getPersonalizedRecommendations(count = RECOMMENDATION_CONFIG.MAX_RECOMM
     }
   });
   
-  // Находим самую популярную категорию
   const favoriteCategory = Object.keys(categoryCounts).reduce((a, b) => 
     categoryCounts[a] > categoryCounts[b] ? a : b, ''
   );
@@ -1666,14 +1954,12 @@ function getPersonalizedRecommendations(count = RECOMMENDATION_CONFIG.MAX_RECOMM
   return getTrendingProducts(count);
 }
 
-// Рекомендации для корзины
 function getCartSuggestions(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
   const cartProductIds = Object.keys(cart);
   if (cartProductIds.length === 0) {
     return getTrendingProducts(count);
   }
   
-  // Анализируем категории товаров в корзине
   const cartCategories = {};
   cartProductIds.forEach(productId => {
     const product = products.find(p => p.id === productId);
@@ -1682,14 +1968,12 @@ function getCartSuggestions(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
     }
   });
   
-  // Находим самую частую категорию
   const mostCommonCategory = Object.keys(cartCategories).reduce((a, b) => 
     cartCategories[a] > cartCategories[b] ? a : b, ''
   );
   
   let suggestions = [];
   
-  // 1. Товары из той же категории
   if (mostCommonCategory) {
     suggestions = products.filter(p => 
       p.category === mostCommonCategory && 
@@ -1697,7 +1981,6 @@ function getCartSuggestions(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
     ).slice(0, Math.ceil(count / 2));
   }
   
-  // 2. Популярные акционные товары
   const discountProducts = products
     .filter(p => p.discount > 0 && !cartProductIds.includes(p.id))
     .slice(0, Math.ceil(count / 2));
@@ -1707,7 +1990,6 @@ function getCartSuggestions(count = RECOMMENDATION_CONFIG.MAX_RECOMMENDATIONS) {
   return shuffleArray(suggestions).slice(0, count);
 }
 
-// Рендер блока "Может вас заинтересовать"
 function renderRelatedProducts(productId, containerId = 'related-products') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1751,19 +2033,16 @@ function renderRelatedProducts(productId, containerId = 'related-products') {
   container.style.display = 'block';
 }
 
-// Рендер блока "Люди также ищут"
 function renderPeopleAlsoSearch(containerId = 'people-also-search') {
   const container = document.getElementById(containerId);
   if (!container) return;
   
-  // Получаем популярные поисковые запросы из истории
   const searchHistory = getSearchHistory();
   if (searchHistory.length === 0) {
     container.style.display = 'none';
     return;
   }
   
-  // Берем 4 самых популярных запроса
   const popularSearches = searchHistory.slice(0, 4);
   
   container.innerHTML = `
@@ -1797,7 +2076,6 @@ function renderPeopleAlsoSearch(containerId = 'people-also-search') {
   container.style.display = 'block';
 }
 
-// Рендер блока "Доповніть ваше замовлення" для корзины
 function renderCartSuggestions(containerId = 'cart-suggestions') {
   const container = document.getElementById(containerId);
   if (!container || Object.keys(cart).length === 0) {
@@ -1843,7 +2121,6 @@ function renderCartSuggestions(containerId = 'cart-suggestions') {
   container.style.display = 'block';
 }
 
-// Рендер блока "Персональні рекомендації"
 function renderPersonalizedRecommendations(containerId = 'personalized-recommendations') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1888,14 +2165,12 @@ function renderPersonalizedRecommendations(containerId = 'personalized-recommend
   container.style.display = 'block';
 }
 
-// Рендер всех рекомендаций на главной
 function renderAllRecommendations() {
   renderPersonalizedRecommendations();
   renderTrendingProducts();
   renderPeopleAlsoSearch();
 }
 
-// Рендер трендовых товаров
 function renderTrendingProducts(containerId = 'trending-products') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1940,7 +2215,6 @@ function renderTrendingProducts(containerId = 'trending-products') {
   container.style.display = 'block';
 }
 
-// Стили для системы рекомендаций
 function addRecommendationStyles() {
   const style = document.createElement('style');
   style.textContent = `
@@ -2180,25 +2454,22 @@ function addRecommendationStyles() {
   document.head.appendChild(style);
 }
 
-// Инициализация системы рекомендаций
 function initRecommendationSystem() {
   addRecommendationStyles();
   initUserBehavior();
   
-  // Показываем рекомендации при загрузке главной
   if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
     setTimeout(renderAllRecommendations, 1000);
   }
 }
 
-// Ініціалізація додатка
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
   initEnhancedSearch();
-  initRecommendationSystem(); // Добавляем инициализацию рекомендаций
-
-  // Показать скелетоны сразу при инициализации
+  initRecommendationSystem();
+  addAdStyles();
+  
   showEnhancedLoadingSkeleton();
   
   auth.onAuthStateChanged(user => {
@@ -2220,7 +2491,6 @@ function initApp() {
     }
   });
   
-  // Загрузка товаров
   loadProducts().catch(error => {
     console.error("Помилка завантаження з Firestore, пробуємо завантажити з JSON:", error);
     
@@ -2241,7 +2511,7 @@ function initApp() {
         console.error("Помилка завантаження з JSON:", jsonError);
         showNotification("Не вдалося завантажити товари", "error");
         isProductsLoading = false;
-        renderProducts(); // Показать сообщение об ошибке
+        renderProducts();
       });
   }).finally(() => {
       checkFilesAvailability();
@@ -2305,7 +2575,6 @@ function initApp() {
     }
   });
 
-  // Синхронизация фильтров при загрузке
   setTimeout(() => {
     document.getElementById('mobile-price-min').value = document.getElementById('price-min').value;
     document.getElementById('mobile-price-max').value = document.getElementById('price-max').value;
@@ -2315,12 +2584,10 @@ function initApp() {
   }, 1000);
 }
 
-// Функции для мобильных фильтров
 function toggleMobileFilters() {
     const mobileFilters = document.getElementById('mobile-filters');
     mobileFilters.classList.toggle('active');
     
-    // Блокируем прокрутку body при открытых фильтрах
     if (mobileFilters.classList.contains('active')) {
         document.body.style.overflow = 'hidden';
     } else {
@@ -2335,38 +2602,30 @@ function closeMobileFilters() {
 }
 
 function applyMobileFilters() {
-    // Синхронизируем значения из мобильных фильтров в основные
     document.getElementById('price-min').value = document.getElementById('mobile-price-min').value;
     document.getElementById('price-max').value = document.getElementById('mobile-price-max').value;
     document.getElementById('brand').value = document.getElementById('mobile-brand').value;
     document.getElementById('availability').value = document.getElementById('mobile-availability').value;
     document.getElementById('sort').value = document.getElementById('mobile-sort').value;
     
-    // Применяем фильтры
     applyFilters();
-    
-    // Закрываем мобильные фильтры
     closeMobileFilters();
 }
 
 function resetMobileFilters() {
-    // Сбрасываем мобильные фильтры
     document.getElementById('mobile-price-min').value = '';
     document.getElementById('mobile-price-max').value = '';
     document.getElementById('mobile-brand').value = '';
     document.getElementById('mobile-availability').value = '';
     document.getElementById('mobile-sort').value = 'default';
     
-    // Сбрасываем основные фильтры
     resetFilters();
-    
-    // Закрываем мобильные фильтры
     closeMobileFilters();
 }
 
 function loadProducts() {
   isProductsLoading = true;
-  renderProducts(); // Показать скелетоны сразу при начале загрузки
+  renderProducts();
   
   const cachedProducts = localStorage.getItem('products_cache');
   const cacheTime = localStorage.getItem('products_cache_time');
@@ -2460,8 +2719,6 @@ function loadProducts() {
       }
     });
 }
-
-// ===== ФУНКЦІЇ ПАГІНАЦІЇ =====
 
 function changePage(page) {
   currentPage = page;
@@ -2592,209 +2849,12 @@ function getFilteredProducts() {
   return filteredProducts;
 }
 
-// ===== КІНЕЦЬ ФУНКЦІЇ ПАГІНАЦІЇ =====
-
-// Функція для завантаження XML-фіду
-async function loadFromFeed() {
-  const messageElement = document.getElementById("feed-message");
-  messageElement.textContent = "Завантаження даних...";
-  
-  const feedUrl = localStorage.getItem(FEED_URL_KEY) || document.getElementById("feed-url").value;
-  
-  if (!feedUrl) {
-    messageElement.textContent = "Введіть URL фіду";
-    showNotification("Введіть URL фіду для завантаження");
-    return;
-  }
-  
-  if (document.getElementById("feed-url").value) {
-    localStorage.setItem(FEED_URL_KEY, document.getElementById("feed-url").value);
-  }
-  
-  try {
-    const proxyUrl = 'https://corsproxy.io/?';
-    const response = await fetch(proxyUrl + encodeURIComponent(feedUrl));
-    
-    if (!response.ok) {
-      throw new Error(`Помилка HTTP: ${response.status}`);
-    }
-    
-    const xmlText = await response.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    
-    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-      throw new Error("Помилка парсингу XML");
-    }
-    
-    let items = [];
-    const offers = xmlDoc.getElementsByTagName("offer");
-    
-    for (let i = 0; i < offers.length; i++) {
-      const offer = offers[i];
-      const id = offer.getAttribute("id") || `feed-${i}`;
-      const getValue = (tagName) => {
-        const element = offer.getElementsByTagName(tagName)[0];
-        return element ? element.textContent.trim() : "";
-      };
-      
-      const title = getValue("name") || getValue("title") || getValue("model");
-      const priceText = getValue("price");
-      const price = priceText ? parseFloat(priceText.replace(/[^0-9.,]/g, "").replace(",", ".")) : 0;
-      const description = getValue("description") || "";
-      const brand = getValue("vendor") || getValue("brand") || "Невідомо";
-      
-      let image = "";
-      const pictureElement = offer.getElementsByTagName("picture")[0];
-      if (pictureElement) {
-        image = pictureElement.textContent.trim();
-      }
-      
-      const category = getValue("category") || "Без категорії";
-      
-      items.push({
-        id,
-        title,
-        price,
-        description,
-        image: image,
-        category,
-        brand,
-        fromFeed: true,
-        inStock: true,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-    
-    if (items.length === 0) {
-      throw new Error("Не знайдено товарів у фіді");
-    }
-    
-    const batch = db.batch();
-    const productsRef = db.collection("products");
-    
-    for (const item of items) {
-      const productRef = productsRef.doc(item.id);
-      batch.set(productRef, item, { merge: true });
-    }
-    
-    await batch.commit();
-    
-    localStorage.setItem(FEED_UPDATE_TIME_KEY, new Date().getTime());
-    
-    messageElement.textContent = `Завантажено ${items.length} товарів`;
-    showNotification("Дані успішно завантажені з фіду");
-    
-  } catch (error) {
-    console.error("Помилка завантаження фіду:", error);
-    messageElement.textContent = `Помилка: ${error.message}`;
-    showNotification("Помилка завантаження даних з фіду", "error");
-  }
-}
-
-// Збереження продуктів в Firestore
-function saveProduct(product) {
-  const productData = {
-    ...product,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  
-  if (!product.id) {
-    productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    productData.id = generateId();
-  }
-  
-  const productRef = db.collection("products").doc(productData.id);
-  
-  return productRef.set(productData, { merge: true })
-    .then(() => {
-      showNotification("Товар успішно збережено");
-      loadProducts();
-      return productData.id;
-    })
-    .catch((error) => {
-      console.error("Помилка збереження товару: ", error);
-      showNotification("Помилка збереження товару", "error");
-      
-      if (!product.id) {
-        product.id = generateId();
-        products.push(product);
-      } else {
-        const index = products.findIndex(p => p.id === product.id);
-        if (index !== -1) {
-          products[index] = product;
-        } else {
-          products.push(product);
-        }
-      }
-      
-      localStorage.setItem('products_backup', JSON.stringify(products));
-      renderProducts();
-      
-      return product.id;
-    });
-}
-
-// Генерація ID для нового товару
-function generateId() {
-  return 'product-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-}
-
-// Показати скелетон завантаження
-function showLoadingSkeleton() {
-  const grid = document.getElementById("product-grid");
-  grid.innerHTML = '';
-  
-  for (let i = 0; i < 8; i++) {
-    const skeleton = document.createElement("div");
-    skeleton.className = "card";
-    skeleton.innerHTML = `
-      <div class="skeleton-img"></div>
-      <div class="skeleton-title"></div>
-      <div class="skeleton-text"></div>
-      <div class="skeleton-text" style="width: 80%;"></div>
-      <div class="skeleton-price"></div>
-      <div class="skeleton-text" style="height: 36px; margin-top: 15px;"></div>
-    `;
-    grid.appendChild(skeleton);
-  }
-}
-
-// Добавьте эту функцию для улучшенного отображения скелетонов
-function showEnhancedLoadingSkeleton() {
-  const grid = document.getElementById("product-grid");
-  if (!grid) return;
-  
-  grid.innerHTML = '';
-  
-  // Показать больше скелетонов для лучшего UX
-  const skeletonCount = window.innerWidth <= 768 ? 4 : 8;
-  
-  for (let i = 0; i < skeletonCount; i++) {
-    const skeleton = document.createElement("div");
-    skeleton.className = "card skeleton-item";
-    skeleton.innerHTML = `
-      <div class="skeleton-img"></div>
-      <div class="skeleton-title"></div>
-      <div class="skeleton-text"></div>
-      <div class="skeleton-text" style="width: 80%;"></div>
-      <div class="skeleton-price"></div>
-      <div class="skeleton-text" style="height: 36px; margin-top: 15px;"></div>
-    `;
-    grid.appendChild(skeleton);
-  }
-  
-  document.getElementById('products-count').textContent = 'Завантаження товарів...';
-}
-
-// Рендеринг продуктів
 function renderProducts() {
   const grid = document.getElementById("product-grid");
   if (!grid) return;
   
   grid.innerHTML = '';
   
-  // Показать скелетоны если товары еще загружаются
   if (isProductsLoading) {
     showLoadingSkeleton();
     document.getElementById('products-count').textContent = 'Завантаження товарів...';
@@ -2862,10 +2922,15 @@ function renderProducts() {
     grid.appendChild(card);
   });
   
+  setTimeout(() => {
+    if (currentPage === 1 && canShowAds()) {
+      insertAdsIntoProductGrid();
+    }
+  }, 100);
+  
   updatePagination();
 }
 
-// Рендеринг популярных товаров
 function renderFeaturedProducts() {
   const featuredContainer = document.getElementById("featured-products");
   featuredContainer.innerHTML = '';
@@ -2896,7 +2961,6 @@ function renderFeaturedProducts() {
   });
 }
 
-// Рендеринг категорії
 function renderCategories() {
   const categorySelect = document.getElementById("category");
   
@@ -2916,7 +2980,6 @@ function renderCategories() {
   renderCategoriesList();
 }
 
-// Функция для рендеринга списка категорий
 function renderCategoriesList() {
     const categoriesList = document.getElementById('categories-list');
     const mobileCategoriesList = document.getElementById('mobile-categories-list');
@@ -2935,7 +2998,6 @@ function renderCategoriesList() {
     let categoriesHTML = '';
     let mobileCategoriesHTML = '';
 
-    // Для десктопной версии
     categoriesHTML += `
         <div class="category-item active" onclick="selectCategory('')">
             Всі категорії
@@ -2943,7 +3005,6 @@ function renderCategoriesList() {
         </div>
     `;
 
-    // Для мобильной версии
     mobileCategoriesHTML += `
         <div class="category-item active" onclick="selectMobileCategory('')">
             Всі категорії
@@ -2971,7 +3032,6 @@ function renderCategoriesList() {
     mobileCategoriesList.innerHTML = mobileCategoriesHTML;
 }
 
-// Функция выбора категории
 function selectCategory(category) {
     document.getElementById('category').value = category;
     
@@ -2995,7 +3055,6 @@ function selectCategory(category) {
     applyFilters();
 }
 
-// Функция выбора категории для мобильной версии
 function selectMobileCategory(category) {
     document.getElementById('category').value = category;
     
@@ -3018,7 +3077,6 @@ function selectMobileCategory(category) {
     currentFilters.category = category;
 }
 
-// Рендеринг брендів
 function renderBrands() {
   const brandSelect = document.getElementById("brand");
   
@@ -3036,12 +3094,10 @@ function renderBrands() {
   });
 }
 
-// Форматування ціни
 function formatPrice(price) {
   return new Intl.NumberFormat('uk-UA').format(price);
 }
 
-// Показати сповіщення
 function showNotification(message, type = "success") {
   const notification = document.getElementById("notification");
   const text = document.getElementById("notification-text");
@@ -3054,7 +3110,6 @@ function showNotification(message, type = "success") {
   }, 3000);
 }
 
-// Додавання товару в кошик
 function addToCart(productId) {
   if (!cart[productId]) {
     cart[productId] = 0;
@@ -3063,20 +3118,17 @@ function addToCart(productId) {
   
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   
-  // Отслеживаем добавление в корзину
   trackUserBehavior('add_to_cart', productId);
   
   updateCartCount();
   showNotification("Товар додано до кошика");
 }
 
-// Оновлення лічильника кошика
 function updateCartCount() {
   const count = Object.values(cart).reduce((total, qty) => total + qty, 0);
   document.getElementById("cart-count").textContent = count;
 }
 
-// Додавання/видалення з обраного
 function toggleFavorite(productId) {
   if (favorites[productId]) {
     delete favorites[productId];
@@ -3099,7 +3151,6 @@ function toggleFavorite(productId) {
   showNotification(favorites[productId] ? "Додано в обране" : "Видалено з обраного");
 }
 
-// Переключенние режима відображення обраного
 function toggleFavorites() {
   showingFavorites = !showingFavorites;
   
@@ -3115,7 +3166,6 @@ function toggleFavorites() {
   applyFilters();
 }
 
-// Застосування фільтрів
 function applyFilters() {
   const minPrice = document.getElementById("price-min").value ? parseInt(document.getElementById("price-min").value) : null;
   const maxPrice = document.getElementById("price-max").value ? parseInt(document.getElementById("price-max").value) : null;
@@ -3146,7 +3196,6 @@ function applyFilters() {
   
   currentPage = 1;
   
-  // Показать скелетоны при применении фильтров (если товары загружаются)
   if (isProductsLoading) {
     showEnhancedLoadingSkeleton();
   } else {
@@ -3158,11 +3207,9 @@ function applyFilters() {
     document.getElementById('products-count').textContent = `Знайдено: ${filteredProducts.length}`;
   }
   
-  // Закрываем мобильные фильтры после применения (если они открыты)
   closeMobileFilters();
 }
 
-// Скидання фільтрів
 function resetFilters() {
   document.getElementById("price-min").value = '';
   document.getElementById("price-max").value = '';
@@ -3188,7 +3235,6 @@ function resetFilters() {
   applyFilters();
 }
 
-// Встановлення режиму перегляду
 function setViewMode(mode) {
   localStorage.setItem(VIEW_MODE_KEY, mode);
   
@@ -3206,7 +3252,6 @@ function setViewMode(mode) {
   renderProducts();
 }
 
-// Показати деталі товару
 function showProductDetail(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
@@ -3273,14 +3318,12 @@ function showProductDetail(productId) {
       `}
     </div>
     
-    <!-- Блок "Може вас зацікавити" -->
     <div id="related-products" class="recommendation-container"></div>
   `;
   
   loadReviews(product.id);
   renderRelatedProducts(productId, 'related-products');
   
-  // Отслеживаем просмотр товара
   trackUserBehavior('view', productId);
   
   currentRating = 0;
@@ -3290,13 +3333,11 @@ function showProductDetail(productId) {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функция для установки рейтинга
 function setRating(rating) {
   currentRating = rating;
   updateRatingStars();
 }
 
-// Функция для обновления отображения звезд рейтинга
 function updateRatingStars() {
   const stars = document.querySelectorAll('.rating-stars span');
   stars.forEach((star, index) => {
@@ -3308,7 +3349,6 @@ function updateRatingStars() {
   });
 }
 
-// Функция загрузки отзывов для товара
 function loadReviews(productId) {
   const reviewsContainer = document.getElementById(`reviews-container-${productId}`);
   if (!reviewsContainer) return;
@@ -3351,7 +3391,6 @@ function loadReviews(productId) {
     });
 }
 
-// Функция добавления отзыва
 function addReview(event, productId) {
   event.preventDefault();
   
@@ -3391,7 +3430,6 @@ function addReview(event, productId) {
     });
 }
 
-// Додавання товару в кошик із зазначеною кількістю
 function addToCartWithQuantity(productId) {
   const quantity = parseInt(document.getElementById("product-quantity").value) || 1;
   
@@ -3402,7 +3440,6 @@ function addToCartWithQuantity(productId) {
   
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   
-  // Отслеживаем добавление в корзину
   trackUserBehavior('add_to_cart', productId);
   
   updateCartCount();
@@ -3410,7 +3447,6 @@ function addToCartWithQuantity(productId) {
   closeModal();
 }
 
-// Зміна кількості товару
 function changeQuantity(delta) {
   const input = document.getElementById("product-quantity");
   let value = parseInt(input.value) || 1;
@@ -3421,7 +3457,6 @@ function changeQuantity(delta) {
   input.value = value;
 }
 
-// Відкриття кошика
 function openCart() {
   const modalContent = document.getElementById("modal-content");
   
@@ -3434,7 +3469,6 @@ function openCart() {
         <h3>Кошик порожній</h3>
         <p>Додайте товари з каталогу</p>
       </div>
-      <!-- Блок рекомендаций даже для пустой корзины -->
       <div id="cart-suggestions" class="recommendation-container"></div>
     `;
     renderCartSuggestions('cart-suggestions');
@@ -3476,7 +3510,6 @@ function openCart() {
         <div class="cart-total">Разом: ${formatPrice(total)} ₴</div>
         <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
       </div>
-      <!-- Блок "Доповніть ваше замовлення" -->
       <div id="cart-suggestions" class="recommendation-container"></div>
     `;
     
@@ -3487,7 +3520,6 @@ function openCart() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Зміна кількості товару в кошику
 function changeCartQuantity(productId, delta) {
   if (!cart[productId] && delta < 1) return;
   
@@ -3503,7 +3535,6 @@ function changeCartQuantity(productId, delta) {
   openCart();
 }
 
-// Видалення товару з кошика
 function removeFromCart(productId) {
   delete cart[productId];
   
@@ -3513,9 +3544,6 @@ function removeFromCart(productId) {
   openCart();
 }
 
-// ===== ДОБАВЛЕНИЕ КОММЕНТАРИЕВ К ЗАКАЗАМ И ВОЗМОЖНОСТИ ОТМЕНЫ =====
-
-// В функции checkout() добавляем поле для комментария
 function checkout() {
   if (!currentUser) {
     closeModal();
@@ -3574,7 +3602,6 @@ function checkout() {
         </div>
       </div>
       
-      <!-- ДОБАВЛЕНО ПОЛЕ КОММЕНТАРИЯ -->
       <div class="form-group">
         <label>Коментар до замовлення (необов'язково)</label>
         <textarea id="order-comment" placeholder="Ваші побажання щодо замовлення..." rows="3"></textarea>
@@ -3610,7 +3637,6 @@ function checkout() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// В функции placeOrder() добавляем сохранение комментария
 function placeOrder(event) {
   event.preventDefault();
   
@@ -3625,7 +3651,6 @@ function placeOrder(event) {
   const phone = document.getElementById('order-phone').value.trim();
   const email = document.getElementById('order-email').value.trim();
   const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-  // ДОБАВЛЕНО: Получаем комментарий
   const comment = document.getElementById('order-comment') ? document.getElementById('order-comment').value.trim() : '';
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -3674,7 +3699,6 @@ function placeOrder(event) {
     total: calculateCartTotal(),
     delivery: deliveryDetails,
     paymentMethod,
-    // ДОБАВЛЕНО: Сохраняем комментарий
     comment: comment,
     status: 'new',
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -3699,7 +3723,6 @@ function placeOrder(event) {
     });
 }
 
-// Генерація підсумку замовлення
 function generateOrderSummary() {
   let summaryHTML = '';
   
@@ -3718,7 +3741,6 @@ function generateOrderSummary() {
   return summaryHTML;
 }
 
-// Розрахунок загальної вартості кошика
 function calculateCartTotal() {
   return Object.entries(cart).reduce((sum, [productId, quantity]) => {
     const product = products.find(p => p.id === productId);
@@ -3726,11 +3748,9 @@ function calculateCartTotal() {
   }, 0);
 }
 
-// ===== ПОКАЗ ПІДТВЕРДЖЕННЯ ЗАКАЗА =====
 function showOrderConfirmation(orderId, order) {
   const modalContent = document.getElementById("modal-content");
   
-  // ДОБАВЛЕНО: Отображение комментария если он есть
   const commentSection = order.comment ? `
     <div class="comment-section" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
       <h4>Ваш коментар:</h4>
@@ -3777,26 +3797,22 @@ function showOrderConfirmation(orderId, order) {
   openModal();
 }
 
-// Відкриття модального вікна
 function openModal() {
   document.getElementById("modal").classList.add("active");
 }
 
-// Закриття модального вікна
 function closeModal() {
   const modal = document.getElementById("modal");
   modal.classList.remove("active");
   modal.classList.remove("mobile-modal");
   document.body.style.overflow = '';
   
-  // Отписываемся от слушателя заказов
   if (window.currentOrdersUnsubscribe) {
     window.currentOrdersUnsubscribe();
     window.currentOrdersUnsubscribe = null;
   }
 }
 
-// ===== ОБНОВЛЕННАЯ ФУНКЦИЯ АВТОРИЗАЦИИ С GOOGLE =====
 function openAuthModal() {
   const modalContent = document.getElementById("modal-content");
   modalContent.innerHTML = `
@@ -3859,7 +3875,6 @@ function openAuthModal() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Переключення вкладок авторизации
 function switchAuthTab(tab) {
   const loginForm = document.getElementById("login-form");
   const registerForm = document.getElementById("register-form");
@@ -3890,7 +3905,6 @@ function switchAuthTab(tab) {
   }
 }
 
-// Вхід в систему
 function login(event) {
   event.preventDefault();
   const email = event.target.querySelector('input[type="email"]').value;
@@ -3915,7 +3929,6 @@ function login(event) {
     });
 }
 
-// Реєстрація
 function register(event) {
   event.preventDefault();
   const name = event.target.querySelector('input[type="text"]').value;
@@ -3938,7 +3951,6 @@ function register(event) {
     });
 }
 
-// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ПАРОЛЯ АДМИНИСТРАТОРА =====
 function verifyAdminPassword() {
   const password = document.getElementById("admin-password").value;
   if (password === ADMIN_PASSWORD) {
@@ -3948,14 +3960,12 @@ function verifyAdminPassword() {
       return;
     }
     
-    // Зберігаємо користувача як адміністратора в Firestore
     const adminRef = db.collection("admins").doc(currentUser.uid);
     adminRef.set({
       email: currentUser.email,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
-      // Также сохраняем в localStorage для быстрого доступа в UI
       const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
       admins[currentUser.uid] = true;
       localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
@@ -3965,14 +3975,11 @@ function verifyAdminPassword() {
       showNotification("Права адміністратора отримані");
       closeModal();
       
-      // Завантажуємо замовлення для адмін-панелі
       loadAdminOrders();
       
-      // Показуємо лічильник переглядів
       document.getElementById("page-views-container").style.display = "block";
       setupPageCounter();
       
-      // Добавляем вкладку для модерации отзывов
       addReviewsTabIfNotExists();
     })
     .catch((error) => {
@@ -3984,7 +3991,6 @@ function verifyAdminPassword() {
   }
 }
 
-// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ВВОДА ПАРОЛЯ АДМИНИСТРАТОРА =====
 function promptAdminPassword() {
   const password = prompt("Введіть пароль адміністратора:");
   if (password === ADMIN_PASSWORD) {
@@ -3994,14 +4000,12 @@ function promptAdminPassword() {
       return;
     }
     
-    // Зберігаємо користувача як адміністратора в Firestore
     const adminRef = db.collection("admins").doc(currentUser.uid);
     adminRef.set({
       email: currentUser.email,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
-      // Также сохраняем в localStorage для быстрого доступа в UI
       const admins = JSON.parse(localStorage.getItem(ADMINS_STORAGE_KEY) || '{}');
       admins[currentUser.uid] = true;
       localStorage.setItem(ADMINS_STORAGE_KEY, JSON.stringify(admins));
@@ -4010,14 +4014,11 @@ function promptAdminPassword() {
       adminMode = true;
       showNotification("Права адміністратора отримані");
       
-      // Завантажуємо замовлення для адмін-панелі
       loadAdminOrders();
       
-      // Показуємо лічильник переглядів
       document.getElementById("page-views-container").style.display = "block";
       setupPageCounter();
       
-      // Добавляем вкладку для модерации отзывов
       addReviewsTabIfNotExists();
     })
     .catch((error) => {
@@ -4029,7 +4030,6 @@ function promptAdminPassword() {
   }
 }
 
-// Перевірка статусу адміністратора
 function checkAdminStatus(userId) {
   db.collection("admins").doc(userId).get()
     .then((doc) => {
@@ -4038,11 +4038,9 @@ function checkAdminStatus(userId) {
         adminMode = true;
         loadAdminOrders();
         
-        // Показуємо лічильник переглядів
         document.getElementById("page-views-container").style.display = "block";
         setupPageCounter();
         
-        // Добавляем вкладку для модерации отзывов
         addReviewsTabIfNotExists();
       }
     })
@@ -4051,9 +4049,7 @@ function checkAdminStatus(userId) {
     });
 }
 
-// Вихід з системи
 function logout() {
-  // Не видаляємо права адміністратора при виході, щоб не вводити пароль кожного разу
   auth.signOut()
     .then(() => {
       showNotification("Вихід виконано успішно");
@@ -4064,7 +4060,6 @@ function logout() {
     });
 }
 
-// Переключення вкладок в адмін-панелі
 function switchTab(tabId) {
   const tabs = document.querySelectorAll(".tab");
   const tabContents = document.querySelectorAll(".tab-content");
@@ -4075,28 +4070,23 @@ function switchTab(tabId) {
   document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add("active");
   document.getElementById(tabId).classList.add("active");
   
-  // Якщо переключилися на вкладку товарів, завантажуємо їх
   if (tabId === 'products-tab') {
     loadAdminProducts();
   }
   
-  // Якщо переключилися на вкладку замовлень, завантажуємо їх
   if (tabId === 'orders-tab') {
     loadAdminOrders();
   }
   
-  // Если переключились на вкладку отзывов, загружаем их
   if (tabId === 'reviews-tab-content') {
     loadReviewsForModeration();
   }
 }
 
-// ===== ЗАВАНТАЖЕННЯ ЗАМОВЛЕНЬ В АДМІН-ПАНЕЛІ =====
 function loadAdminOrders() {
   const ordersList = document.getElementById("admin-orders-list");
   ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
   
-  // Слухаємо оновлення в реальному часі
   db.collection("orders")
     .orderBy("createdAt", "desc")
     .onSnapshot((querySnapshot) => {
@@ -4111,7 +4101,6 @@ function loadAdminOrders() {
         const order = { id: doc.id, ...doc.data() };
         const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
         
-        // Визначаємо статус замовлення
         let statusClass = 'status-new';
         let statusText = 'Новий';
         
@@ -4166,7 +4155,6 @@ function loadAdminOrders() {
     });
 }
 
-// ===== ФУНКЦІЯ ДОДАВАННЯ ТТН ДО ЗАМОВЛЕННЯ =====
 function addTTNToOrder(orderId) {
   const ttn = prompt('Введіть ТТН (трек-номер) для цього замовлення:');
   
@@ -4179,7 +4167,6 @@ function addTTNToOrder(orderId) {
     .then(() => {
       showNotification("ТТН успішно додано до замовлення");
       
-      // Отправляем email с уведомлением о ТТН
       db.collection("orders").doc(orderId).get()
         .then((doc) => {
           if (doc.exists) {
@@ -4188,7 +4175,6 @@ function addTTNToOrder(orderId) {
           }
         });
       
-      // Обновляем список заказов
       loadAdminOrders();
     })
     .catch((error) => {
@@ -4198,7 +4184,6 @@ function addTTNToOrder(orderId) {
   }
 }
 
-// ===== ФУНКЦІЯ ВІДПРАВКИ EMAIL ПРО ТТН =====
 function sendTTNEmail(orderId, order) {
   if (!order.ttn) return;
   
@@ -4213,7 +4198,6 @@ function sendTTNEmail(orderId, order) {
     tracking_url: `https://tracking.novaposhta.ua/#/uk/search/${order.ttn}`
   };
 
-  // Используем другой шаблон для уведомления о ТТН
   emailjs.send(EMAILJS_SERVICE_ID, "template_ttn_notification", templateParams)
     .then(function(response) {
       console.log('Email с ТТН успешно отправлен!', response.status, response.text);
@@ -4222,7 +4206,6 @@ function sendTTNEmail(orderId, order) {
     });
 }
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СТАТУСОВ =====
 function getStatusClass(status) {
   const statusClasses = {
     'new': 'status-new',
@@ -4245,7 +4228,6 @@ function getStatusText(status) {
   return statusTexts[status] || 'Новий';
 }
 
-// ===== ЗМІНА СТАТУСУ ЗАМОВЛЕННЯ =====
 function changeOrderStatus(orderId, status) {
   db.collection("orders").doc(orderId).update({
     status,
@@ -4260,7 +4242,6 @@ function changeOrderStatus(orderId, status) {
   });
 }
 
-// ===== ВИДАЛЕННЯ ЗАМОВЛЕННЯ =====
 function deleteOrder(orderId) {
   if (confirm("Ви впевнені, що хочете видалити це замовлення? Цю дію не можна скасувати.")) {
     db.collection("orders").doc(orderId).delete()
@@ -4274,7 +4255,6 @@ function deleteOrder(orderId) {
   }
 }
 
-// ===== ПЕРЕГЛЯД ДЕТАЛЕЙ ЗАМОВЛЕННЯ =====
 function viewOrderDetails(orderId) {
   db.collection("orders").doc(orderId).get()
     .then((doc) => {
@@ -4306,7 +4286,6 @@ function viewOrderDetails(orderId) {
       const updatedDate = order.updatedAt ? order.updatedAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
       const ttnDate = order.ttnAddedAt ? order.ttnAddedAt.toDate().toLocaleString('uk-UA') : '';
       
-      // ДОБАВЛЕНО: Секция комментария
       const commentSection = order.comment ? `
         <div class="comment-section" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
           <h4>Коментар клієнта:</h4>
@@ -4338,7 +4317,6 @@ function viewOrderDetails(orderId) {
         </div>
       ` : '';
       
-      // ДОБАВЛЕНО: Улучшенная кнопка отмены заказа
       const cancelButton = !adminMode && order.status === 'new' ? `
         <div style="margin: 1rem 0;">
           <button class="btn btn-danger" onclick="cancelOrder('${order.id}')" style="background: #e74c3c; color: white; padding: 10px 20px;">
@@ -4402,7 +4380,6 @@ function viewOrderDetails(orderId) {
     });
 }
 
-// ===== ЗАГРУЗКА ОТЗЫВОВ ДЛЯ МОДЕРАЦИИ =====
 function loadReviewsForModeration() {
   const reviewsContainer = document.getElementById("reviews-moderation-container");
   if (!reviewsContainer) return;
@@ -4450,7 +4427,6 @@ function loadReviewsForModeration() {
     });
 }
 
-// ===== ОДОБРЕНИЕ ОТЗЫВА =====
 function approveReview(reviewId) {
   db.collection("reviews").doc(reviewId).update({
     approved: true,
@@ -4466,7 +4442,6 @@ function approveReview(reviewId) {
   });
 }
 
-// ===== УДАЛЕНИЕ ОТЗЫВА =====
 function deleteReview(reviewId) {
   if (confirm("Ви впевнені, що хочете видалити цей відгук? Цю дію не можна скасувати.")) {
     db.collection("reviews").doc(reviewId).delete()
@@ -4481,7 +4456,6 @@ function deleteReview(reviewId) {
   }
 }
 
-// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ОТМЕНЫ ЗАКАЗА =====
 function cancelOrder(orderId) {
     if (!currentUser) {
         showNotification("Увійдіть в систему для скасування замовлення", "warning");
@@ -4494,7 +4468,6 @@ function cancelOrder(orderId) {
 
     showNotification("Скасування замовлення...", "info");
 
-    // Сначала получаем данные заказа
     db.collection("orders").doc(orderId).get()
         .then((doc) => {
             if (!doc.exists) {
@@ -4504,31 +4477,25 @@ function cancelOrder(orderId) {
             
             const order = doc.data();
             
-            // Проверяем права доступа
             if (!adminMode && order.userId !== currentUser.uid) {
                 showNotification("Ви не можете скасувати це замовлення", "error");
                 return;
             }
             
-            // Проверяем, можно ли отменить заказ
             if (order.status !== 'new') {
                 showNotification("Неможливо скасувати замовлення з поточним статусом: " + getStatusText(order.status), "error");
                 return;
             }
             
-            // Выполняем отмену
             return performOrderCancellation(orderId, order);
         })
         .then(() => {
-            // Успешная отмена
             showNotification("Замовлення успішно скасовано");
             
-            // Обновляем интерфейс в зависимости от контекста
             setTimeout(() => {
                 if (adminMode) {
                     loadAdminOrders();
                 } else {
-                    // Закрываем модальное окно и обновляем список заказов
                     closeModal();
                     viewOrders();
                 }
@@ -4540,7 +4507,6 @@ function cancelOrder(orderId) {
         });
 }
 
-// ===== УЛУЧШЕННАЯ ФУНКЦИЯ ВЫПОЛНЕНИЯ ОТМЕНЫ =====
 function performOrderCancellation(orderId, order) {
     const updateData = {
         status: 'cancelled',
@@ -4553,14 +4519,12 @@ function performOrderCancellation(orderId, order) {
     return db.collection("orders").doc(orderId).update(updateData);
 }
 
-// Збереження URL фіду
 function saveFeedUrl() {
   const feedUrl = document.getElementById("feed-url").value;
   localStorage.setItem(FEED_URL_KEY, feedUrl);
   showNotification("URL фіду збережено");
 }
 
-// Очищення каталогу
 function clearCatalog() {
   if (confirm("Ви впевнені, що хочете очистити каталог? Цю дію не можна скасувати.")) {
     showLoadingSkeleton();
@@ -4589,7 +4553,6 @@ function clearCatalog() {
   }
 }
 
-// Експорт в JSON
 function exportJSON() {
   const dataStr = JSON.stringify(products, null, 2);
   const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -4604,7 +4567,6 @@ function exportJSON() {
   showNotification("Дані експортовано в JSON");
 }
 
-// Функція відкриття модального вікна додавання товару
 function openAddProductModal() {
   const modalContent = document.getElementById("modal-content");
   modalContent.innerHTML = `
@@ -4668,7 +4630,6 @@ function openAddProductModal() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функція збереження нового товару
 function saveNewProduct(event) {
   event.preventDefault();
   
@@ -4692,7 +4653,6 @@ function saveNewProduct(event) {
     });
 }
 
-// Функція завантаження товарів в адмін-панелі
 function loadAdminProducts() {
   const productsList = document.getElementById("admin-products-list");
   productsList.innerHTML = '<p>Завантаження товарів...</p>';
@@ -4753,7 +4713,6 @@ function loadAdminProducts() {
     });
 }
 
-// Функція пошуку товарів в адмін-панелі
 function searchAdminProducts(query) {
   const productItems = document.querySelectorAll('.admin-product-item');
   
@@ -4770,7 +4729,6 @@ function searchAdminProducts(query) {
   });
 }
 
-// Функція редагування товару
 function editProduct(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
@@ -4837,7 +4795,6 @@ function editProduct(productId) {
   setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функція оновлення товару
 function updateProduct(event, productId) {
   event.preventDefault();
   
@@ -4862,7 +4819,6 @@ function updateProduct(event, productId) {
     });
 }
 
-// Функція видалення товару
 function deleteProduct(productId) {
   if (confirm("Ви впевнені, що хочете видалити цей товар? Цю дію не можна скасувати.")) {
     db.collection("products").doc(productId).delete()
@@ -4877,9 +4833,96 @@ function deleteProduct(productId) {
   }
 }
 
-// ===== ФУНКЦИИ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ =====
+function saveProduct(product) {
+  const productData = {
+    ...product,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  if (!product.id) {
+    productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    productData.id = generateId();
+  }
+  
+  const productRef = db.collection("products").doc(productData.id);
+  
+  return productRef.set(productData, { merge: true })
+    .then(() => {
+      showNotification("Товар успішно збережено");
+      loadProducts();
+      return productData.id;
+    })
+    .catch((error) => {
+      console.error("Помилка збереження товару: ", error);
+      showNotification("Помилка збереження товару", "error");
+      
+      if (!product.id) {
+        product.id = generateId();
+        products.push(product);
+      } else {
+        const index = products.findIndex(p => p.id === product.id);
+        if (index !== -1) {
+          products[index] = product;
+        } else {
+          products.push(product);
+        }
+      }
+      
+      localStorage.setItem('products_backup', JSON.stringify(products));
+      renderProducts();
+      
+      return product.id;
+    });
+}
 
-// Функция открытия профиля пользователя
+function generateId() {
+  return 'product-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+function showLoadingSkeleton() {
+  const grid = document.getElementById("product-grid");
+  grid.innerHTML = '';
+  
+  for (let i = 0; i < 8; i++) {
+    const skeleton = document.createElement("div");
+    skeleton.className = "card";
+    skeleton.innerHTML = `
+      <div class="skeleton-img"></div>
+      <div class="skeleton-title"></div>
+      <div class="skeleton-text"></div>
+      <div class="skeleton-text" style="width: 80%;"></div>
+      <div class="skeleton-price"></div>
+      <div class="skeleton-text" style="height: 36px; margin-top: 15px;"></div>
+    `;
+    grid.appendChild(skeleton);
+  }
+}
+
+function showEnhancedLoadingSkeleton() {
+  const grid = document.getElementById("product-grid");
+  if (!grid) return;
+  
+  grid.innerHTML = '';
+  
+  const skeletonCount = window.innerWidth <= 768 ? 4 : 8;
+  
+  for (let i = 0; i < skeletonCount; i++) {
+    const skeleton = document.createElement("div");
+    skeleton.className = "card skeleton-item";
+    skeleton.innerHTML = `
+      <div class="skeleton-img"></div>
+      <div class="skeleton-title"></div>
+      <div class="skeleton-text"></div>
+      <div class="skeleton-text" style="width: 80%;"></div>
+      <div class="skeleton-price"></div>
+      <div class="skeleton-text" style="height: 36px; margin-top: 15px;"></div>
+    `;
+    grid.appendChild(skeleton);
+  }
+  
+  document.getElementById('products-count').textContent = 'Завантаження товарів...';
+}
+
 function openProfile() {
     if (!currentUser) {
         openAuthModal();
@@ -4937,14 +4980,12 @@ function openProfile() {
         </div>
     `;
 
-    // Загружаем статистику заказов
     loadUserOrderStats();
     
     openModal();
     setTimeout(optimizeModalForMobile, 100);
 }
 
-// Функция обновления профиля
 function updateProfile(event) {
     event.preventDefault();
     
@@ -4953,7 +4994,6 @@ function updateProfile(event) {
     
     const promises = [];
     
-    // Обновляем имя, если оно изменилось
     if (newName && newName !== currentUser.displayName) {
         promises.push(
             currentUser.updateProfile({
@@ -4962,7 +5002,6 @@ function updateProfile(event) {
         );
     }
     
-    // Обновляем пароль, если введен новый
     if (newPassword) {
         promises.push(
             currentUser.updatePassword(newPassword)
@@ -4998,7 +5037,6 @@ function updateProfile(event) {
         });
 }
 
-// Функция загрузки статистики заказов пользователя
 function loadUserOrderStats() {
     if (!currentUser) return;
     
@@ -5010,11 +5048,10 @@ function loadUserOrderStats() {
             document.getElementById('profile-orders-count').textContent = ordersCount;
         })
         .catch((error) => {
-            console.error("Помилка завантаження статистики замовлень: ", error);
+            console.error("Помишка завантаження статистики замовлень: ", error);
         });
 }
 
-// Функция для получения информации о статусе заказа
 function getOrderStatusInfo(status) {
     const statusMap = {
         'new': { class: 'status-new', text: 'Новий', icon: 'fas fa-clock' },
@@ -5027,7 +5064,6 @@ function getOrderStatusInfo(status) {
     return statusMap[status] || statusMap['new'];
 }
 
-// Улучшенная функция просмотра заказов
 function viewOrders() {
     if (!currentUser) {
         openAuthModal();
@@ -5047,7 +5083,6 @@ function viewOrders() {
     const ordersList = document.getElementById("user-orders-list");
     ordersList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Завантаження замовлень...</div>';
     
-    // Используем реальное слушание для обновлений в реальном времени
     const unsubscribe = db.collection("orders")
         .where("userId", "==", currentUser.uid)
         .orderBy("createdAt", "desc")
@@ -5079,14 +5114,12 @@ function viewOrders() {
                     </div>
                 ` : '';
                 
-                // ДОБАВЛЕНО: Комментарий к заказу
                 const commentSection = order.comment ? `
                     <div class="order-comment">
                         <p><strong>Ваш коментар:</strong> "${order.comment}"</p>
                     </div>
                 ` : '';
                 
-                // ДОБАВЛЕНО: Кнопка отмены только для заказов со статусом "new"
                 const cancelButton = order.status === 'new' ? `
                     <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">
                         <i class="fas fa-times"></i> Скасувати
@@ -5131,30 +5164,25 @@ function viewOrders() {
             ordersList.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Помилка завантаження замовлень</div>';
         });
     
-    // Сохраняем функцию отписки для использования при закрытии модального окна
     window.currentOrdersUnsubscribe = unsubscribe;
     
     openModal();
     setTimeout(optimizeModalForMobile, 100);
 }
 
-// Добавляем вкладку для модерации отзывов в админ-панель, если её нет
 function addReviewsTabIfNotExists() {
     const adminTabs = document.querySelector('.admin-tabs');
     if (!adminTabs) return;
     
-    // Проверяем, есть ли уже вкладка отзывов
     const existingReviewsTab = adminTabs.querySelector('[onclick*="reviews-tab-content"]');
     if (existingReviewsTab) return;
     
-    // Добавляем вкладку отзывов
     const reviewsTab = document.createElement('div');
     reviewsTab.className = 'tab';
     reviewsTab.setAttribute('onclick', "switchTab('reviews-tab-content')");
     reviewsTab.innerHTML = '<i class="fas fa-comments"></i> Модерація відгуків';
     adminTabs.appendChild(reviewsTab);
     
-    // Добавляем контент для вкладки отзывов
     const tabContents = document.querySelector('.tab-contents');
     if (tabContents) {
         const reviewsContent = document.createElement('div');
@@ -5168,7 +5196,6 @@ function addReviewsTabIfNotExists() {
     }
 }
 
-// Вспомогательная функция для перемешивания массива
 function shuffleArray(array) {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -5178,7 +5205,6 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-// Функция для адаптации заголовка
 function adjustHeaderTitle() {
   const headerTitle = document.querySelector('.header-title');
   if (window.innerWidth <= 768) {
@@ -5188,13 +5214,6 @@ function adjustHeaderTitle() {
   }
 }
 
-// Переключение источника данных
-function switchSource(source) {
-  currentFilters.source = source;
-  applyFilters();
-}
-
-// Функция переключения источника товаров
 function switchSource(source, element) {
     document.querySelectorAll('.source-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -5227,7 +5246,6 @@ function switchSource(source, element) {
     applyFilters();
 }
 
-// Функция для оптимизации модальных окон на мобильных устройствах
 function optimizeModalForMobile() {
   const modal = document.getElementById('modal');
   const modalContent = document.querySelector('.modal-content');
@@ -5244,14 +5262,11 @@ function optimizeModalForMobile() {
   }
 }
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
   
-  // Инициализация EmailJS
   emailjs.init(EMAILJS_USER_ID);
   
-  // Добавляем обработчики событий для мобильного меню
   document.getElementById('mobile-menu-btn').addEventListener('click', function() {
     document.getElementById('mobile-menu').classList.toggle('active');
   });
@@ -5260,19 +5275,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mobile-menu').classList.remove('active');
   });
   
-  // Добавляем обработчики для мобильных фильтров
   document.getElementById('mobile-filters-close').addEventListener('click', closeMobileFilters);
   document.getElementById('mobile-filters-apply').addEventListener('click', applyMobileFilters);
   document.getElementById('mobile-filters-reset').addEventListener('click', resetMobileFilters);
   
-  // Закрытие мобильного меню при клике на ссылку
   document.querySelectorAll('#mobile-menu a').forEach(link => {
     link.addEventListener('click', () => {
       document.getElementById('mobile-menu').classList.remove('active');
     });
   });
   
-  // Добавляем стили для мобильных фильтров, если их еще нет
   if (!document.getElementById('mobile-filters-styles')) {
     const style = document.createElement('style');
     style.id = 'mobile-filters-styles';
@@ -5326,7 +5338,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Добавляем функцию для обновления заголовка страницы при загрузке
 function updatePageTitle() {
   const category = currentFilters.category;
   const search = currentFilters.search;
@@ -5344,35 +5355,30 @@ function updatePageTitle() {
   document.title = title;
 }
 
-// Обновляем заголовок при применении фильтров
 const originalApplyFilters = applyFilters;
 applyFilters = function() {
   originalApplyFilters();
   updatePageTitle();
 };
 
-// Обновляем заголовок при переключении в избранное
 const originalToggleFavorites = toggleFavorites;
 toggleFavorites = function() {
   originalToggleFavorites();
   updatePageTitle();
 };
 
-// Функция открытия модального окна с правилами магазина
 function openRules() {
     const modal = document.getElementById("rules-modal");
     modal.classList.add("active");
     document.body.style.overflow = 'hidden';
 }
 
-// Функция закрытия модального окна с правилами
 function closeRulesModal() {
     const modal = document.getElementById("rules-modal");
     modal.classList.remove("active");
     document.body.style.overflow = '';
 }
 
-// Закрытие модального окна правил при клике вне контента
 document.addEventListener('click', function(e) {
     const rulesModal = document.getElementById("rules-modal");
     if (e.target === rulesModal) {
@@ -5380,7 +5386,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Закрытие модального окна правил по ESC
 document.addEventListener('keydown', function(e) {
     const rulesModal = document.getElementById("rules-modal");
     if (e.key === 'Escape' && rulesModal.classList.contains('active')) {

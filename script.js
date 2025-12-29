@@ -200,20 +200,16 @@ function canShowAds() {
 function getRandomAdBanner() {
   if (!AD_BANNERS.length) return null;
   
-  // Фильтруем баннеры, которые еще не были показаны
   const availableBanners = AD_BANNERS.filter(banner => !shownBannerIds.has(banner.id));
   
-  // Если все баннеры уже были показаны, сбрасываем список
   if (availableBanners.length === 0) {
     shownBannerIds.clear();
     return AD_BANNERS[Math.floor(Math.random() * AD_BANNERS.length)];
   }
   
-  // Выбираем случайный баннер из доступных
   const randomIndex = Math.floor(Math.random() * availableBanners.length);
   const selectedBanner = availableBanners[randomIndex];
   
-  // Добавляем ID в список показанных
   shownBannerIds.add(selectedBanner.id);
   
   return selectedBanner;
@@ -239,7 +235,6 @@ function getAdProducts(count = 4) {
 function renderAdBanner(ad, positionClass = '') {
   if (!ad) return '';
   
-  // Проверяем, не был ли этот баннер уже отображен на странице
   const existingAd = document.querySelector(`.ad-container[data-ad-id="${ad.id}"]`);
   if (existingAd) return '';
   
@@ -319,7 +314,6 @@ function checkForDuplicateAds() {
     const adId = container.getAttribute('data-ad-id');
     if (adId) {
       if (seenIds.has(adId)) {
-        // Удаляем дубликат
         container.remove();
       } else {
         seenIds.add(adId);
@@ -337,7 +331,6 @@ function insertAdsIntoProductGrid() {
   const productCards = grid.querySelectorAll('.card');
   if (productCards.length < ADS_CONFIG.MIN_PRODUCTS_TO_SHOW_ADS) return;
   
-  // Очищаем предыдущие рекламные блоки
   const existingAds = grid.querySelectorAll('.ad-container');
   existingAds.forEach(ad => ad.remove());
   
@@ -347,29 +340,24 @@ function insertAdsIntoProductGrid() {
     before_pagination: productCards.length - 2
   };
   
-  // Обрабатываем каждую позицию
   ADS_CONFIG.AD_POSITIONS.forEach((position, index) => {
     const positionIndex = positions[position];
     
     if (positionIndex && productCards[positionIndex]) {
       let adHTML = '';
       
-      // Чередуем типы рекламы
       if (index % 2 === 0) {
-        // Текстовый баннер
         const adBanner = getRandomAdBanner();
         if (adBanner) {
           adHTML = renderAdBanner(adBanner, `ad-${position.replace(/_/g, '-')}`);
         }
       } else {
-        // Рекламные товары
         const adProducts = getAdProducts(2);
         if (adProducts.length > 0) {
           adHTML = renderAdProducts(adProducts, `ad-${position.replace(/_/g, '-')}`);
         }
       }
       
-      // Вставляем рекламу
       if (adHTML) {
         const currentCards = grid.querySelectorAll('.card');
         if (currentCards[positionIndex]) {
@@ -379,7 +367,6 @@ function insertAdsIntoProductGrid() {
     }
   });
   
-  // Проверяем и удаляем дубликаты
   setTimeout(checkForDuplicateAds, 100);
 }
 
@@ -1732,7 +1719,7 @@ function loadProductsFromJson() {
       fetch(file)
           .then(response => {
               if (!response.ok) {
-                  console.warn(`Файл ${file} не найден, пропускаем`);
+                  console.warn(`Файл ${file} не знайдено, пропускаємо`);
                   return [];
               }
               return response.json();
@@ -1745,7 +1732,7 @@ function loadProductsFromJson() {
               }));
           })
           .catch(error => {
-              console.warn(`Ошибка загрузки файла ${file}:`, error);
+              console.warn(`Помилка завантаження файлу ${file}:`, error);
               return [];
           })
   );
@@ -1803,7 +1790,7 @@ async function checkFilesAvailability() {
 }
 
 function preprocessProducts(productsArray) {
-  console.log("🔧 Предобработка товаров для умного поиска...");
+  console.log("🔧 Попередня обробка товарів для розумного пошуку...");
   
   const processedProducts = productsArray.map((product, index) => {
     if (!product || typeof product !== 'object') return product;
@@ -1847,7 +1834,7 @@ function preprocessProducts(productsArray) {
     };
   });
   
-  console.log(`✅ Обработано ${processedProducts.length} товаров`);
+  console.log(`✅ Оброблено ${processedProducts.length} товарів`);
   return processedProducts;
 }
 
@@ -2540,7 +2527,6 @@ function addToCart(productId) {
   
   updateCartCount();
   
-  // Перевіряємо, скільки постачальників тепер в кошику
   const suppliers = getCartSuppliers();
   
   let message = "Товар додано до кошика";
@@ -2572,10 +2558,8 @@ function openCart() {
     let total = 0;
     let cartItemsHTML = '';
     
-    // Визначаємо постачальників товарів в кошику
     const suppliers = getCartSuppliers();
     
-    // Інформаційне повідомлення, якщо товари від різних постачальників
     let supplierWarning = '';
     if (suppliers.size > 1) {
       supplierWarning = `
@@ -2590,7 +2574,6 @@ function openCart() {
       `;
     }
     
-    // Групуємо товари за постачальниками
     const itemsBySupplier = {};
     
     for (const [productId, quantity] of Object.entries(cart)) {
@@ -2613,7 +2596,6 @@ function openCart() {
       }
     }
     
-    // Формуємо HTML з групуванням за постачальниками
     for (const [supplierName, items] of Object.entries(itemsBySupplier)) {
       cartItemsHTML += `
         <div class="supplier-section">
@@ -2684,7 +2666,6 @@ function checkout() {
 
   const modalContent = document.getElementById("modal-content");
   
-  // Перевіряємо постачальників
   const suppliers = getCartSuppliers();
   
   let supplierWarning = '';
@@ -2792,6 +2773,97 @@ function checkout() {
   setTimeout(optimizeModalForMobile, 100);
 }
 
+// ===== ОНОВЛЕНА ФУНКЦІЯ РОЗМІЩЕННЯ ЗАМОВЛЕННЯ =====
+function placeOrder(event) {
+  event.preventDefault();
+  
+  if (!currentUser || !currentUser.uid) {
+    closeModal();
+    openAuthModal();
+    showNotification("Для оформлення замовлення необхідно авторизуватися", "warning");
+    return;
+  }
+  
+  const name = document.getElementById('order-name').value.trim();
+  const phone = document.getElementById('order-phone').value.trim();
+  const email = document.getElementById('order-email').value.trim();
+  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  const comment = document.getElementById('order-comment') ? document.getElementById('order-comment').value.trim() : '';
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showNotification("Введіть коректну email адресу", "error");
+    return;
+  }
+  
+  const phoneRegex = /^[\+]?[0-9]{10,15}$/;
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (!phoneRegex.test(cleanPhone)) {
+    showNotification("Введіть коректний номер телефону", "error");
+    return;
+  }
+  
+  const city = document.getElementById('np-city').value.trim();
+  const warehouse = document.getElementById('np-warehouse').value.trim();
+  
+  if (!city || !warehouse) {
+    showNotification('Заповніть всі поля для доставки Новою Поштою', 'error');
+    return;
+  }
+  
+  const deliveryDetails = { 
+    service: 'Нова Пошта', 
+    city, 
+    warehouse 
+  };
+  
+  if (!name || !phone || !email) {
+    showNotification('Заповніть всі обов\'язкові поля', 'error');
+    return;
+  }
+  
+  if (Object.keys(cart).length === 0) {
+    showNotification('Кошик порожній', 'error');
+    return;
+  }
+  
+  const suppliers = Array.from(getCartSuppliers());
+  
+  const order = {
+    userId: currentUser.uid,
+    userName: name,
+    userPhone: cleanPhone,
+    userEmail: email,
+    items: {...cart},
+    total: calculateCartTotal(),
+    delivery: deliveryDetails,
+    paymentMethod,
+    comment: comment,
+    suppliers: suppliers,
+    ttns: {},
+    status: 'new',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  db.collection("orders").add(order)
+    .then((docRef) => {
+      cart = {};
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      updateCartCount();
+      
+      sendOrderEmail(docRef.id, order);
+      
+      showNotification(`Замовлення успішно оформлено. Номер вашого замовлення: ${docRef.id}`);
+      closeModal();
+      showOrderConfirmation(docRef.id, order);
+    })
+    .catch(error => {
+      console.error("Помилка оформлення замовлення: ", error);
+      showNotification("Помилка оформлення замовлення", "error");
+    });
+}
+
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
@@ -2799,7 +2871,7 @@ function initApp() {
   initRecommendationSystem();
   addAdStyles();
   
-  // Додаємо стилі для постачальників
+  // Додаємо стилі для постачальників та ТТН
   const supplierStyles = document.createElement('style');
   supplierStyles.textContent = `
     /* Стилі для відображення постачальників у кошику */
@@ -2906,6 +2978,40 @@ function initApp() {
       color: #e74c3c;
       font-weight: 600;
       font-size: 0.85rem;
+    }
+    
+    /* Стилі для мульти-ТТН */
+    .ttn-suppliers-list {
+      margin: 20px 0;
+    }
+    
+    .ttn-supplier-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    
+    .ttn-supplier-item label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .ttn-supplier-item input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .ttn-supplier-item input:focus {
+      border-color: #3498db;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
     }
   `;
   document.head.appendChild(supplierStyles);
@@ -3163,7 +3269,6 @@ function loadProducts() {
 function changePage(page) {
   currentPage = page;
   
-  // Сбрасываем показанные баннеры при переходе на первую страницу
   if (page === 1) {
     resetShownBanners();
   }
@@ -3628,7 +3733,6 @@ function applyFilters() {
   
   currentPage = 1;
   
-  // Сбрасываем показанные баннеры при применении фильтров
   resetShownBanners();
   
   if (isProductsLoading) {
@@ -3914,92 +4018,6 @@ function removeFromCart(productId) {
   
   updateCartCount();
   openCart();
-}
-
-function placeOrder(event) {
-  event.preventDefault();
-  
-  if (!currentUser || !currentUser.uid) {
-    closeModal();
-    openAuthModal();
-    showNotification("Для оформлення замовлення необхідно авторизуватися", "warning");
-    return;
-  }
-  
-  const name = document.getElementById('order-name').value.trim();
-  const phone = document.getElementById('order-phone').value.trim();
-  const email = document.getElementById('order-email').value.trim();
-  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-  const comment = document.getElementById('order-comment') ? document.getElementById('order-comment').value.trim() : '';
-  
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    showNotification("Введіть коректну email адресу", "error");
-    return;
-  }
-  
-  const phoneRegex = /^[\+]?[0-9]{10,15}$/;
-  const cleanPhone = phone.replace(/\D/g, '');
-  if (!phoneRegex.test(cleanPhone)) {
-    showNotification("Введіть коректний номер телефону", "error");
-    return;
-  }
-  
-  const city = document.getElementById('np-city').value.trim();
-  const warehouse = document.getElementById('np-warehouse').value.trim();
-  
-  if (!city || !warehouse) {
-    showNotification('Заповніть всі поля для доставки Новою Поштою', 'error');
-    return;
-  }
-  
-  const deliveryDetails = { 
-    service: 'Нова Пошта', 
-    city, 
-    warehouse 
-  };
-  
-  if (!name || !phone || !email) {
-    showNotification('Заповніть всі обов\'язкові поля', 'error');
-    return;
-  }
-  
-  if (Object.keys(cart).length === 0) {
-    showNotification('Кошик порожній', 'error');
-    return;
-  }
-  
-  const order = {
-    userId: currentUser.uid,
-    userName: name,
-    userPhone: cleanPhone,
-    userEmail: email,
-    items: {...cart},
-    total: calculateCartTotal(),
-    delivery: deliveryDetails,
-    paymentMethod,
-    comment: comment,
-    status: 'new',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  
-  db.collection("orders").add(order)
-    .then((docRef) => {
-      cart = {};
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-      updateCartCount();
-      
-      sendOrderEmail(docRef.id, order);
-      
-      showNotification(`Замовлення успішно оформлено. Номер вашого замовлення: ${docRef.id}`);
-      closeModal();
-      showOrderConfirmation(docRef.id, order);
-    })
-    .catch(error => {
-      console.error("Помилка оформлення замовлення: ", error);
-      showNotification("Помилка оформлення замовлення", "error");
-    });
 }
 
 function generateOrderSummary() {
@@ -4362,6 +4380,163 @@ function switchTab(tabId) {
   }
 }
 
+// ===== ОНОВЛЕНА ФУНКЦІЯ ДОДАВАННЯ ТТН =====
+function addTTNToOrder(orderId) {
+  db.collection("orders").doc(orderId).get()
+    .then((doc) => {
+      if (!doc.exists) return;
+
+      const order = doc.data();
+      
+      if (order.suppliers && order.suppliers.length > 1) {
+        const modalContent = document.getElementById("modal-content");
+        let supplierOptions = '';
+        
+        order.suppliers.forEach(supplier => {
+          const currentTTN = order.ttns?.[supplier] || '';
+          supplierOptions += `
+            <div class="ttn-supplier-item">
+              <label>${supplier}</label>
+              <input type="text" 
+                     class="ttn-input" 
+                     data-supplier="${supplier}" 
+                     value="${currentTTN}" 
+                     placeholder="Введіть ТТН">
+            </div>
+          `;
+        });
+        
+        modalContent.innerHTML = `
+          <button class="modal-close" onclick="closeModal()" aria-label="Закрити">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+          <h3>Додати ТТН для замовлення #${orderId}</h3>
+          <p>У цьому замовленні ${order.suppliers.length} постачальників</p>
+          <form onsubmit="saveMultipleTTNs(event, '${orderId}')">
+            <div class="ttn-suppliers-list">
+              ${supplierOptions}
+            </div>
+            <button type="submit" class="btn btn-detail">Зберегти всі ТТН</button>
+          </form>
+        `;
+        openModal();
+      } else {
+        const supplier = order.suppliers?.[0] || 'Основний постачальник';
+        const ttn = prompt(`Введіть ТТН для постачальника "${supplier}":`, order.ttns?.[supplier] || '');
+        
+        if (ttn && ttn.trim() !== '') {
+          saveTTNForSupplier(orderId, supplier, ttn.trim());
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Помилка завантаження замовлення: ", error);
+      showNotification("Помилка завантаження замовлення", "error");
+    });
+}
+
+// ===== НОВА ФУНКЦІЯ ЗБЕРЕЖЕННЯ КІЛЬКОХ ТТН =====
+function saveMultipleTTNs(event, orderId) {
+  event.preventDefault();
+  
+  const ttnInputs = document.querySelectorAll('.ttn-input');
+  const ttns = {};
+  
+  ttnInputs.forEach(input => {
+    const supplier = input.getAttribute('data-supplier');
+    const ttn = input.value.trim();
+    if (ttn) {
+      ttns[supplier] = ttn;
+    }
+  });
+  
+  if (Object.keys(ttns).length === 0) {
+    showNotification("Введіть хоча б один ТТН", "error");
+    return;
+  }
+  
+  db.collection("orders").doc(orderId).update({
+    ttns: ttns,
+    ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    showNotification("ТТН успішно додано для всіх постачальників");
+    closeModal();
+    loadAdminOrders();
+    
+    db.collection("orders").doc(orderId).get()
+      .then((doc) => {
+        if (doc.exists) {
+          const order = { id: doc.id, ...doc.data() };
+          sendTTNsEmail(orderId, order);
+        }
+      });
+  })
+  .catch((error) => {
+    console.error("Помилка збереження ТТН: ", error);
+    showNotification("Помилка збереження ТТН", "error");
+  });
+}
+
+// ===== НОВА ФУНКЦІЯ ЗБЕРЕЖЕННЯ ТТН ДЛЯ ОДНОГО ПОСТАЧАЛЬНИКА =====
+function saveTTNForSupplier(orderId, supplier, ttn) {
+  db.collection("orders").doc(orderId).update({
+    [`ttns.${supplier}`]: ttn,
+    ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    showNotification(`ТТН успішно додано для ${supplier}`);
+    loadAdminOrders();
+    
+    db.collection("orders").doc(orderId).get()
+      .then((doc) => {
+        if (doc.exists) {
+          const order = { id: doc.id, ...doc.data() };
+          sendTTNsEmail(orderId, order);
+        }
+      });
+  })
+  .catch((error) => {
+    console.error("Помилка збереження ТТН: ", error);
+    showNotification("Помилка збереження ТТН", "error");
+  });
+}
+
+// ===== ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ EMAIL З ТТН =====
+function sendTTNsEmail(orderId, order) {
+  if (!order.ttns || Object.keys(order.ttns).length === 0) return;
+  
+  let ttnList = '';
+  Object.entries(order.ttns).forEach(([supplier, ttn]) => {
+    ttnList += `
+      <tr>
+        <td>${supplier}</td>
+        <td>${ttn}</td>
+        <td><a href="https://tracking.novaposhta.ua/#/uk/search/${ttn}">Відстежити</a></td>
+      </tr>
+    `;
+  });
+  
+  const templateParams = {
+    to_email: order.userEmail,
+    order_id: orderId,
+    customer_name: order.userName,
+    ttns_table: ttnList,
+    delivery_service: order.delivery.service,
+    delivery_city: order.delivery.city,
+    delivery_warehouse: order.delivery.warehouse
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, "template_ttn_notification", templateParams)
+    .then(function(response) {
+      console.log('Email з ТТН успішно відправлено!', response.status, response.text);
+    }, function(error) {
+      console.error('Помилка відправки email з ТТН:', error);
+    });
+}
+
 function loadAdminOrders() {
   const ordersList = document.getElementById("admin-orders-list");
   ordersList.innerHTML = '<p>Завантаження замовлень...</p>';
@@ -4397,6 +4572,10 @@ function loadAdminOrders() {
           statusText = 'Скасовано';
         }
         
+        const ttnInfo = order.ttns && Object.keys(order.ttns).length > 0 
+          ? `<p><strong>ТТН:</strong> ${Object.entries(order.ttns).map(([s, t]) => `${s}: ${t}`).join(', ')}</p>`
+          : '';
+        
         const orderElement = document.createElement('div');
         orderElement.className = 'admin-order-item';
         orderElement.innerHTML = `
@@ -4410,7 +4589,8 @@ function loadAdminOrders() {
             <p><strong>Сума:</strong> ${formatPrice(order.total)} ₴</p>
             <p><strong>Доставка:</strong> ${order.delivery.service}</p>
             <p><strong>Статус:</strong> <span class="order-status ${statusClass}">${statusText}</span></p>
-            ${order.ttn ? `<p><strong>ТТН:</strong> ${order.ttn}</p>` : ''}
+            ${ttnInfo}
+            ${order.suppliers && order.suppliers.length > 1 ? `<p><strong>Постачальників:</strong> ${order.suppliers.length}</p>` : ''}
           </div>
           <div class="admin-order-actions">
             <button class="btn btn-detail" onclick="viewOrderDetails('${order.id}')">Деталі</button>
@@ -4431,57 +4611,6 @@ function loadAdminOrders() {
     }, (error) => {
       console.error("Помилка завантаження замовлень: ", error);
       ordersList.innerHTML = '<p>Помилка завантаження замовлень</p>';
-    });
-}
-
-function addTTNToOrder(orderId) {
-  const ttn = prompt('Введіть ТТН (трек-номер) для цього замовлення:');
-  
-  if (ttn && ttn.trim() !== '') {
-    db.collection("orders").doc(orderId).update({
-      ttn: ttn.trim(),
-      ttnAddedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-      showNotification("ТТН успішно додано до замовлення");
-      
-      db.collection("orders").doc(orderId).get()
-        .then((doc) => {
-          if (doc.exists) {
-            const order = { id: doc.id, ...doc.data() };
-            sendTTNEmail(orderId, order);
-          }
-        });
-      
-      loadAdminOrders();
-    })
-    .catch((error) => {
-      console.error("Помилка додавання ТТН: ", error);
-      showNotification("Помилка додавання ТТН", "error");
-    });
-  }
-}
-
-function sendTTNEmail(orderId, order) {
-  if (!order.ttn) return;
-  
-  const templateParams = {
-    to_email: order.userEmail,
-    order_id: orderId,
-    customer_name: order.userName,
-    ttn_number: order.ttn,
-    delivery_service: order.delivery.service,
-    delivery_city: order.delivery.city,
-    delivery_warehouse: order.delivery.warehouse,
-    tracking_url: `https://tracking.novaposhta.ua/#/uk/search/${order.ttn}`
-  };
-
-  emailjs.send(EMAILJS_SERVICE_ID, "template_ttn_notification", templateParams)
-    .then(function(response) {
-      console.log('Email с ТТН успешно отправлен!', response.status, response.text);
-    }, function(error) {
-      console.error('Ошибка отправки email с ТТН:', error);
     });
 }
 
@@ -4534,6 +4663,7 @@ function deleteOrder(orderId) {
   }
 }
 
+// ===== ОНОВЛЕНА ФУНКЦІЯ ПЕРЕГЛЯДУ ДЕТАЛЕЙ ЗАМОВЛЕННЯ =====
 function viewOrderDetails(orderId) {
   db.collection("orders").doc(orderId).get()
     .then((doc) => {
@@ -4572,15 +4702,32 @@ function viewOrderDetails(orderId) {
         </div>
       ` : '';
       
-      const ttnSection = order.ttn ? `
+      const ttnSection = order.ttns && Object.keys(order.ttns).length > 0 ? `
         <div class="ttn-section" style="margin: 1rem 0; padding: 1rem; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #007bff;">
           <h4>Інформація про відправлення</h4>
-          <p><strong>ТТН (трек-номер):</strong> ${order.ttn}</p>
-          <p><strong>Дата додавання ТТН:</strong> ${ttnDate}</p>
-          <p><strong>Служба доставки:</strong> Нова Пошта</p>
-          <p><a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" style="color: #007bff; text-decoration: none;">
-            <i class="fas fa-external-link-alt"></i> Відстежити посилку
-          </a></p>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd;">Постачальник</th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd;">ТТН</th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd;">Відстежити</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(order.ttns).map(([supplier, ttn]) => `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${supplier}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${ttn}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                    <a href="https://tracking.novaposhta.ua/#/uk/search/${ttn}" target="_blank" style="color: #007bff; text-decoration: none;">
+                      <i class="fas fa-external-link-alt"></i> Відстежити
+                    </a>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ${ttnDate ? `<p style="margin-top: 10px;"><strong>Дата додавання ТТН:</strong> ${ttnDate}</p>` : ''}
         </div>
       ` : `
         <div class="ttn-section" style="margin: 1rem 0; padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
@@ -4591,7 +4738,7 @@ function viewOrderDetails(orderId) {
       const ttnButton = adminMode ? `
         <div style="margin: 1rem 0;">
           <button class="btn btn-detail" onclick="addTTNToOrder('${order.id}')">
-            <i class="fas fa-truck"></i> ${order.ttn ? 'Змінити ТТН' : 'Додати ТТН'}
+            <i class="fas fa-truck"></i> ${order.ttns && Object.keys(order.ttns).length > 0 ? 'Змінити ТТН' : 'Додати ТТН'}
           </button>
         </div>
       ` : '';
@@ -4607,46 +4754,57 @@ function viewOrderDetails(orderId) {
         </div>
       ` : '';
       
+      const suppliersInfo = order.suppliers && order.suppliers.length > 1 ? `
+        <div class="suppliers-info" style="margin: 1rem 0; padding: 1rem; background: #f0f7ff; border-radius: 8px;">
+          <h4>Постачальники у замовленні</h4>
+          <ul style="margin: 0; padding-left: 20px;">
+            ${order.suppliers.map(supplier => `<li>${supplier}</li>`).join('')}
+          </ul>
+          <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+            <i class="fas fa-info-circle"></i> Кожен постачальник відправляє окрему посилку
+          </p>
+        </div>
+      ` : '';
+      
       modalContent.innerHTML = `
         <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
         <h3>Деталі замовлення #${order.id}</h3>
-        <div class="order-details">
-          ${ttnSection}
-          ${ttnButton}
-          ${cancelButton}
-          ${commentSection}
-          
-          <div class="customer-info">
-            <h4>Інформація про клієнта</h4>
-            <p><strong>Ім'я:</strong> ${order.userName}</p>
-            <p><strong>Email:</strong> ${order.userEmail}</p>
-            <p><strong>Телефон:</strong> ${order.userPhone}</p>
-          </div>
-          
-          <div class="order-meta">
-            <h4>Інформація про замовлення</h4>
-            <p><strong>Дата створення:</strong> ${orderDate}</p>
-            <p><strong>Дата оновлення:</strong> ${updatedDate}</p>
-            <p><strong>Спосіб оплати:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
-            <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
-          </div>
-          
-          <div class="delivery-info">
-            <h4>Доставка</h4>
-            <p><strong>Служба:</strong> ${order.delivery.service}</p>
-            ${order.delivery.city ? `<p><strong>Місто:</strong> ${order.delivery.city}</p>` : ''}
-            ${order.delivery.warehouse ? `<p><strong>Відділення:</strong> ${order.delivery.warehouse}</p>` : ''}
-            ${order.delivery.address ? `<p><strong>Адреса:</strong> ${order.delivery.address}</p>` : ''}
-          </div>
-          
-          <div class="order-items">
-            <h4>Товари</h4>
-            ${itemsHTML}
-          </div>
-          
-          <div class="order-total">
-            <h4>Разом: ${formatPrice(order.total)} ₴</h4>
-          </div>
+        ${suppliersInfo}
+        ${ttnSection}
+        ${ttnButton}
+        ${cancelButton}
+        ${commentSection}
+        
+        <div class="customer-info">
+          <h4>Інформація про клієнта</h4>
+          <p><strong>Ім'я:</strong> ${order.userName}</p>
+          <p><strong>Email:</strong> ${order.userEmail}</p>
+          <p><strong>Телефон:</strong> ${order.userPhone}</p>
+        </div>
+        
+        <div class="order-meta">
+          <h4>Інформація про замовлення</h4>
+          <p><strong>Дата створення:</strong> ${orderDate}</p>
+          <p><strong>Дата оновлення:</strong> ${updatedDate}</p>
+          <p><strong>Спосіб оплати:</strong> ${order.paymentMethod === 'cash' ? 'Готівкою при отриманні' : 'Онлайн-оплата карткою'}</p>
+          <p><strong>Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
+        </div>
+        
+        <div class="delivery-info">
+          <h4>Доставка</h4>
+          <p><strong>Служба:</strong> ${order.delivery.service}</p>
+          ${order.delivery.city ? `<p><strong>Місто:</strong> ${order.delivery.city}</p>` : ''}
+          ${order.delivery.warehouse ? `<p><strong>Відділення:</strong> ${order.delivery.warehouse}</p>` : ''}
+          ${order.delivery.address ? `<p><strong>Адреса:</strong> ${order.delivery.address}</p>` : ''}
+        </div>
+        
+        <div class="order-items">
+          <h4>Товари</h4>
+          ${itemsHTML}
+        </div>
+        
+        <div class="order-total">
+          <h4>Разом: ${formatPrice(order.total)} ₴</h4>
         </div>
       `;
       
@@ -5384,12 +5542,14 @@ function viewOrders() {
                 const orderDate = order.createdAt ? order.createdAt.toDate().toLocaleString('uk-UA') : 'Дата не вказана';
                 const statusInfo = getOrderStatusInfo(order.status);
                 
-                const ttnSection = order.ttn ? `
+                const ttnSection = order.ttns && Object.keys(order.ttns).length > 0 ? `
                     <div class="order-ttn-info">
-                        <p><strong>ТТН:</strong> ${order.ttn}</p>
-                        <a href="https://tracking.novaposhta.ua/#/uk/search/${order.ttn}" target="_blank" class="track-link">
-                            <i class="fas fa-external-link-alt"></i> Відстежити посилку
-                        </a>
+                        <p><strong>ТТН:</strong> ${Object.entries(order.ttns).map(([s, t]) => `${s}: ${t}`).join(', ')}</p>
+                        ${Object.entries(order.ttns).map(([supplier, ttn]) => `
+                            <a href="https://tracking.novaposhta.ua/#/uk/search/${ttn}" target="_blank" class="track-link">
+                                <i class="fas fa-external-link-alt"></i> Відстежити ${supplier}
+                            </a>
+                        `).join('<br>')}
                     </div>
                 ` : '';
                 

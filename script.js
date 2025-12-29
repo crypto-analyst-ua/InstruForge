@@ -23,6 +23,16 @@ const PRODUCT_FILES = [
     'products6.json'
 ];
 
+// Названия поставщиков для отображения
+const SUPPLIER_NAMES = {
+    'products1.json': 'Поставщик інструментів',
+    'products2.json': 'Поставщик миючих засобів',
+    'products3.json': 'Поставщик масел',
+    'products4.json': 'Поставщик дрібниць для дому',
+    'products5.json': 'Поставщик сувенірів',
+    'products6.json': 'Поставщик матеріалів для ремонту'
+};
+
 // ===== СИСТЕМА РЕКЛАМЫ =====
 const ADS_CONFIG = {
   ENABLED: true,
@@ -2501,12 +2511,404 @@ function initRecommendationSystem() {
   }
 }
 
+// ===== ФУНКЦІЯ ДЛЯ ПЕРЕВІРКИ ПОСТАЧАЛЬНИКІВ В КОШИКУ =====
+function getCartSuppliers() {
+  const suppliers = new Set();
+  
+  for (const [productId, quantity] of Object.entries(cart)) {
+    const product = products.find(p => p.id === productId);
+    if (product && product.source) {
+      suppliers.add(SUPPLIER_NAMES[product.source] || product.source);
+    }
+  }
+  
+  return suppliers;
+}
+
+// ===== ОНОВЛЕНА ФУНКЦІЯ ДОДАВАННЯ В КОШИК =====
+function addToCart(productId) {
+  const product = products.find(p => p.id === productId);
+  
+  if (!cart[productId]) {
+    cart[productId] = 0;
+  }
+  cart[productId]++;
+  
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  
+  trackUserBehavior('add_to_cart', productId);
+  
+  updateCartCount();
+  
+  // Перевіряємо, скільки постачальників тепер в кошику
+  const suppliers = getCartSuppliers();
+  
+  let message = "Товар додано до кошика";
+  
+  if (suppliers.size > 1 && product) {
+    message += `. Увага! Товари від ${suppliers.size} різних постачальників. Кожен відправляє окрему посилку.`;
+  }
+  
+  showNotification(message);
+}
+
+// ===== ОНОВЛЕНА ФУНКЦІЯ ВІДКРИТТЯ КОШИКА =====
+function openCart() {
+  const modalContent = document.getElementById("modal-content");
+  
+  if (Object.keys(cart).length === 0) {
+    modalContent.innerHTML = `
+      <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
+      <h3>Кошик</h3>
+      <div class="empty-cart">
+        <i class="fas fa-shopping-cart"></i>
+        <h3>Кошик порожній</h3>
+        <p>Додайте товари з каталогу</p>
+      </div>
+      <div id="cart-suggestions" class="recommendation-container"></div>
+    `;
+    renderCartSuggestions('cart-suggestions');
+  } else {
+    let total = 0;
+    let cartItemsHTML = '';
+    
+    // Визначаємо постачальників товарів в кошику
+    const suppliers = getCartSuppliers();
+    
+    // Інформаційне повідомлення, якщо товари від різних постачальників
+    let supplierWarning = '';
+    if (suppliers.size > 1) {
+      supplierWarning = `
+        <div class="supplier-warning">
+          <i class="fas fa-info-circle"></i>
+          <div class="warning-content">
+            <strong>Увага!</strong> Товари в кошику від <strong>${suppliers.size} різних постачальників</strong>.
+            <br>Кожен постачальник відправляє товари окремою посилкою.
+            <br>Доставка та упаковка розраховуються окремо для кожної посилки.
+          </div>
+        </div>
+      `;
+    }
+    
+    // Групуємо товари за постачальниками
+    const itemsBySupplier = {};
+    
+    for (const [productId, quantity] of Object.entries(cart)) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        const itemTotal = product.price * quantity;
+        total += itemTotal;
+        
+        const supplierName = SUPPLIER_NAMES[product.source] || 'Невідомий постачальник';
+        
+        if (!itemsBySupplier[supplierName]) {
+          itemsBySupplier[supplierName] = [];
+        }
+        
+        itemsBySupplier[supplierName].push({
+          product,
+          quantity,
+          itemTotal
+        });
+      }
+    }
+    
+    // Формуємо HTML з групуванням за постачальниками
+    for (const [supplierName, items] of Object.entries(itemsBySupplier)) {
+      cartItemsHTML += `
+        <div class="supplier-section">
+          <div class="supplier-header">
+            <i class="fas fa-truck"></i>
+            <h4>${supplierName}</h4>
+            <span class="supplier-badge">Окрема посилка</span>
+          </div>
+      `;
+      
+      items.forEach(({product, quantity, itemTotal}) => {
+        cartItemsHTML += `
+          <div class="cart-item">
+            <img src="${product.image || 'https://via.placeholder.com/80x80?text=No+Image'}" alt="${product.title}" class="cart-item-image">
+            <div class="cart-item-details">
+              <h4 class="cart-item-title">${product.title}</h4>
+              <div class="cart-item-price">${formatPrice(product.price)} ₴ x ${quantity} = ${formatPrice(itemTotal)} ₴</div>
+              <div class="cart-item-actions">
+                <button class="btn" onclick="changeCartQuantity('${product.id}', -1)">-</button>
+                <span>${quantity}</span>
+                <button class="btn" onclick="changeCartQuantity('${product.id}', 1)">+</button>
+                <button class="btn" onclick="removeFromCart('${product.id}')"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      cartItemsHTML += `</div>`;
+    }
+    
+    modalContent.innerHTML = `
+      <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
+      <h3>Кошик</h3>
+      ${supplierWarning}
+      <div class="cart-items">
+        ${cartItemsHTML}
+      </div>
+      <div class="cart-footer">
+        <div class="cart-summary">
+          <div class="suppliers-count">
+            <i class="fas fa-boxes"></i>
+            Кількість посилок: <strong>${suppliers.size}</strong>
+          </div>
+          <div class="cart-total">Сума товарів: ${formatPrice(total)} ₴</div>
+          <p class="delivery-note">*Вартість доставки розраховується окремо для кожної посилки</p>
+        </div>
+        <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
+      </div>
+      <div id="cart-suggestions" class="recommendation-container"></div>
+    `;
+    
+    renderCartSuggestions('cart-suggestions');
+  }
+  
+  openModal();
+  setTimeout(optimizeModalForMobile, 100);
+}
+
+// ===== ОНОВЛЕНА ФУНКЦІЯ ОФОРМЛЕННЯ ЗАМОВЛЕННЯ =====
+function checkout() {
+  if (!currentUser) {
+    closeModal();
+    openAuthModal();
+    showNotification("Для оформлення замовлення необхідно авторизуватися", "warning");
+    return;
+  }
+
+  const modalContent = document.getElementById("modal-content");
+  
+  // Перевіряємо постачальників
+  const suppliers = getCartSuppliers();
+  
+  let supplierWarning = '';
+  if (suppliers.size > 1) {
+    supplierWarning = `
+      <div class="supplier-warning">
+        <i class="fas fa-info-circle"></i>
+        <div class="warning-content">
+          <strong>Увага!</strong> Ваше замовлення містить товари від <strong>${suppliers.size} різних постачальників</strong>.
+          <br>• Кожен постачальник відправляє товари окремою посилкою
+          <br>• Доставка розраховується окремо для кожної посилки
+          <br>• Ви отримаєте окремі ТТН-номери для кожної посилки
+        </div>
+      </div>
+    `;
+  }
+  
+  modalContent.innerHTML = `
+    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
+    <h3>Оформлення замовлення</h3>
+    ${supplierWarning}
+    <form class="checkout-form" onsubmit="placeOrder(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Ім'я та прізвище*</label>
+          <input type="text" id="order-name" required value="${currentUser.displayName || ''}">
+        </div>
+        <div class="form-group">
+          <label>Телефон*</label>
+          <input type="tel" id="order-phone" required placeholder="+380XXXXXXXXX">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email*</label>
+        <input type="email" id="order-email" required value="${currentUser.email || ''}">
+      </div>
+      
+      <div class="delivery-section">
+        <h4>Доставка Новою Поштою</h4>
+        <div class="delivery-notice">
+          <i class="fas fa-info-circle"></i>
+          <p>Доставка здійснюється за тарифами перевізника. Вартість доставки розраховується окремо та оплачується при отриманні замовлення.</p>
+        </div>
+        <div class="form-group">
+          <label>Місто*</label>
+          <input type="text" id="np-city" required placeholder="Введіть ваше місто">
+        </div>
+        <div class="form-group">
+          <label>Відділення Нової Пошти*</label>
+          <input type="text" id="np-warehouse" required placeholder="Номер відділення">
+        </div>
+      </div>
+      
+      <div class="payment-section">
+        <h4>Спосіб оплати</h4>
+        <div class="payment-options">
+          <label class="payment-option">
+            <input type="radio" name="payment" value="cash" checked>
+            <span>Готівкою при отриманні</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment" value="card">
+            <span>Онлайн-оплата карткою</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Коментар до замовлення (необов'язково)</label>
+        <textarea id="order-comment" placeholder="Ваші побажання щодо замовлення..." rows="3"></textarea>
+      </div>
+      
+      <div class="order-summary">
+        <h4>Ваше замовлення</h4>
+        <div class="order-items">
+          ${generateOrderSummary()}
+        </div>
+        <div class="suppliers-summary">
+          <i class="fas fa-boxes"></i>
+          Постачальників у замовленні: <strong>${suppliers.size}</strong>
+          ${suppliers.size > 1 ? '<span class="multiple-parcels">(Кілька посилок)</span>' : ''}
+        </div>
+        <div class="order-total">
+          <div class="total-line">
+            <span>Сума замовлення:</span>
+            <span>${formatPrice(calculateCartTotal())} ₴</span>
+          </div>
+          <div class="total-line">
+            <span>Доставка:</span>
+            <span>Згідно тарифів перевізника</span>
+          </div>
+          <div class="total-line final-total">
+            <span>Разом:</span>
+            <span>${formatPrice(calculateCartTotal())} ₴</span>
+          </div>
+        </div>
+      </div>
+      
+      <button type="submit" class="btn btn-buy">Підтвердити замовлення</button>
+    </form>
+  `;
+  
+  openModal();
+  
+  setTimeout(optimizeModalForMobile, 100);
+}
+
 function initApp() {
   emailjs.init(EMAILJS_USER_ID);
   
   initEnhancedSearch();
   initRecommendationSystem();
   addAdStyles();
+  
+  // Додаємо стилі для постачальників
+  const supplierStyles = document.createElement('style');
+  supplierStyles.textContent = `
+    /* Стилі для відображення постачальників у кошику */
+    .supplier-warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .supplier-warning i {
+      color: #f39c12;
+      font-size: 1.2rem;
+      margin-top: 2px;
+    }
+    
+    .supplier-warning .warning-content {
+      flex: 1;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    .supplier-section {
+      margin-bottom: 25px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    
+    .supplier-header {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .supplier-header i {
+      color: #3498db;
+    }
+    
+    .supplier-header h4 {
+      margin: 0;
+      flex: 1;
+      font-size: 1rem;
+      color: #2c3e50;
+    }
+    
+    .supplier-badge {
+      background: #3498db;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .cart-summary {
+      margin-bottom: 15px;
+    }
+    
+    .suppliers-count {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      color: #555;
+    }
+    
+    .suppliers-count i {
+      color: #3498db;
+    }
+    
+    .delivery-note {
+      font-size: 0.8rem;
+      color: #7f8c8d;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    
+    .suppliers-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 15px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .suppliers-summary i {
+      color: #3498db;
+    }
+    
+    .multiple-parcels {
+      margin-left: auto;
+      color: #e74c3c;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+  `;
+  document.head.appendChild(supplierStyles);
   
   showEnhancedLoadingSkeleton();
   
@@ -3154,20 +3556,6 @@ function showNotification(message, type = "success") {
   }, 3000);
 }
 
-function addToCart(productId) {
-  if (!cart[productId]) {
-    cart[productId] = 0;
-  }
-  cart[productId]++;
-  
-  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  
-  trackUserBehavior('add_to_cart', productId);
-  
-  updateCartCount();
-  showNotification("Товар додано до кошика");
-}
-
 function updateCartCount() {
   const count = Object.values(cart).reduce((total, qty) => total + qty, 0);
   document.getElementById("cart-count").textContent = count;
@@ -3504,69 +3892,6 @@ function changeQuantity(delta) {
   input.value = value;
 }
 
-function openCart() {
-  const modalContent = document.getElementById("modal-content");
-  
-  if (Object.keys(cart).length === 0) {
-    modalContent.innerHTML = `
-      <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-      <h3>Кошик</h3>
-      <div class="empty-cart">
-        <i class="fas fa-shopping-cart"></i>
-        <h3>Кошик порожній</h3>
-        <p>Додайте товари з каталогу</p>
-      </div>
-      <div id="cart-suggestions" class="recommendation-container"></div>
-    `;
-    renderCartSuggestions('cart-suggestions');
-  } else {
-    let total = 0;
-    let cartItemsHTML = '';
-    
-    for (const [productId, quantity] of Object.entries(cart)) {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const itemTotal = product.price * quantity;
-        total += itemTotal;
-        
-        cartItemsHTML += `
-          <div class="cart-item">
-            <img src="${product.image || 'https://via.placeholder.com/80x80?text=No+Image'}" alt="${product.title}" class="cart-item-image">
-            <div class="cart-item-details">
-              <h4 class="cart-item-title">${product.title}</h4>
-              <div class="cart-item-price">${formatPrice(product.price)} ₴ x ${quantity} = ${formatPrice(itemTotal)} ₴</div>
-              <div class="cart-item-actions">
-                <button class="btn" onclick="changeCartQuantity('${productId}', -1)">-</button>
-                <span>${quantity}</span>
-                <button class="btn" onclick="changeCartQuantity('${productId}', 1)">+</button>
-                <button class="btn" onclick="removeFromCart('${productId}')"><i class="fas fa-trash"></i></button>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    }
-    
-    modalContent.innerHTML = `
-      <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-      <h3>Кошик</h3>
-      <div class="cart-items">
-        ${cartItemsHTML}
-      </div>
-      <div class="cart-footer">
-        <div class="cart-total">Разом: ${formatPrice(total)} ₴</div>
-        <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
-      </div>
-      <div id="cart-suggestions" class="recommendation-container"></div>
-    `;
-    
-    renderCartSuggestions('cart-suggestions');
-  }
-  
-  openModal();
-  setTimeout(optimizeModalForMobile, 100);
-}
-
 function changeCartQuantity(productId, delta) {
   if (!cart[productId] && delta < 1) return;
   
@@ -3589,99 +3914,6 @@ function removeFromCart(productId) {
   
   updateCartCount();
   openCart();
-}
-
-function checkout() {
-  if (!currentUser) {
-    closeModal();
-    openAuthModal();
-    showNotification("Для оформлення замовлення необхідно авторизуватися", "warning");
-    return;
-  }
-
-  const modalContent = document.getElementById("modal-content");
-  modalContent.innerHTML = `
-    <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
-    <h3>Оформлення замовлення</h3>
-    <form class="checkout-form" onsubmit="placeOrder(event)">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Ім'я та прізвище*</label>
-          <input type="text" id="order-name" required value="${currentUser.displayName || ''}">
-        </div>
-        <div class="form-group">
-          <label>Телефон*</label>
-          <input type="tel" id="order-phone" required placeholder="+380XXXXXXXXX">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Email*</label>
-        <input type="email" id="order-email" required value="${currentUser.email || ''}">
-      </div>
-      
-      <div class="delivery-section">
-        <h4>Доставка Новою Поштою</h4>
-        <div class="delivery-notice">
-          <i class="fas fa-info-circle"></i>
-          <p>Доставка здійснюється за тарифами перевізника. Вартість доставки розраховується окремо та оплачується при отриманні замовлення.</p>
-        </div>
-        <div class="form-group">
-          <label>Місто*</label>
-          <input type="text" id="np-city" required placeholder="Введіть ваше місто">
-        </div>
-        <div class="form-group">
-          <label>Відділення Нової Пошти*</label>
-          <input type="text" id="np-warehouse" required placeholder="Номер відділення">
-        </div>
-      </div>
-      
-      <div class="payment-section">
-        <h4>Спосіб оплати</h4>
-        <div class="payment-options">
-          <label class="payment-option">
-            <input type="radio" name="payment" value="cash" checked>
-            <span>Готівкою при отриманні</span>
-          </label>
-          <label class="payment-option">
-            <input type="radio" name="payment" value="card">
-            <span>Онлайн-оплата карткою</span>
-          </label>
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label>Коментар до замовлення (необов'язково)</label>
-        <textarea id="order-comment" placeholder="Ваші побажання щодо замовлення..." rows="3"></textarea>
-      </div>
-      
-      <div class="order-summary">
-        <h4>Ваше замовлення</h4>
-        <div class="order-items">
-          ${generateOrderSummary()}
-        </div>
-        <div class="order-total">
-          <div class="total-line">
-            <span>Сума замовлення:</span>
-            <span>${formatPrice(calculateCartTotal())} ₴</span>
-          </div>
-          <div class="total-line">
-            <span>Доставка:</span>
-            <span>Згідно тарифів перевізника</span>
-          </div>
-          <div class="total-line final-total">
-            <span>Разом:</span>
-            <span>${formatPrice(calculateCartTotal())} ₴</span>
-          </div>
-        </div>
-      </div>
-      
-      <button type="submit" class="btn btn-buy">Підтвердити замовлення</button>
-    </form>
-  `;
-  
-  openModal();
-  
-  setTimeout(optimizeModalForMobile, 100);
 }
 
 function placeOrder(event) {

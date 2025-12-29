@@ -4428,3 +4428,87 @@ main {
 .auth-tabs .auth-tab:nth-child(3) {
     display: none !important;
 }
+
+/* Стили для отображения поставщиков в корзине */
+.supplier-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.supplier-warning i {
+  color: #f39c12;
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.supplier-warning .warning-content {
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.supplier-section {
+  margin-bottom: 25px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.supplier-header {
+  background: #f8f9fa;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.supplier-header i {
+  color: #3498db;
+}
+
+.supplier-header h4 {
+  margin: 0;
+  flex: 1;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.supplier-badge {
+  background: #3498db;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cart-summary {
+  margin-bottom: 15px;
+}
+
+.suppliers-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.suppliers-count i {
+  color: #3498db;
+}
+
+.delivery-note {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-top: 8px;
+  font-style: italic;
+}

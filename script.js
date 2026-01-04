@@ -13,6 +13,10 @@ const EMAILJS_SERVICE_ID = "boltmaster-2025";
 const EMAILJS_TEMPLATE_ID = "template_2csi2fp";
 const EMAILJS_USER_ID = "hYmYimcQ5x5Mu_skB";
 
+// Константи для WhatsApp
+const WHATSAPP_PHONE = "380684296978"; // Замініть на реальний номер телефону
+const WHATSAPP_MESSAGE_TEMPLATE = "Доброго дня! Бажаю оформити швидке замовлення:\n\n";
+
 // Массив файлов с товарами
 const PRODUCT_FILES = [
     'products1.json',
@@ -184,6 +188,54 @@ let userBehavior = {
   addedToCart: [],
   purchasedProducts: []
 };
+
+// ===== ФУНКЦІЯ ДЛЯ ШВИДКОГО ЗАМОВЛЕННЯ ЧЕРЕЗ WHATSAPP =====
+function quickOrderViaWhatsApp() {
+  if (Object.keys(cart).length === 0) {
+    showNotification("Кошик порожній", "error");
+    return;
+  }
+
+  // Формуємо повідомлення для WhatsApp
+  let message = WHATSAPP_MESSAGE_TEMPLATE;
+  let total = 0;
+  
+  const suppliers = getCartSuppliers();
+  
+  // Додаємо інформацію про товари
+  for (const [productId, quantity] of Object.entries(cart)) {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const itemTotal = product.price * quantity;
+      total += itemTotal;
+      message += `• ${product.title}\n  Кількість: ${quantity}\n  Ціна: ${formatPrice(product.price)} ₴\n  Сума: ${formatPrice(itemTotal)} ₴\n\n`;
+    }
+  }
+  
+  message += `\n💰 Загальна сума: ${formatPrice(total)} ₴`;
+  
+  if (suppliers.size > 1) {
+    message += `\n\n⚠️ Увага! Замовлення містить товари від ${suppliers.size} різних постачальників.`;
+    message += ` Кожен постачальник відправляє окрему посилку.`;
+  }
+  
+  // Додаємо інформацію про користувача, якщо він авторизований
+  if (currentUser) {
+    message += `\n\n👤 Покупець: ${currentUser.displayName || currentUser.email}`;
+  }
+  
+  message += `\n\nБудь ласка, зв'яжіться зі мною для підтвердження замовлення.`;
+  
+  // Кодуємо повідомлення для URL
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodedMessage}`;
+  
+  // Відкриваємо WhatsApp у новому вікні
+  window.open(whatsappUrl, '_blank');
+  
+  // Показуємо сповіщення
+  showNotification("Відкривається WhatsApp для швидкого замовлення");
+}
 
 // ===== РЕКЛАМНЫЕ ФУНКЦИИ =====
 function canShowAds() {
@@ -2568,7 +2620,7 @@ function openCart() {
           <div class="warning-content">
             <strong>Увага!</strong> Товари в кошику від <strong>${suppliers.size} різних постачальників</strong>.
             <br>Кожен постачальник відправляє товари окремою посилкою.
-            <br>Доставка та упаковка розраховуються окремо для кожної посилки.
+            <br>Доставка та упаковка розраховується окремо для кожної посилки.
           </div>
         </div>
       `;
@@ -2643,7 +2695,12 @@ function openCart() {
           <div class="cart-total">Сума товарів: ${formatPrice(total)} ₴</div>
           <p class="delivery-note">*Вартість доставки розраховується окремо для кожної посилки</p>
         </div>
-        <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
+        <div class="cart-buttons">
+          <button class="btn btn-whatsapp" onclick="quickOrderViaWhatsApp()">
+            <i class="fab fa-whatsapp"></i> Швидке замовлення в WhatsApp
+          </button>
+          <button class="btn btn-buy" onclick="checkout()">Оформити замовлення</button>
+        </div>
       </div>
       <div id="cart-suggestions" class="recommendation-container"></div>
     `;
@@ -2978,6 +3035,73 @@ function initApp() {
       color: #e74c3c;
       font-weight: 600;
       font-size: 0.85rem;
+    }
+    
+    /* Стилі для кнопки WhatsApp */
+    .btn-whatsapp {
+      background-color: #25D366;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      flex: 1;
+    }
+    
+    .btn-whatsapp:hover {
+      background-color: #1da851;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+    
+    .btn-whatsapp i {
+      font-size: 18px;
+    }
+    
+    .cart-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      margin-top: 15px;
+    }
+    
+    @media (min-width: 768px) {
+      .cart-buttons {
+        flex-direction: row;
+      }
+      
+      .btn-whatsapp {
+        flex: 1;
+      }
+      
+      .btn-buy {
+        flex: 1;
+      }
+    }
+    
+    /* Анимация для кнопки WhatsApp */
+    @keyframes pulse-whatsapp {
+      0% {
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(37, 211, 102, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+      }
+    }
+    
+    .btn-whatsapp.pulsing {
+      animation: pulse-whatsapp 2s infinite;
     }
     
     /* Стилі для мульти-ТТН */

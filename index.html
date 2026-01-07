@@ -285,6 +285,39 @@
         transform: scale(0.95);
     }
 
+    /* Стили для плавающей кнопки Telegram */
+    .telegram-float {
+        position: fixed;
+        width: 60px;
+        height: 60px;
+        bottom: 25px;
+        left: 25px; /* Размещаем слева, а не справа */
+        background-color: #0088cc;
+        color: #FFF;
+        border-radius: 50px;
+        text-align: center;
+        font-size: 30px;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s ease-in-out;
+        animation: float 3s ease-in-out infinite;
+        animation-delay: 0.5s; /* Небольшая задержка анимации для разнообразия */
+    }
+
+    .telegram-float:hover {
+        background-color: #0077b5;
+        transform: scale(1.1);
+        box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .telegram-float:active {
+        transform: scale(0.95);
+    }
+
     /* Анимация плавающего эффекта */
     @keyframes float {
         0% {
@@ -347,6 +380,15 @@
             right: 20px;
             font-size: 28px;
         }
+
+        /* Для плавающей кнопки Telegram на планшетах */
+        .telegram-float {
+            width: 55px;
+            height: 55px;
+            bottom: 20px;
+            left: 20px;
+            font-size: 28px;
+        }
     }
 
     @media (max-width: 480px) {
@@ -405,6 +447,15 @@
             right: 15px;
             font-size: 25px;
         }
+
+        /* Для плавающей кнопки Telegram на мобильных */
+        .telegram-float {
+            width: 50px;
+            height: 50px;
+            bottom: 15px;
+            left: 15px;
+            font-size: 25px;
+        }
     }
 
     /* Для очень маленьких экранов */
@@ -425,6 +476,17 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* Для плавающих кнопок на очень маленьких экранах */
+        .telegram-float {
+            left: 10px;
+            bottom: 10px;
+        }
+        
+        .whatsapp-float {
+            right: 10px;
+            bottom: 10px;
         }
     }
 </style>
@@ -957,6 +1019,16 @@
        aria-label="Написати нам у WhatsApp"
        title="Написати у WhatsApp">
         <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Плавающая кнопка Telegram -->
+    <a href="https://t.me/Voanarhes" 
+       target="_blank" 
+       rel="noopener noreferrer" 
+       class="telegram-float"
+       aria-label="Написати нам у Telegram"
+       title="Написати у Telegram">
+        <i class="fab fa-telegram"></i>
     </a>
 
     <div id="modal" class="modal">

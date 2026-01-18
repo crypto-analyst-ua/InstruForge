@@ -225,34 +225,8 @@
         border-color: #e67e22;
     }
 
-    /* ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ РЕКЛАМНОГО БАННЕРА */
-    .ad-banner-container {
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: visible; /* Изменено с hidden на visible */
-        background-color: #f5f5f5;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        height: auto; /* Автоматическая высота */
-    }
-
-    .responsive-ad-banner {
-        width: 100%;
-        height: auto;
-        display: block;
-        object-fit: contain; /* Гарантирует полное отображение без обрезки */
-        max-width: 100%; /* Ограничение по ширине */
-    }
-
-    /* Убраны фиксированные высоты для контейнера */
-    .ad-banner-container {
-        min-height: auto;
-        max-height: none;
-    }
-
+    /* УДАЛЕНЫ СТИЛИ ДЛЯ РЕКЛАМНОГО БАННЕРА */
+    
     /* Стили для плавающей кнопки WhatsApp */
     .whatsapp-float {
         position: fixed;
@@ -362,16 +336,8 @@
             text-overflow: ellipsis;
         }
         
-        /* Стили баннера для планшетов */
-        .ad-banner-container {
-            height: auto;
-        }
+        /* УДАЛЕНЫ СТИЛИ БАННЕРА ДЛЯ ПЛАНШЕТОВ */
         
-        .responsive-ad-banner {
-            max-height: none; /* Убираем ограничение высоты */
-            object-fit: contain;
-        }
-
         /* Для плавающей кнопки WhatsApp на планшетах */
         .whatsapp-float {
             width: 55px;
@@ -429,16 +395,8 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         
-        /* Стили баннера для мобильных */
-        .ad-banner-container {
-            height: auto;
-        }
+        /* УДАЛЕНЫ СТИЛИ БАННЕРА ДЛЯ МОБИЛЬНЫХ */
         
-        .responsive-ad-banner {
-            max-height: none; /* Убираем ограничение высоты */
-            object-fit: contain;
-        }
-
         /* Для плавающей кнопки WhatsApp на мобильных */
         .whatsapp-float {
             width: 50px;
@@ -639,12 +597,7 @@
         </div>
     </header>
 
-    <!-- Рекламный баннер -->
-    <div class="ad-banner-container">
-        <img src="file_00000000d0c472469936389705c8cf86.png" 
-             alt="Рекламний банер - Безпечна покупка та швидка доставка" 
-             class="responsive-ad-banner">
-    </div>
+    <!-- УДАЛЕН РЕКЛАМНЫЙ БАННЕР -->
 
     <!-- Breadcrumb Navigation -->
     <nav aria-label="Навігація по сайту" class="breadcrumb">

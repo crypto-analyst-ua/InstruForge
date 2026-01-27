@@ -36,7 +36,7 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#2c3e50">
 
-    <!-- Стили для черного текста с белой обводкой -->
+    <!-- ПРЕМИАЛЬНЫЕ СТИЛИ ДЛЯ КАРТОЧЕК КАТЕГОРИЙ -->
 <style>
     .logo-text .logo-name {
         color: #000000 !important; /* Черный цвет текста */
@@ -87,146 +87,373 @@
     .contact-info .fa-facebook { color: #1877F2; }
     .contact-info .fa-instagram { color: #E4405F; }
 
-    /* Обновленные стили для карточек категорий (уменьшенный размер) */
+    /* ПРЕМИАЛЬНЫЕ СТИЛИ ДЛЯ КАРТОЧЕК КАТЕГОРИЙ */
     .category-cards {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin: 15px 0 20px;
+        gap: 15px;
+        margin: 25px 0 30px;
         justify-content: center;
-        padding: 6px 0;
+        padding: 10px 0;
+        position: relative;
+    }
+
+    /* Эффект градиентного фона для всей секции */
+    .category-cards::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: radial-gradient(circle at 50% 50%, rgba(52, 152, 219, 0.05) 0%, transparent 70%);
+        z-index: -1;
+        opacity: 0.7;
+        pointer-events: none;
     }
 
     .category-card {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        width: 100px;
-        height: auto; /* Изменено для авто высоты */
-        min-height: 100px; /* Минимальная высота */
-        border: 1.5px solid #e0e0e0;
-        border-radius: 8px;
-        background: linear-gradient(145deg, #ffffff, #f5f7fa);
+        justify-content: space-between;
+        width: 125px;
+        min-height: 140px; /* Изменили на min-height */
+        border: none;
+        border-radius: 20px;
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        padding: 10px 6px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        padding: 18px 12px;
+        box-shadow: 
+            0 6px 20px rgba(0, 0, 0, 0.08),
+            0 4px 12px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.05);
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    .category-card::before {
+    /* Неоновое свечение для активной карточки */
+    .category-card::after {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, #3498db, #2c3e50);
+        bottom: 0;
+        border-radius: 20px;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.2) 0%, 
+            rgba(255, 255, 255, 0.05) 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
+        z-index: 1;
+        mix-blend-mode: overlay;
+    }
+
+    /* Эффект градиентной рамки при наведении */
+    .category-card::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, 
+            #3498db, #2ecc71, #f39c12, #e74c3c, #9b59b6);
+        background-size: 400% 400%;
+        opacity: 0;
+        z-index: -1;
+        transition: opacity 0.5s ease;
+        animation: gradient-border 4s ease infinite;
+    }
+
+    @keyframes gradient-border {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
     }
 
     .category-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
-        border-color: #3498db;
-        background: linear-gradient(145deg, #ffffff, #ecf0f1);
+        transform: translateY(-10px) scale(1.05);
+        box-shadow: 
+            0 15px 30px rgba(0, 0, 0, 0.15),
+            0 10px 20px rgba(52, 152, 219, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: linear-gradient(145deg, #ffffff, #f0f7ff);
     }
 
-    .category-card:hover::before {
-        opacity: 1;
-    }
-
-    .category-card.active {
-        background: linear-gradient(145deg, #2c3e50, #3498db);
-        color: white;
-        border-color: #2980b9;
-        box-shadow: 0 4px 8px rgba(41, 128, 185, 0.25);
-    }
-
+    .category-card:hover::before,
     .category-card.active::before {
         opacity: 1;
-        background: linear-gradient(90deg, #e74c3c, #f39c12);
-        height: 3px;
+    }
+
+    .category-card:hover::after {
+        opacity: 1;
+    }
+
+    /* СУПЕР ВЫРАЗИТЕЛЬНОЕ АКТИВНОЕ СОСТОЯНИЕ */
+    .category-card.active {
+        background: linear-gradient(135deg, var(--active-gradient));
+        color: white;
+        box-shadow: 
+            0 20px 40px rgba(52, 152, 219, 0.4),
+            0 10px 25px rgba(0, 0, 0, 0.2),
+            0 0 0 2px rgba(255, 255, 255, 0.3),
+            inset 0 2px 0 rgba(255, 255, 255, 0.3),
+            inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+        transform: translateY(-8px) scale(1.08);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        animation: active-pulse 2.5s infinite, active-float 3s ease-in-out infinite;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Индикатор выбранной карточки */
+    .category-card.active::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--active-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 2;
+        animation: check-pop 0.3s ease-out;
+    }
+
+    @keyframes check-pop {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Анимация пульсации для активной карточки */
+    @keyframes active-pulse {
+        0%, 100% {
+            box-shadow: 
+                0 20px 40px rgba(52, 152, 219, 0.4),
+                0 10px 25px rgba(0, 0, 0, 0.2),
+                0 0 0 2px rgba(255, 255, 255, 0.3);
+        }
+        50% {
+            box-shadow: 
+                0 20px 45px rgba(52, 152, 219, 0.6),
+                0 12px 30px rgba(0, 0, 0, 0.25),
+                0 0 0 3px rgba(255, 255, 255, 0.4);
+        }
+    }
+
+    /* Плавающая анимация */
+    @keyframes active-float {
+        0%, 100% { transform: translateY(-8px) scale(1.08); }
+        50% { transform: translateY(-12px) scale(1.08); }
+    }
+
+    /* Декоративные элементы для активной карточки */
+    .category-card.active .category-icon::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+        border-radius: 50%;
+        z-index: -1;
+        animation: shine 2s infinite;
+    }
+
+    @keyframes shine {
+        0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+        50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
     }
 
     .category-icon {
-        font-size: 1.8rem;
-        margin-bottom: 6px;
+        font-size: 2.4rem;
+        margin-bottom: 12px;
         color: #2c3e50;
-        transition: all 0.3s ease;
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        filter: drop-shadow(0 3px 5px rgba(0,0,0,0.1));
+        z-index: 2;
+        position: relative;
     }
 
     .category-card:hover .category-icon {
-        color: #3498db;
-        transform: scale(1.05);
+        color: var(--hover-color, #3498db);
+        transform: scale(1.15) rotate(5deg);
+        filter: drop-shadow(0 5px 10px rgba(52, 152, 219, 0.3));
     }
 
     .category-card.active .category-icon {
         color: white;
-        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+        transform: scale(1.2) rotate(0deg);
+        filter: 
+            drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3))
+            drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+        animation: icon-glow 1.5s infinite alternate;
+    }
+
+    @keyframes icon-glow {
+        from { filter: 
+            drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3))
+            drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+        }
+        to { filter: 
+            drop-shadow(0 5px 10px rgba(0, 0, 0, 0.4))
+            drop-shadow(0 0 25px rgba(255, 255, 255, 0.7));
+        }
     }
 
     .category-name {
-        font-size: 0.75rem;
+        font-size: 0.82rem;
         text-align: center;
-        font-weight: 600;
-        line-height: 1.1;
-        color: #34495e;
-        transition: color 0.3s ease;
-        padding: 0 3px;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #2c3e50;
+        transition: all 0.4s ease;
+        padding: 0 5px;
         width: 100%;
         white-space: normal;
         word-wrap: break-word;
-        overflow-wrap: break-word;
-        /* Убрано ограничение по строкам для десктопа */
-        display: block;
-        overflow: visible;
-        text-overflow: unset;
-        -webkit-line-clamp: unset;
-        -webkit-box-orient: unset;
+        overflow-wrap: break-word; /* Добавили для лучшего переноса */
+        hyphens: auto; /* Автоматическое расставление переносов */
+        z-index: 2;
+        position: relative;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        letter-spacing: -0.01em;
+        display: -webkit-box; /* Для многострочного обрезания */
+        -webkit-line-clamp: 3; /* Максимум 3 строки */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: 3.75em; /* Примерно 3 строки */
     }
 
     .category-card:hover .category-name {
-        color: #2c3e50;
+        color: #1a252f;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+        transform: translateY(-2px);
     }
 
     .category-card.active .category-name {
         color: white;
-        font-weight: 600;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.15);
+        font-weight: 800;
+        text-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.4),
+            0 0 10px rgba(255, 255, 255, 0.3);
+        transform: translateY(-3px) scale(1.05);
+        position: relative;
+        -webkit-line-clamp: unset; /* Снимаем ограничение при активном состоянии */
+        max-height: none; /* Убираем ограничение высоты */
     }
 
-    /* Стили для акцентных категорий */
-    .category-card:nth-child(2) { /* Обладнання */
-        border-color: #3498db;
+    /* Декоративная линия под текстом в активном состоянии */
+    .category-card.active .category-name::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+        border-radius: 2px;
+        animation: line-glow 2s infinite;
     }
 
-    .category-card:nth-child(2):hover {
-        border-color: #2980b9;
+    @keyframes line-glow {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
     }
 
-    .category-card:nth-child(3) { /* Миючі засоби */
-        border-color: #2ecc71;
+    /* ИНДИВИДУАЛЬНЫЕ ЦВЕТА ДЛЯ КАЖДОЙ КАТЕГОРИИ */
+    .category-card[data-category="all"] {
+        --hover-color: #6366f1;
+        --active-gradient: #6366f1 0%, #8b5cf6 100%;
+        --active-color: #6366f1;
+        border-top: 4px solid #6366f1;
     }
 
-    .category-card:nth-child(3):hover {
-        border-color: #27ae60;
+    .category-card[data-category="tools"] {
+        --hover-color: #3498db;
+        --active-gradient: #3498db 0%, #2980b9 100%;
+        --active-color: #3498db;
+        border-top: 4px solid #3498db;
     }
 
-    .category-card:nth-child(4) { /* Маслобаза */
-        border-color: #f39c12;
+    .category-card[data-category="cleaning"] {
+        --hover-color: #2ecc71;
+        --active-gradient: #2ecc71 0%, #27ae60 100%;
+        --active-color: #2ecc71;
+        border-top: 4px solid #2ecc71;
     }
 
-    .category-card:nth-child(4):hover {
-        border-color: #e67e22;
+    .category-card[data-category="oil"] {
+        --hover-color: #f39c12;
+        --active-gradient: #f39c12 0%, #e67e22 100%;
+        --active-color: #f39c12;
+        border-top: 4px solid #f39c12;
     }
 
-    /* УДАЛЕНЫ СТИЛИ ДЛЯ РЕКЛАМНОГО БАННЕРА */
-    
+    .category-card[data-category="home"] {
+        --hover-color: #9b59b6;
+        --active-gradient: #9b59b6 0%, #8e44ad 100%;
+        --active-color: #9b59b6;
+        border-top: 4px solid #9b59b6;
+    }
+
+    .category-card[data-category="comfort"] {
+        --hover-color: #e74c3c;
+        --active-gradient: #e74c3c 0%, #c0392b 100%;
+        --active-color: #e74c3c;
+        border-top: 4px solid #e74c3c;
+    }
+
+    .category-card[data-category="repair"] {
+        --hover-color: #1abc9c;
+        --active-gradient: #1abc9c 0%, #16a085 100%;
+        --active-color: #1abc9c;
+        border-top: 4px solid #1abc9c;
+    }
+
+    /* Эффект подписи для активной карточки */
+    .category-card.active::before {
+        content: 'ВИБРАНО';
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #ff6b6b, #ffa726);
+        color: white;
+        font-size: 0.6rem;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(255, 107, 107, 0.3);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        animation: badge-pop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    @keyframes badge-pop {
+        0% { transform: translateX(-50%) scale(0) rotate(-20deg); opacity: 0; }
+        100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; }
+    }
+
     /* Стили для плавающей кнопки WhatsApp */
     .whatsapp-float {
         position: fixed;
@@ -305,38 +532,35 @@
         }
     }
 
-    /* ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */
+    /* АДАПТИВНОСТЬ ДЛЯ КАРТОЧЕК КАТЕГОРИЙ */
     @media (max-width: 768px) {
         .category-cards {
-            gap: 8px;
-            margin: 12px 0 16px;
+            gap: 12px;
+            margin: 20px 0 25px;
         }
         
         .category-card {
-            width: 95px;
-            height: 100px; /* Фиксированная высота для мобильных */
-            min-height: 100px;
-            border-radius: 7px;
-            padding: 8px 4px;
+            width: 115px;
+            min-height: 125px; /* Изменили на min-height */
+            padding: 16px 10px;
+            border-radius: 18px;
         }
         
         .category-icon {
-            font-size: 1.6rem;
-            margin-bottom: 5px;
+            font-size: 1.8rem; /* Уменьшили размер иконок */
+            margin-bottom: 10px;
         }
         
         .category-name {
-            font-size: 0.7rem;
-            line-height: 1.1;
-            /* Ограничение текста для мобильных */
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.75rem; /* Чуть уменьшили шрифт */
+            -webkit-line-clamp: 3; /* 3 строки на планшетах */
+            line-height: 1.2;
         }
         
-        /* УДАЛЕНЫ СТИЛИ БАННЕРА ДЛЯ ПЛАНШЕТОВ */
+        .category-card.active .category-name {
+            -webkit-line-clamp: unset; /* Снимаем ограничение при активном состоянии */
+            max-height: none;
+        }
         
         /* Для плавающей кнопки WhatsApp на планшетах */
         .whatsapp-float {
@@ -359,43 +583,80 @@
 
     @media (max-width: 480px) {
         .category-cards {
-            gap: 6px;
+            gap: 10px;
             justify-content: space-between;
-            margin: 10px 0 14px;
+            margin: 15px 0 20px;
         }
         
         .category-card {
-            width: calc(33.333% - 5px);
-            height: 95px; /* Фиксированная высота для мобильных */
-            min-height: 95px;
-            padding: 6px 3px;
-            border-radius: 6px;
-            border-width: 1px;
+            width: calc(33.333% - 7px);
+            min-height: 120px; /* Увеличили высоту для мобильных */
+            padding: 14px 8px;
+            border-radius: 16px;
         }
         
         .category-icon {
-            font-size: 1.5rem;
-            margin-bottom: 4px;
+            font-size: 1.6rem; /* Еще уменьшили иконки */
+            margin-bottom: 6px;
         }
         
         .category-name {
-            font-size: 0.65rem;
-            font-weight: 600;
-            line-height: 1;
-            /* Ограничение текста для мобильных */
+            font-size: 0.7rem; /* Уменьшили размер шрифта */
+            font-weight: 700;
+            line-height: 1.15;
+            -webkit-line-clamp: 4; /* 4 строки на мобильных */
             display: -webkit-box;
-            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-height: 4.6em; /* Примерно 4 строки */
+        }
+        
+        .category-card.active .category-name {
+            -webkit-line-clamp: unset;
+            max-height: none;
         }
         
         .category-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-6px) scale(1.03);
         }
         
-        /* УДАЛЕНЫ СТИЛИ БАННЕРА ДЛЯ МОБИЛЬНЫХ */
+        .category-card.active {
+            transform: translateY(-6px) scale(1.05);
+            animation: active-pulse-mobile 2.5s infinite, active-float-mobile 3s ease-in-out infinite;
+        }
+        
+        @keyframes active-pulse-mobile {
+            0%, 100% {
+                box-shadow: 
+                    0 15px 30px rgba(52, 152, 219, 0.3),
+                    0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+                box-shadow: 
+                    0 15px 35px rgba(52, 152, 219, 0.5),
+                    0 10px 25px rgba(0, 0, 0, 0.2);
+            }
+        }
+        
+        @keyframes active-float-mobile {
+            0%, 100% { transform: translateY(-6px) scale(1.05); }
+            50% { transform: translateY(-9px) scale(1.05); }
+        }
+        
+        .category-card.active::before {
+            font-size: 0.5rem;
+            padding: 2px 6px;
+            top: -10px;
+        }
+        
+        .category-card.active::after {
+            width: 18px;
+            height: 18px;
+            font-size: 9px;
+            top: 5px;
+            right: 5px;
+        }
         
         /* Для плавающей кнопки WhatsApp на мобильных */
         .whatsapp-float {
@@ -416,24 +677,21 @@
         }
     }
 
-    /* Для очень маленьких экранов */
     @media (max-width: 360px) {
         .category-card {
-            width: calc(50% - 4px);
-            height: 95px;
-            min-height: 95px;
-            padding: 6px 3px;
+            width: calc(50% - 5px);
+            min-height: 115px;
+            padding: 12px 6px;
         }
         
         .category-name {
-            font-size: 0.65rem;
-            line-height: 1;
-            /* Ограничение текста для мобильных */
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.65rem; /* Минимальный размер шрифта */
+            -webkit-line-clamp: 4; /* 4 строки на маленьких экранах */
+        }
+        
+        .category-card.active .category-name {
+            font-size: 0.7rem; /* Чуть больше при активном состоянии */
+            -webkit-line-clamp: unset;
         }
 
         /* Для плавающих кнопок на очень маленьких экранах */
@@ -667,35 +925,36 @@
             <div class="products-header">
                 <h1 id="products-title">Каталог професійних інструментів — купити в Україні з доставкою</h1>
                 
-                <!-- Карточки категорий -->
+                <!-- ПРЕМИАЛЬНЫЕ КАРТОЧКИ КАТЕГОРИЙ -->
                 <div class="category-cards" role="tablist">
-                    <div class="category-card active" role="tab" onclick="switchSource('all')" aria-selected="true">
+                    <!-- ИСПРАВЛЕНО: убрали класс active у первой карточки -->
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'all')" aria-selected="false" data-category="all">
                         <div class="category-icon"><i class="fas fa-th-large" aria-hidden="true"></i></div>
                         <div class="category-name">Всі товари</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products1.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products1.json')" aria-selected="false" data-category="tools">
                         <div class="category-icon"><i class="fas fa-tools" aria-hidden="true"></i></div>
-                        <div class="category-name">Обладнання та інструменти</div>
+                        <div class="category-name">Інструменти та обладнання</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products2.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products2.json')" aria-selected="false" data-category="cleaning">
                         <div class="category-icon"><i class="fas fa-soap" aria-hidden="true"></i></div>
-                        <div class="category-name">Миючі засоби для техніки та дому</div>
+                        <div class="category-name">Миючі засоби</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products3.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products3.json')" aria-selected="false" data-category="oil">
                         <div class="category-icon"><i class="fas fa-oil-can" aria-hidden="true"></i></div>
-                        <div class="category-name">Маслобаза для техніки та обладнання</div>
+                        <div class="category-name">Масла та мастила</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products4.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products4.json')" aria-selected="false" data-category="home">
                         <div class="category-icon"><i class="fas fa-home" aria-hidden="true"></i></div>
-                        <div class="category-name">Дрібниці для дому</div>
+                        <div class="category-name">Товари для дому</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products5.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products5.json')" aria-selected="false" data-category="comfort">
                         <div class="category-icon"><i class="fas fa-gift" aria-hidden="true"></i></div>
-                        <div class="category-name">Все необхідне для комфортного проживання</div>
+                        <div class="category-name">Для комфорту</div>
                     </div>
-                    <div class="category-card" role="tab" onclick="switchSource('products6.json')" aria-selected="false">
+                    <div class="category-card" role="tab" onclick="switchCategory(this, 'products6.json')" aria-selected="false" data-category="repair">
                         <div class="category-icon"><i class="fas fa-paint-roller" aria-hidden="true"></i></div>
-                        <div class="category-name">Матеріали для швидкого ремонту</div>
+                        <div class="category-name">Матеріали для ремонту</div>
                     </div>
                 </div>
                 
@@ -1090,6 +1349,41 @@
 
     <!-- Добавьте этот скрипт перед вашим script.js -->
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3.2.0/dist/email.min.js"></script>
+    
+    <!-- Добавляем JavaScript для управления выделением карточек -->
+    <script>
+        // Функция для переключения категории с выделением
+        function switchCategory(cardElement, source) {
+            // Убираем активный класс у всех карточек
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active');
+                card.setAttribute('aria-selected', 'false');
+            });
+            
+            // Добавляем активный класс выбранной карточке
+            cardElement.classList.add('active');
+            cardElement.setAttribute('aria-selected', 'true');
+            
+            // Вызываем оригинальную функцию switchSource
+            if (typeof switchSource === 'function') {
+                switchSource(source);
+            }
+        }
+        
+        // При загрузке страницы снимаем выделение со всех карточек
+        document.addEventListener('DOMContentLoaded', function() {
+            // Убираем активный класс у всех карточек (на всякий случай)
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active');
+                card.setAttribute('aria-selected', 'false');
+            });
+            
+            // По умолчанию загружаем все товары, но не выделяем карточку
+            // Если нужно выделить карточку "Все товары" по умолчанию, раскомментируйте следующую строку:
+            // document.querySelector('.category-card[data-category="all"]').classList.add('active');
+        });
+    </script>
+    
     <script src="script.js"></script>
 </body>
 </html>

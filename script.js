@@ -15,7 +15,7 @@ const EMAILJS_USER_ID = "hYmYimcQ5x5Mu_skB";
 
 // Константи для WhatsApp
 const WHATSAPP_PHONE = "380684296978"; // Замініть на реальний номер телефону
-const WHATSAPP_MESSAGE_TEMPLATE = "Доброго дня! Бажаю оформити швидке замовлення:\n\n";
+const WHATSAPP_MESSAGE_TEMPLATE = "Доброго дня! Бажаю оформити швидке замовлення на InstruForge:\n\n";
 
 // Массив файлов с товарами
 const PRODUCT_FILES = [

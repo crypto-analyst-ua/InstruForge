@@ -519,6 +519,49 @@
         transform: scale(0.95);
     }
 
+    /* Стили для кнопки "Наверх" */
+    .back-to-top {
+        position: fixed;
+        width: 50px;
+        height: 50px;
+        bottom: 90px; /* Размещаем выше кнопки WhatsApp */
+        right: 25px;
+        background-color: rgba(52, 152, 219, 0.8);
+        color: #FFF;
+        border-radius: 50%;
+        text-align: center;
+        font-size: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
+        backdrop-filter: blur(4px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .back-to-top.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .back-to-top:hover {
+        background-color: #2980b9;
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .back-to-top:active {
+        transform: translateY(0) scale(0.95);
+    }
+
     /* Анимация плавающего эффекта */
     @keyframes float {
         0% {
@@ -578,6 +621,15 @@
             bottom: 20px;
             left: 20px;
             font-size: 28px;
+        }
+
+        /* Адаптивность для кнопки "Наверх" */
+        .back-to-top {
+            width: 45px;
+            height: 45px;
+            bottom: 85px;
+            right: 20px;
+            font-size: 20px;
         }
     }
 
@@ -675,6 +727,15 @@
             left: 15px;
             font-size: 25px;
         }
+
+        /* Адаптивность для кнопки "Наверх" */
+        .back-to-top {
+            width: 40px;
+            height: 40px;
+            bottom: 80px;
+            right: 15px;
+            font-size: 18px;
+        }
     }
 
     @media (max-width: 360px) {
@@ -703,6 +764,12 @@
         .whatsapp-float {
             right: 10px;
             bottom: 10px;
+        }
+
+        /* Для кнопки "Наверх" на очень маленьких экранах */
+        .back-to-top {
+            bottom: 70px;
+            right: 10px;
         }
     }
 </style>
@@ -1243,6 +1310,11 @@
         <i class="fab fa-telegram"></i>
     </a>
 
+    <!-- Плавающая кнопка "Наверх" -->
+    <a href="#" id="back-to-top" class="back-to-top" aria-label="Повернутись наверх">
+        <i class="fas fa-chevron-up"></i>
+    </a>
+
     <div id="modal" class="modal">
         <div class="modal-content" id="modal-content">
             <button class="modal-close" onclick="closeModal()" aria-label="Закрити"><i class="fas fa-times" aria-hidden="true"></i></button>
@@ -1376,6 +1448,30 @@
             document.querySelectorAll('.category-card').forEach(card => {
                 card.classList.remove('active');
                 card.setAttribute('aria-selected', 'false');
+            });
+        });
+    </script>
+    
+    <!-- JavaScript для кнопки "Наверх" -->
+    <script>
+        // Кнопка "Наверх"
+        const backToTopButton = document.getElementById('back-to-top');
+        
+        // Показать/скрыть кнопку при прокрутке
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        });
+        
+        // Плавная прокрутка при клике
+        backToTopButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
             });
         });
     </script>

@@ -1,41 +1,36 @@
 /* Подключение шрифтов */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap');
 
-/* Обновленная цветовая палитра - СВЕТЛАЯ ТЕМА */
+/* Обновленная современная цветовая палитра с серыми тонами */
 :root {
-  --primary: #5e72e4;
-  --primary-light: #825ee4;
-  --primary-dark: #324cdd;
-  --secondary: #f5365c;
-  --secondary-light: #fb6340;
-  --secondary-dark: #f56036;
-  --accent: #11cdef;
-  --accent-light: #2dce89;
-  --accent-dark: #2bffc6;
-  --success: #2dce89;
-  --warning: #fb6340;
-  --danger: #f5365c;
-  --light: #f8f9fe;
-  --dark: #172b4d;
-  --gray: #8898aa;
-  --gray-light: #e9ecef;
-  --gray-lighter: #f6f9fc;
-  --white: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f8f9fe;
-  --shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-hover: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+  --primary: #2C3E50; /* Темный серо-синий - основной цвет */
+  --primary-light: #34495E;
+  --primary-dark: #1A252F;
+  --secondary: #7F8C8D; /* Серый - современный акцент */
+  --secondary-light: #95A5A6;
+  --secondary-dark: #616A6B;
+  --accent: #3498DB; /* Синий - для интерактивных элементов */
+  --accent-light: #5DADE2;
+  --accent-dark: #2980B9;
+  --tech-blue: #2C3E50; /* Темный серо-синий */
+  --tech-green: #27AE60; /* Зеленый для успеха */
+  --warning: #F39C12; /* Оранжевый для предупреждений */
+  --danger: #E74C3C; /* Красный для ошибок */
+  --success: #27AE60; /* Зеленый для успеха */
+  --light: #F8F9FA; /* Светлый серый фон */
+  --dark: #2C3E50; /* Темный для текста */
+  --gray: #7F8C8D;
+  --gray-light: #BDC3C7;
+  --gray-lighter: #ECF0F1;
+  --gray-dark: #34495E; /* Новый темный серый */
+  --white: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F8F9FA;
+  --shadow: 0 4px 6px -1px rgba(44, 62, 80, 0.1), 0 2px 4px -1px rgba(44, 62, 80, 0.06);
+  --shadow-hover: 0 20px 25px -5px rgba(44, 62, 80, 0.1), 0 10px 10px -5px rgba(44, 62, 80, 0.04);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --border-radius: 12px;
   --border-radius-lg: 16px;
-  --primary: #2c3e50;
-  --primary-dark: #1a252f;
-  --primary-light: #3498db;
-  --secondary: #e74c3c;
-  --accent: #f39c12;
-  --success: #27ae60;
-  --warning: #f1c40f;
-  --danger: #e74c3c;
 }
 
 /* Общие стили */
@@ -54,7 +49,12 @@ body {
   font-family: 'Roboto', sans-serif;
   line-height: 1.6;
   color: var(--dark);
-  background: linear-gradient(135deg, #f8f9fe 0%, #e9ecef 25%, #f6f9fc 50%, #f8f9fe 75%, #ffffff 100%);
+  background: linear-gradient(135deg, 
+    #F8F9FA 0%, 
+    #ECF0F1 25%, 
+    #F8F9FA 50%, 
+    #ECF0F1 75%, 
+    #F8F9FA 100%);
   background-attachment: fixed;
   background-size: cover;
   min-height: 100vh;
@@ -73,10 +73,10 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
   font-size: clamp(1.8rem, 5vw, 2.5rem);
-  background: linear-gradient(45deg, var(--primary), var(--accent));
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+  text-shadow: 2px 2px 4px rgba(44, 62, 80, 0.05);
 }
 
 h2 {
@@ -91,14 +91,17 @@ h3 {
   color: var(--primary);
 }
 
-/* Хедер - разноцветный градиент */
+/* ШАПКА - ЦВЕТНАЯ ДЛЯ САЙТА ЭЛЕКТРОНИКИ */
 header {
   background: linear-gradient(135deg, 
-    #5e72e4 0%, 
-    #825ee4 25%, 
-    #11cdef 50%, 
-    #f5365c 75%, 
-    #fb6340 100%);
+    #FF6B6B 0%, 
+    #FF8E53 15%, 
+    #FFD166 30%, 
+    #06D6A0 45%, 
+    #118AB2 60%, 
+    #073B4C 75%, 
+    #7209B7 90%, 
+    #3A0CA3 100%);
   color: var(--white);
   padding: 1rem;
   box-shadow: var(--shadow);
@@ -106,6 +109,27 @@ header {
   top: 0;
   z-index: 1000;
   transition: var(--transition);
+  border-bottom: 4px solid #FFD166;
+  animation: gradientShift 15s ease infinite;
+  background-size: 400% 400%;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+header:hover {
+  border-bottom-color: #06D6A0;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  animation-duration: 10s;
 }
 
 /* Новая структура шапки для мобильных устройств */
@@ -148,8 +172,8 @@ header {
 
 .search-container-mobile input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.1);
+  border-color: #3498DB;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .logo {
@@ -167,28 +191,88 @@ header {
 .logo i {
   font-size: clamp(1.8rem, 5vw, 2.5rem);
   color: var(--white);
-  background: var(--primary-light);
+  background: rgba(255, 255, 255, 0.2);
   padding: 0.5rem;
   border-radius: 50%;
-  box-shadow: 0 0 15px rgba(130, 94, 228, 0.4);
-  animation: pulse 2s infinite;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  animation: pulse 2s infinite, rainbowBorder 3s linear infinite;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+@keyframes rainbowBorder {
+  0% {
+    border-color: #FF6B6B;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  }
+  25% {
+    border-color: #FFD166;
+    box-shadow: 0 0 20px rgba(255, 209, 102, 0.5);
+  }
+  50% {
+    border-color: #06D6A0;
+    box-shadow: 0 0 20px rgba(6, 214, 160, 0.5);
+  }
+  75% {
+    border-color: #118AB2;
+    box-shadow: 0 0 20px rgba(17, 138, 178, 0.5);
+  }
+  100% {
+    border-color: #FF6B6B;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  }
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% { 
+    transform: scale(1); 
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  }
+  50% { 
+    transform: scale(1.05); 
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+  }
+  100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  }
 }
 
 .logo h1 {
   font-size: clamp(1.3rem, 4vw, 1.8rem);
   color: var(--white);
+  -webkit-text-fill-color: var(--white);
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.2);
   margin-bottom: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  letter-spacing: 0.5px;
+  font-weight: 800;
+  background: linear-gradient(45deg, 
+    #FFD166 0%, 
+    #06D6A0 25%, 
+    #118AB2 50%, 
+    #7209B7 75%, 
+    #FF6B6B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 3s ease infinite;
+}
+
+@keyframes textShimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
 }
 
 /* Стили для маленьких кнопок */
@@ -209,13 +293,18 @@ header {
 .btn-mobile-filters {
   grid-column: 1;
   justify-self: start;
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.25);
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
 }
 
 .btn-mobile-filters:hover {
-  background: var(--primary-light);
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
 /* Элементы управления справа */
@@ -234,6 +323,8 @@ header {
   font-size: 0.7rem;
   top: -5px;
   right: -5px;
+  background: #F39C12;
+  box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
 }
 
 /* ИЗМЕНЕНИЕ: Показываем текст на маленьких кнопках */
@@ -276,8 +367,10 @@ header {
 
 .search-container input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.1);
+  border-color: #06D6A0;
+  box-shadow: 
+    0 0 0 3px rgba(6, 214, 160, 0.1),
+    0 0 20px rgba(6, 214, 160, 0.3);
 }
 
 .search-container:focus-within {
@@ -310,7 +403,7 @@ select {
 
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.1);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 /* Кнопки */
@@ -340,29 +433,51 @@ select:focus {
 }
 
 .btn-admin {
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
   color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(6, 214, 160, 0.3);
 }
 
 .btn-admin:hover {
-  background: linear-gradient(135deg, var(--secondary-light) 0%, var(--secondary) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.25) 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 6px 20px rgba(6, 214, 160, 0.4);
 }
 
 .btn-cart {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(255, 209, 102, 0.9) 25%, rgba(6, 214, 160, 0.9) 50%, rgba(17, 138, 178, 0.9) 75%, rgba(115, 9, 183, 0.9) 100%);
   color: var(--white);
   position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-size: 200% 200%;
+  animation: cartGradient 3s ease infinite;
+}
+
+@keyframes cartGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .btn-cart:hover {
-  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 1) 0%, rgba(255, 209, 102, 1) 25%, rgba(6, 214, 160, 1) 50%, rgba(17, 138, 178, 1) 75%, rgba(115, 9, 183, 1) 100%);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+  animation-duration: 1.5s;
 }
 
 .cart-count {
   position: absolute;
   top: -8px;
   right: -8px;
-  background: var(--danger);
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
   color: var(--white);
   border-radius: 50%;
   width: 22px;
@@ -373,11 +488,19 @@ select:focus {
   font-size: 0.8rem;
   font-weight: bold;
   animation: bounce 1s infinite alternate;
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+  border: 2px solid white;
 }
 
 @keyframes bounce {
-  from { transform: scale(1); }
-  to { transform: scale(1.1); }
+  from { 
+    transform: scale(1); 
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+  }
+  to { 
+    transform: scale(1.1); 
+    box-shadow: 0 0 20px rgba(255, 107, 107, 1);
+  }
 }
 
 .btn-detail {
@@ -390,12 +513,12 @@ select:focus {
 }
 
 .btn-buy {
-  background: linear-gradient(135deg, var(--success) 0%, #24c48a 100%);
+  background: linear-gradient(135deg, var(--success) 0%, #27AE60 100%);
   color: var(--white);
 }
 
 .btn-buy:hover {
-  background: linear-gradient(135deg, #24c48a 0%, #2dce89 100%);
+  background: linear-gradient(135deg, #27AE60 0%, #219653 100%);
 }
 
 .btn-favorite {
@@ -412,7 +535,7 @@ select:focus {
 }
 
 .btn-favorite:hover {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(44, 62, 80, 0.1);
   color: var(--secondary);
 }
 
@@ -454,6 +577,7 @@ main {
   position: sticky;
   top: 90px;
   color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 .filter-group {
@@ -487,7 +611,7 @@ main {
 .filter-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(17, 205, 239, 0.1);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .price-range {
@@ -557,7 +681,7 @@ main {
   color: var(--white);
 }
 
-/* СЕТКА КАРТОЧЕК - СВЕТЛЫЕ */
+/* СЕТКА КАРТОЧЕК */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -579,6 +703,9 @@ main {
   animation: fadeIn 0.5s ease;
   color: var(--dark);
   border: 1px solid var(--gray-lighter);
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
 }
 
 .card:hover {
@@ -588,7 +715,7 @@ main {
 
 .card img {
   width: 100%;
-  height: 200px;
+  height: 280px;
   object-fit: cover;
   transition: var(--transition);
 }
@@ -597,11 +724,25 @@ main {
   transform: scale(1.05);
 }
 
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  flex-shrink: 0;
+}
+
 .card h3 {
   font-size: 1.2rem;
   padding: 0 1rem;
   margin: 0.5rem 0;
   color: var(--dark);
+}
+
+.card-description {
+  flex: 1;
 }
 
 .card p {
@@ -641,6 +782,7 @@ main {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .card-actions .btn {
@@ -664,7 +806,7 @@ main {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: var(--secondary);
+  background: #F39C12;
   color: var(--white);
   padding: 0.3rem 0.6rem;
   border-radius: var(--border-radius);
@@ -725,6 +867,7 @@ aside h3 {
   transition: var(--transition);
   animation: fadeIn 0.5s ease;
   color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 .featured-item:hover {
@@ -757,6 +900,7 @@ aside h3 {
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow);
   color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 .admin-panel h4 {
@@ -795,14 +939,14 @@ aside h3 {
   display: block;
 }
 
-/* О магазине - СВЕТЛАЯ СЕКЦИЯ */
+/* О магазине */
 .about-section {
-  background: linear-gradient(135deg, #ffffff 0%, var(--surface-2) 50%, #ffffff 100%);
-  color: var(--dark);
+  background: linear-gradient(135deg, #ffffff 0%, var(--gray-lighter) 50%, #ffffff 100%);
+  color: #2C3E50;
   padding: 2.5rem 0;
   margin: 2rem 0;
-  border: 1px solid var(--gray-lighter);
-  box-shadow: var(--shadow);
+  border: 1px solid #BDC3C7;
+  box-shadow: 0 4px 6px -1px rgba(44, 62, 80, 0.1);
 }
 
 .about-section h1 {
@@ -818,18 +962,18 @@ aside h3 {
 }
 
 .about-section h3 {
-  color: var(--accent);
+  color: var(--primary);
   margin: 1.5rem 0 1rem;
   font-size: clamp(1.2rem, 3vw, 1.5rem);
 }
 
 .about-section h4 {
-  color: var(--secondary);
+  color: var(--primary);
   margin: 1.5rem 0 1rem;
 }
 
 .about-section p {
-  color: var(--dark);
+  color: #2C3E50;
   margin-bottom: 1rem;
   line-height: 1.6;
 }
@@ -842,41 +986,41 @@ aside h3 {
 .about-section li {
   margin-bottom: 0.8rem;
   line-height: 1.6;
-  color: var(--dark);
+  color: #2C3E50;
 }
 
 .about-section strong {
-  color: var(--accent-light);
+  color: var(--accent);
 }
 
 .about-section mark {
-  background-color: rgba(251, 99, 64, 0.1);
-  color: var(--warning);
+  background-color: var(--secondary-light);
+  color: var(--dark);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
 }
 
 .about-section .highlight {
-  background: var(--gray-lighter);
+  background: var(--surface-2);
   padding: 1.5rem;
   border-radius: var(--border-radius);
-  border-left: 4px solid var(--primary-light);
-  color: var(--dark);
+  border-left: 4px solid var(--tech-blue);
+  color: #2C3E50;
   margin: 1.5rem 0;
 }
 
 .about-section .container {
-  color: var(--dark);
+  color: #2C3E50;
 }
 
 .about-section article {
-  color: var(--dark);
+  color: #2C3E50;
   margin-bottom: 1.5rem;
 }
 
 .about-section ul li::before {
   content: "✓ ";
-  color: var(--accent-light);
+  color: var(--success);
   font-weight: bold;
   margin-right: 0.5rem;
 }
@@ -887,68 +1031,89 @@ aside h3 {
   padding: 0 1.5rem;
 }
 
-/* Футер */
+/* ФУТЕР - СДЕЛАЕМ ЕГО СЕРЫМ И СОВРЕМЕННЫМ */
 footer {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, 
+    #2C3E50 0%, 
+    #34495E 25%, 
+    #7F8C8D 50%, 
+    #95A5A6 75%, 
+    #BDC3C7 100%);
   color: var(--white);
-  padding: 2rem 1.5rem;
+  padding: 3rem 1.5rem 2rem;
   text-align: center;
+  margin-top: auto;
 }
 
 .footer-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
+  gap: 2.5rem;
   text-align: left;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto 2rem;
 }
 
 .footer-section {
   margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(10px);
 }
 
 .footer-section h4 {
   color: var(--white);
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
+  font-size: 1.1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 0.5rem;
 }
 
 .footer-section a {
-  color: var(--white);
+  color: var(--gray-lighter);
   text-decoration: none;
   transition: var(--transition);
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.7rem;
+  padding: 0.3rem 0;
 }
 
 .footer-section a:hover {
-  color: var(--accent-light);
-  text-decoration: underline;
+  color: var(--white);
+  padding-left: 0.5rem;
+  text-decoration: none;
 }
 
 .contact-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.8rem;
   margin-top: 1rem;
 }
 
 .contact-info div {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.8rem;
+  color: var(--gray-lighter);
 }
 
 .contact-info i {
   color: var(--white);
+  width: 20px;
 }
 
 .copyright {
   margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--gray-light);
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--gray-lighter);
   text-align: center;
+  font-size: 0.9rem;
+  background: rgba(44, 62, 80, 0.3);
+  padding: 1.5rem;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
 /* Модальные окна */
@@ -977,15 +1142,16 @@ footer {
 .modal-content {
   background: var(--white);
   border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
+  padding: 2.5rem 1.5rem 1.5rem 1.5rem;
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
   animation: modalFadeIn 0.3s ease;
   color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 @keyframes modalFadeIn {
@@ -1001,8 +1167,8 @@ footer {
 
 .modal-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.2rem;
+  right: 1.2rem;
   background: transparent;
   border: none;
   font-size: 1.5rem;
@@ -1013,21 +1179,31 @@ footer {
   min-height: auto;
   padding: 0.2rem;
   z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .modal-close:hover {
   color: var(--danger);
   transform: rotate(90deg);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .product-detail {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  padding-top: 0.5rem;
 }
 
 .product-image img {
   width: 100%;
+  max-height: 500px;
+  object-fit: contain;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
 }
@@ -1036,6 +1212,11 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.product-info h2 {
+  margin-top: 0;
+  padding-right: 2.5rem;
 }
 
 .detail-price {
@@ -1120,8 +1301,8 @@ footer {
 }
 
 .cart-item-image {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
   border-radius: var(--border-radius);
 }
@@ -1206,7 +1387,7 @@ footer {
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(17, 205, 239, 0.1);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .form-row {
@@ -1261,7 +1442,7 @@ footer {
 }
 
 .skeleton-img {
-  height: 200px;
+  height: 280px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
@@ -1355,27 +1536,27 @@ footer {
 }
 
 .status-new {
-  background: rgba(94, 114, 228, 0.1);
-  color: var(--primary);
+  background: rgba(52, 152, 219, 0.1);
+  color: var(--accent);
 }
 
 .status-processing {
-  background: rgba(251, 99, 64, 0.1);
-  color: var(--warning);
+  background: rgba(243, 156, 18, 0.1);
+  color: #F39C12;
 }
 
 .status-shipped {
-  background: rgba(17, 205, 239, 0.1);
+  background: rgba(52, 152, 219, 0.1);
   color: var(--accent);
 }
 
 .status-delivered {
-  background: rgba(45, 206, 137, 0.1);
-  color: var(--success);
+  background: rgba(39, 174, 96, 0.1);
+  color: #27AE60;
 }
 
 .status-cancelled {
-  background: rgba(245, 54, 92, 0.1);
+  background: rgba(231, 76, 60, 0.1);
   color: var(--danger);
 }
 
@@ -1406,12 +1587,12 @@ footer {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--primary-light);
+  background: var(--accent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: var(--accent-dark);
 }
 
 /* Улучшения для фокуса */
@@ -1447,10 +1628,13 @@ button:focus, input:focus, select:focus, textarea:focus {
   background: rgba(255, 255, 255, 0.2);
   transition: var(--transition);
   color: var(--white);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .user-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .user-dropdown {
@@ -1464,6 +1648,8 @@ button:focus, input:focus, select:focus, textarea:focus {
   z-index: 1000;
   display: none;
   margin-top: 0.5rem;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .user-menu:hover .user-dropdown {
@@ -1480,7 +1666,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .user-dropdown a:hover {
   background: var(--gray-lighter);
-  color: var(--primary);
+  color: var(--accent);
 }
 
 /* Стили для вкладок авторизации */
@@ -1499,8 +1685,8 @@ button:focus, input:focus, select:focus, textarea:focus {
 }
 
 .auth-tab.active, .auth-tab:hover {
-  border-bottom: 3px solid var(--secondary);
-  color: var(--secondary);
+  border-bottom: 3px solid var(--accent);
+  color: var(--accent);
 }
 
 /* Стили для элементов админ-панели */
@@ -1634,7 +1820,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 /* Стили для информации о доставке */
 .delivery-notice {
-  background: rgba(17, 205, 239, 0.1);
+  background: rgba(52, 152, 219, 0.1);
   padding: 1rem;
   border-radius: var(--border-radius);
   margin: 1rem 0;
@@ -1663,7 +1849,9 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 /* Исправление для модального окна правил */
 #rules-modal .modal-content {
-  padding: 2rem;
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 #rules-modal h2 {
@@ -1771,7 +1959,8 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
   
   .modal-content {
-    padding: 1.2rem;
+    padding: 2.5rem 1rem 1rem 1rem;
+    margin: 1rem;
   }
   
   .detail-actions .btn {
@@ -1800,11 +1989,11 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
   
   .search-container {
-    display: none !important; /* Скрываем обычный поиск */
+    display: none !important;
   }
   
   .search-container-mobile {
-    display: block !important; /* Показываем мобильный поиск */
+    display: block !important;
   }
   
   .logo {
@@ -1888,7 +2077,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
   
   .card img {
-    height: 120px;
+    height: 200px;
   }
   
   .products-header {
@@ -1901,7 +2090,8 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
   
   .modal-content {
-    padding: 1rem;
+    padding: 2.2rem 0.8rem 0.8rem 0.8rem;
+    margin: 0.5rem;
     width: 95%;
     max-height: 95vh;
   }
@@ -1913,6 +2103,8 @@ button:focus, input:focus, select:focus, textarea:focus {
   
   .cart-item-image {
     align-self: center;
+    width: 80px;
+    height: 80px;
   }
   
   .cart-item-actions {
@@ -1949,6 +2141,14 @@ button:focus, input:focus, select:focus, textarea:focus {
   
   .btn-small i {
     font-size: 0.9rem !important;
+  }
+  
+  .logo-text {
+    font-size: 1.1rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.7rem;
   }
 }
 
@@ -2133,7 +2333,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
   
   .card img {
-    height: 100px;
+    height: 180px;
   }
   
   .card h3 {
@@ -2159,6 +2359,14 @@ button:focus, input:focus, select:focus, textarea:focus {
   
   .btn-small i {
     font-size: 0.8rem !important;
+  }
+  
+  .logo-text {
+    font-size: 1rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.6rem;
   }
 }
 
@@ -2239,13 +2447,13 @@ button:focus, input:focus, select:focus, textarea:focus {
   padding: 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--tech-blue);
   display: flex;
   align-items: center;
 }
 
 .manager-notice i {
-  color: #007bff;
+  color: var(--tech-blue);
   margin-right: 10px;
   font-size: 1.2rem;
 }
@@ -2334,8 +2542,11 @@ button:focus, input:focus, select:focus, textarea:focus {
 }
 
 .search-suggestion:hover {
-  background: #f5f5f5;
+  background: linear-gradient(90deg, 
+    rgba(255, 107, 107, 0.1) 0%, 
+    rgba(6, 214, 160, 0.1) 100%);
   color: var(--primary);
+  border-left: 3px solid #FF6B6B;
 }
 
 .search-suggestion i {
@@ -2364,12 +2575,12 @@ button:focus, input:focus, select:focus, textarea:focus {
 }
 
 .btn-warning {
-  background: var(--warning);
+  background: #ffc107;
   color: #000;
 }
 
 .btn-success {
-  background: var(--success);
+  background: #28a745;
   color: #fff;
 }
 
@@ -2448,6 +2659,51 @@ button:focus, input:focus, select:focus, textarea:focus {
   }
 }
 
+.logo-text {
+    font-family: 'Arial', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 0;
+    position: relative;
+    display: inline-block;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.logo-text::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #3498DB, #F39C12);
+    border-radius: 2px;
+}
+
+.logo-subtitle {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+    .logo-text {
+        font-size: 22px;
+        letter-spacing: 1px;
+    }
+    
+    .logo-subtitle {
+        font-size: 9px;
+    }
+}
+
 /* Стили для секции ТТН */
 .ttn-section {
   margin: 1rem 0;
@@ -2462,23 +2718,23 @@ button:focus, input:focus, select:focus, textarea:focus {
 }
 
 .ttn-info {
-  background: rgba(94, 114, 228, 0.1);
-  border-left-color: var(--primary);
+  background: #f0f8ff;
+  border-left-color: var(--tech-blue);
 }
 
 .ttn-warning {
-  background: rgba(251, 99, 64, 0.1);
+  background: #fff3cd;
   border-left-color: var(--warning);
 }
 
 /* Стили для кнопки ТТН */
 .btn-ttn {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  background: linear-gradient(135deg, var(--tech-blue) 0%, #2C3E50 100%);
   color: white;
 }
 
 .btn-ttn:hover {
-  background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
 }
 
 /* Стили для ссылки отслеживания */
@@ -2486,16 +2742,16 @@ button:focus, input:focus, select:focus, textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary);
+  color: var(--tech-blue);
   text-decoration: none;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--tech-blue);
   border-radius: var(--border-radius);
   transition: var(--transition);
 }
 
 .tracking-link:hover {
-  background: var(--primary);
+  background: var(--tech-blue);
   color: white;
   text-decoration: none;
 }
@@ -2564,7 +2820,7 @@ button:focus, input:focus, select:focus, textarea:focus {
   font-size: 0.9rem;
 }
 
-/* Адаптивность для мобильных устройств */
+/* Улучшения для мобильных устройств */
 @media (max-width: 768px) {
   .search-suggestions {
     position: fixed;
@@ -2592,8 +2848,8 @@ button:focus, input:focus, select:focus, textarea:focus {
   
   .search-suggestion {
     padding: 15px;
-    font-size: 16px; /* Увеличиваем для удобства касания */
-    min-height: 44px; /* Минимальная высота для касания */
+    font-size: 16px;
+    min-height: 44px;
     display: flex;
     align-items: center;
   }
@@ -2645,12 +2901,12 @@ body.search-suggestions-open {
 }
 
 .about-section strong {
-  color: var(--accent-light) !important;
+  color: var(--accent) !important;
 }
 
 .about-section mark {
-  background-color: rgba(251, 99, 64, 0.1) !important;
-  color: var(--warning) !important;
+  background-color: var(--secondary-light) !important;
+  color: var(--dark) !important;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
 }
@@ -2667,10 +2923,10 @@ body.search-suggestions-open {
 }
 
 .about-section .highlight {
-  background: var(--gray-lighter);
+  background: rgba(255, 255, 255, 0.1);
   padding: 1.5rem;
   border-radius: var(--border-radius);
-  border-left: 4px solid var(--primary-light);
+  border-left: 4px solid var(--accent-light);
 }
 
 .about-section .cta {
@@ -2718,7 +2974,7 @@ body.search-suggestions-open {
 
 .about-section ul li::before {
   content: "✓ ";
-  color: var(--accent-light);
+  color: var(--accent);
   font-weight: bold;
   margin-right: 0.5rem;
 }
@@ -2849,18 +3105,18 @@ body.search-suggestions-open {
 
 .category-item:hover {
     background: #e9ecef;
-    border-color: var(--primary);
+    border-color: var(--tech-blue);
 }
 
 .category-item.active {
-    background: var(--primary);
+    background: var(--tech-blue);
     color: white;
-    border-color: var(--primary);
+    border-color: var(--tech-blue);
 }
 
 .category-item .category-count {
     float: right;
-    background: var(--gray);
+    background: #6c757d;
     color: white;
     padding: 2px 8px;
     border-radius: 12px;
@@ -2874,7 +3130,7 @@ body.search-suggestions-open {
 .popular-categories {
     margin: 15px 0;
     padding: 15px;
-    background: var(--gray-lighter);
+    background: #f8f9fa;
     border-radius: 8px;
 }
 
@@ -2894,9 +3150,9 @@ body.search-suggestions-open {
 }
 
 .btn-category:hover {
-    background: var(--primary);
+    background: var(--tech-blue);
     color: white;
-    border-color: var(--primary);
+    border-color: var(--tech-blue);
 }
 
 /* Стили для улучшенных скелетонов */
@@ -2907,7 +3163,7 @@ body.search-suggestions-open {
 
 .skeleton-img {
   width: 100%;
-  height: 200px;
+  height: 280px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
@@ -2970,8 +3226,8 @@ body.search-suggestions-open {
 .loading-spinner {
   width: 50px;
   height: 50px;
-  border: 5px solid var(--gray-light);
-  border-top: 5px solid var(--primary);
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--tech-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
@@ -2991,7 +3247,7 @@ body.search-suggestions-open {
 /* Адаптивные стили для скелетонов */
 @media (max-width: 768px) {
   .skeleton-img {
-    height: 150px;
+    height: 220px;
   }
   
   .skeleton-title {
@@ -3006,12 +3262,13 @@ body.search-suggestions-open {
 /* Стили для мобильных фильтров */
 .btn-mobile-filters {
     display: inline-block !important;
-    background: var(--primary);
+    background: rgba(52, 152, 219, 0.8);
     color: white;
     border: none;
     padding: 10px;
     border-radius: var(--border-radius);
     cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .mobile-filters-overlay {
@@ -3190,6 +3447,20 @@ body.search-suggestions-open {
   }
 }
 
+/* Стили для черного текста с белой обводкой в логотипе */
+.logo-text .logo-name {
+    color: #ffffff !important;
+    font-weight: 700;
+    text-shadow: 
+        0 0 5px rgba(52, 152, 219, 0.8),
+        0 0 10px rgba(52, 152, 219, 0.6),
+        0 0 15px rgba(52, 152, 219, 0.4) !important;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.5) !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
 /* Скрытие кнопки администратора */
 #admin-access-btn {
     display: none !important;
@@ -3246,11 +3517,11 @@ body.search-suggestions-open {
 
 /* Уменьшаем высоту карточек для большего количества по вертикали */
 .card {
-  min-height: 280px; /* Уменьшаем минимальную высоту */
+  min-height: 280px;
 }
 
 .card img {
-  height: 150px; /* Уменьшаем высоту изображения */
+  height: 150px;
 }
 
 .card h3 {
@@ -3269,11 +3540,7 @@ body.search-suggestions-open {
 
 .price-container {
   padding: 0 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   margin-bottom: 0.8rem;
-  flex-wrap: wrap;
 }
 
 .price {
@@ -3432,6 +3699,13 @@ main {
   min-width: 0;
 }
 
+.logo-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* Для планшетов */
 @media (min-width: 769px) and (max-width: 1024px) {
   .search-container-mobile {
@@ -3459,6 +3733,14 @@ main {
   .btn-small i {
     font-size: 0.8rem !important;
   }
+  
+  .logo-text {
+    font-size: 1.1rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.7rem;
+  }
 }
 
 /* Стили для профиля пользователя */
@@ -3472,14 +3754,14 @@ main {
     align-items: center;
     gap: 20px;
     padding: 20px;
-    background: #f8f9fa;
+    background: var(--gray-lighter);
     border-radius: 10px;
     margin-bottom: 20px;
 }
 
 .profile-avatar {
     font-size: 60px;
-    color: var(--primary);
+    color: var(--tech-blue);
 }
 
 .profile-details p {
@@ -3492,7 +3774,8 @@ main {
     padding: 20px;
     border-radius: 10px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-lighter);
 }
 
 .stats-grid {
@@ -3511,7 +3794,7 @@ main {
 
 .stat-item i {
     font-size: 24px;
-    color: var(--primary);
+    color: var(--tech-blue);
     margin-bottom: 8px;
 }
 
@@ -3519,7 +3802,7 @@ main {
     display: block;
     font-size: 24px;
     font-weight: bold;
-    color: #2c3e50;
+    color: var(--dark);
 }
 
 .stat-label {
@@ -3533,12 +3816,13 @@ main {
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     border-left: 4px solid var(--primary);
+    border: 1px solid var(--gray-lighter);
 }
 
 .user-order-card.new {
-    border-left-color: var(--primary);
+    border-left-color: var(--tech-blue);
 }
 
 .user-order-card.processing {
@@ -3546,7 +3830,7 @@ main {
 }
 
 .user-order-card.shipped {
-    border-left-color: var(--primary-light);
+    border-left-color: var(--accent);
 }
 
 .user-order-card.delivered {
@@ -3566,7 +3850,7 @@ main {
 
 .order-id {
     font-weight: bold;
-    color: #2c3e50;
+    color: var(--dark);
 }
 
 .order-date {
@@ -3589,34 +3873,34 @@ main {
 }
 
 .status-new {
-    background: rgba(94, 114, 228, 0.1);
-    color: var(--primary);
+    background: rgba(52, 152, 219, 0.1);
+    color: var(--accent);
 }
 
 .status-processing {
-    background: rgba(251, 99, 64, 0.1);
+    background: rgba(243, 156, 18, 0.1);
     color: var(--warning);
 }
 
 .status-shipped {
-    background: rgba(130, 94, 228, 0.1);
-    color: var(--primary-light);
+    background: rgba(33, 150, 243, 0.1);
+    color: var(--accent);
 }
 
 .status-delivered {
-    background: rgba(45, 206, 137, 0.1);
+    background: rgba(46, 125, 50, 0.1);
     color: var(--success);
 }
 
 .status-cancelled {
-    background: rgba(245, 54, 92, 0.1);
+    background: rgba(244, 67, 54, 0.1);
     color: var(--danger);
 }
 
 .order-total {
     font-size: 18px;
     font-weight: bold;
-    color: #2c3e50;
+    color: var(--dark);
 }
 
 .order-card-delivery p {
@@ -3625,14 +3909,14 @@ main {
 }
 
 .order-ttn-info {
-    background: rgba(94, 114, 228, 0.1);
+    background: rgba(52, 152, 219, 0.1);
     padding: 10px;
     border-radius: 6px;
     margin: 10px 0;
 }
 
 .track-link {
-    color: var(--primary);
+    color: var(--tech-blue);
     text-decoration: none;
     font-size: 14px;
 }
@@ -3655,7 +3939,7 @@ main {
 .empty-orders i, .empty-cart i {
     font-size: 60px;
     margin-bottom: 20px;
-    color: var(--gray-light);
+    color: #bdc3c7;
 }
 
 .loading-spinner {
@@ -3702,7 +3986,7 @@ main {
 /* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В КАРТОЧКАХ ТОВАРОВ */
 .card img {
   width: 100%;
-  height: 280px; /* Увеличиваем высоту изображения */
+  height: 280px;
   object-fit: cover;
   transition: var(--transition);
 }
@@ -3711,61 +3995,27 @@ main {
   transform: scale(1.05);
 }
 
-/* Уменьшаем отступы в карточке для компенсации увеличенного изображения */
-.card h3 {
-  font-size: 1.1rem;
-  padding: 0 0.8rem;
-  margin: 0.6rem 0;
-  line-height: 1.3;
-  min-height: auto;
-}
-
-.card p {
-  padding: 0 0.8rem;
-  color: var(--gray);
-  font-size: 0.9rem;
-  margin-bottom: 0.8rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: auto;
-}
-
-.price-container {
-  padding: 0 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
-  flex-wrap: wrap;
-}
-
-.card-actions {
-  padding: 0 0.8rem 0.8rem;
-}
-
 /* АДАПТИВНОСТЬ ДЛЯ УВЕЛИЧЕННЫХ ИЗОБРАЖЕНИЙ */
 
 /* Планшеты */
 @media (max-width: 768px) {
   .card img {
-    height: 220px; /* Увеличиваем для планшетов */
+    height: 220px;
   }
   
   .card {
-    min-height: 380px; /* Увеличиваем минимальную высоту карточки */
+    min-height: 380px;
   }
 }
 
 /* Мобильные устройства */
 @media (max-width: 480px) {
   .card img {
-    height: 200px; /* Увеличиваем для мобильных */
+    height: 200px;
   }
   
   .card {
-    min-height: 360px; /* Увеличиваем минимальную высоту */
+    min-height: 360px;
   }
   
   .card h3 {
@@ -3788,12 +4038,18 @@ main {
   .card-actions {
     padding: 0 0.6rem 0.6rem;
   }
+  
+  .card-actions .btn {
+    min-width: 90px;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+  }
 }
 
 /* Очень маленькие экраны */
 @media (max-width: 360px) {
   .card img {
-    height: 180px; /* Увеличиваем для очень маленьких экранов */
+    height: 180px;
   }
   
   .card {
@@ -3803,7 +4059,7 @@ main {
 
 /* ОБНОВЛЯЕМ СКЕЛЕТОНЫ ДЛЯ СООТВЕТСТВИЯ НОВЫМ РАЗМЕРАМ */
 .skeleton-img {
-  height: 280px; /* Соответствует новой высоте изображения */
+  height: 280px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
@@ -3828,140 +4084,24 @@ main {
 /* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В РЕЖИМЕ СПИСКА */
 .grid.list-view .card {
   display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 1rem;
-  min-height: 200px;
-}
-
-.grid.list-view .card img {
-  height: 180px;
-  width: 100%;
-  border-radius: var(--border-radius);
-}
-
-.grid.list-view .card-content {
-  padding: 1rem 1rem 1rem 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-/* Адаптивность для режима списка */
-@media (max-width: 768px) {
-  .grid.list-view .card {
-    grid-template-columns: 150px 1fr;
-    gap: 0.8rem;
-  }
-  
-  .grid.list-view .card img {
-    height: 140px;
-  }
-}
-
-@media (max-width: 480px) {
-  .grid.list-view .card {
-    grid-template-columns: 120px 1fr;
-    gap: 0.6rem;
-  }
-  
-  .grid.list-view .card img {
-    height: 110px;
-  }
-  
-  .grid.list-view .card-content {
-    padding: 0.8rem 0.8rem 0.8rem 0;
-  }
-}
-
-/* УЛУЧШЕНИЯ ДЛЯ КАРТОЧЕК С УВЕЛИЧЕННЫМИ ИЗОБРАЖЕНИЯМИ */
-.card {
-  background: var(--white);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  transition: var(--transition);
-  position: relative;
-  animation: fadeIn 0.5s ease;
-  color: var(--dark);
-  border: 1px solid var(--gray-lighter);
-  min-height: 420px; /* Увеличиваем общую минимальную высоту карточки */
-  display: flex;
-  flex-direction: column;
-}
-
-.card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-title {
-  flex-shrink: 0;
-}
-
-.card-description {
-  flex: 1;
-}
-
-.card-actions {
-  flex-shrink: 0;
-  margin-top: auto;
-}
-
-/* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В МОДАЛЬНОМ ОКНЕ ТОВАРА */
-.product-image img {
-  width: 100%;
-  max-height: 500px; /* Увеличиваем в модальном окне */
-  object-fit: contain;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-}
-
-/* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В ПОПУЛЯРНЫХ ТОВАРАХ */
-.featured-item img {
-  width: 80px; /* Увеличиваем в боковой панели */
-  height: 80px;
-  object-fit: cover;
-  border-radius: var(--border-radius);
-}
-
-/* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В КОРЗИНЕ */
-.cart-item-image {
-  width: 100px; /* Увеличиваем в корзине */
-  height: 100px;
-  object-fit: cover;
-  border-radius: var(--border-radius);
-}
-
-/* АДАПТИВНОСТЬ ДЛЯ УВЕЛИЧЕННЫХ ИЗОБРАЖЕНИЙ В КОРЗИНЕ */
-@media (max-width: 480px) {
-  .cart-item-image {
-    width: 80px;
-    height: 80px;
-  }
-}
-
-/* УВЕЛИЧИВАЕМ ИЗОБРАЖЕНИЯ В РЕЖИМЕ СПИСКА */
-.grid.list-view .card {
-  display: grid;
-  grid-template-columns: 300px 1fr; /* Увеличиваем ширину для изображения */
+  grid-template-columns: 300px 1fr;
   gap: 1.5rem;
-  min-height: 280px; /* Увеличиваем минимальную высоту карточки */
-  align-items: start; /* Выравниваем по верху */
+  min-height: 280px;
+  align-items: start;
 }
 
 .grid.list-view .card img {
-  height: 260px; /* Значительно увеличиваем высоту изображения */
+  height: 260px;
   width: 100%;
   border-radius: var(--border-radius);
-  object-fit: cover; /* Сохраняем пропорции и заполняем область */
+  object-fit: cover;
 }
 
 .grid.list-view .card-content {
   padding: 1.5rem 1.5rem 1.5rem 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Выравниваем по верху */
+  justify-content: flex-start;
   height: 100%;
 }
 
@@ -3976,7 +4116,7 @@ main {
   font-size: 1rem;
   line-height: 1.5;
   margin-bottom: 1rem;
-  -webkit-line-clamp: 3; /* Показываем больше текста */
+  -webkit-line-clamp: 3;
 }
 
 .grid.list-view .price-container {
@@ -3988,7 +4128,7 @@ main {
 }
 
 .grid.list-view .card-actions {
-  margin-top: auto; /* Прижимаем кнопки к низу */
+  margin-top: auto;
   padding-bottom: 0;
 }
 
@@ -4113,15 +4253,16 @@ main {
 .modal-content {
   background: var(--white);
   border-radius: var(--border-radius-lg);
-  padding: 2.5rem 1.5rem 1.5rem 1.5rem; /* Увеличиваем верхний отступ */
+  padding: 2.5rem 1.5rem 1.5rem 1.5rem;
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
   animation: modalFadeIn 0.3s ease;
   color: var(--dark);
+  border: 1px solid var(--gray-lighter);
 }
 
 /* Увеличиваем отступы для модального окна правил */
@@ -4129,14 +4270,14 @@ main {
   max-width: 800px;
   max-height: 80vh;
   overflow-y: auto;
-  padding: 2.5rem 2rem 2rem 2rem; /* Увеличиваем отступы */
+  padding: 2.5rem 2rem 2rem 2rem;
 }
 
 /* Улучшаем позиционирование кнопки закрытия */
 .modal-close {
   position: absolute;
-  top: 1.2rem; /* Немного опускаем вниз */
-  right: 1.2rem; /* Немного сдвигаем от края */
+  top: 1.2rem;
+  right: 1.2rem;
   background: transparent;
   border: none;
   font-size: 1.5rem;
@@ -4166,7 +4307,7 @@ main {
 .profile-container,
 .order-details-container,
 .rules-container {
-  padding-top: 0.5rem; /* Добавляем отступ сверху */
+  padding-top: 0.5rem;
 }
 
 /* Увеличиваем отступы для заголовков в модальных окнах */
@@ -4174,7 +4315,7 @@ main {
 .modal-content h2,
 .modal-content h3,
 .modal-content h4 {
-  padding-right: 3rem; /* Оставляем место для крестика */
+  padding-right: 3rem;
   margin-top: 0;
 }
 
@@ -4182,11 +4323,6 @@ main {
 .product-detail {
   gap: 1.5rem;
   margin-top: 0.5rem;
-}
-
-.product-info h2 {
-  margin-top: 0;
-  padding-right: 2.5rem;
 }
 
 /* Специфические исправления для модального окна профиля */
@@ -4285,6 +4421,8 @@ main {
     height: 40px !important;
     min-height: 40px !important;
     border-radius: var(--border-radius) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
   }
   
   .btn-admin i {
@@ -4298,6 +4436,8 @@ main {
     width: 40px !important;
     height: 40px !important;
     min-height: 40px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
   }
   
   .user-btn i {
@@ -4331,91 +4471,397 @@ main {
   }
 }
 
+/* Стили для фильтра по полу */
+.gender-filter {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.gender-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--primary);
+    background: white;
+    color: var(--primary);
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.gender-btn:hover {
+    background: rgba(44, 62, 80, 0.1);
+    transform: translateY(-2px);
+}
+
+.gender-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+}
+
+@media (max-width: 768px) {
+    .gender-filter {
+        justify-content: center;
+    }
+    
+    .gender-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+}
+
+/* Стили для фильтра по видам спорта */
+.sport-type-filter {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.sport-type-btn {
+    padding: 10px 16px;
+    border: 2px solid var(--primary-light);
+    background: var(--white);
+    color: var(--primary);
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.sport-type-btn:hover {
+    background: var(--primary-light);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(44, 62, 80, 0.2);
+}
+
+.sport-type-btn.active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+}
+
+/* Адаптивность для фильтра видов спорта */
+@media (max-width: 768px) {
+    .sport-type-filter {
+        gap: 6px;
+        margin: 12px 0;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+    
+    .sport-type-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .sport-type-filter {
+        gap: 4px;
+        margin: 10px 0;
+    }
+    
+    .sport-type-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* Стили для социальной авторизации */
+.social-auth {
+    margin-bottom: 20px;
+}
+
+.btn-google {
+    background-color: #4285F4; /* Google Blue */
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.btn-google:hover {
+    background-color: #357AE8;
+}
+
+.btn-google i {
+    font-size: 18px;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #666;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.auth-divider span {
+    padding: 0 15px;
+    font-size: 14px;
+}
+
+/* Стили для аватара пользователя */
+.user-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    transition: background-color 0.3s;
+}
+
+.user-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-btn i {
+    font-size: 18px;
+}
+
+.user-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.user-dropdown a {
+    display: block;
+    padding: 12px 16px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.user-dropdown a:last-child {
+    border-bottom: none;
+}
+
+.user-dropdown a:hover {
+    background-color: #f8f9fa;
+    color: var(--primary);
+}
+
+.user-menu:hover .user-dropdown {
+    display: block;
+}
+
 /* Скрыть вкладку "Администратор" в модальном окне авторизации */
 .auth-tabs .auth-tab:nth-child(3) {
     display: none !important;
 }
 
-/* Стили для отображения поставщиков в корзине */
-.supplier-warning {
-  background: rgba(251, 99, 64, 0.1);
-  border: 1px solid rgba(251, 99, 64, 0.3);
-  border-radius: 8px;
-  padding: 12px 15px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+/* Изменение черного цвета на прозрачный на кнопках и фильтрах */
+.btn-detail,
+.btn-ttn,
+.btn-primary {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-warning i {
-  color: var(--warning);
-  font-size: 1.2rem;
-  margin-top: 2px;
+.filters {
+    background: transparent !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(44, 62, 80, 0.1) !important;
 }
 
-.supplier-warning .warning-content {
-  flex: 1;
-  font-size: 0.9rem;
-  line-height: 1.4;
+/* Кнопки фильтров в мобильной версии */
+.mobile-filters-content .btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-section {
-  margin-bottom: 25px;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
+/* Кнопки в фильтрах */
+.filter-buttons .btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-header {
-  background: var(--gray-lighter);
-  padding: 12px 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid #e0e0e0;
+/* Кнопки в админ-панели */
+.admin-panel .btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-header i {
-  color: var(--primary);
+/* Кнопки в карточках товаров */
+.card-actions .btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-header h4 {
-  margin: 0;
-  flex: 1;
-  font-size: 1rem;
-  color: #2c3e50;
+/* Кнопки в модальных окнах */
+.modal-content .btn:not(.btn-cart):not(.btn-buy):not(.btn-warning):not(.btn-success) {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.supplier-badge {
-  background: var(--primary);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
+/* Кнопки пагинации */
+.pagination button {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.cart-summary {
-  margin-bottom: 15px;
+.pagination button:hover,
+.pagination button.active {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
 }
 
-.suppliers-count {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  font-size: 0.95rem;
-  color: #555;
+/* Кнопки переключения вида */
+.view-btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
 }
 
-.suppliers-count i {
-  color: var(--primary);
+.view-btn.active,
+.view-btn:hover {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
 }
 
-.delivery-note {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-  margin-top: 8px;
-  font-style: italic;
+/* Кнопки в настройках фильтров */
+.gender-btn,
+.sport-type-btn {
+    background: transparent !important;
+    color: var(--dark) !important;
+    border: 1px solid var(--primary) !important;
+}
+
+.gender-btn.active,
+.sport-type-btn.active {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
+}
+
+/* Кнопки в табах */
+.tab,
+.auth-tab {
+    background: transparent !important;
+    color: var(--dark) !important;
+}
+
+.tab.active,
+.tab:hover,
+.auth-tab.active,
+.auth-tab:hover {
+    background: transparent !important;
+    color: var(--primary) !important;
+    border-bottom: 3px solid var(--primary) !important;
+}
+
+/* Исключения для цветных кнопок */
+.btn-cart,
+.btn-buy,
+.btn-warning,
+.btn-success {
+    /* Оставляем оригинальные цвета для этих кнопок */
+    border: none !important;
+}
+
+/* Изменение черного цвета на прозрачный в категориях товаров */
+.category-item {
+    background: transparent !important;
+    border: 1px solid var(--primary) !important;
+    color: var(--dark) !important;
+}
+
+.category-item.active {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.category-item .category-count {
+    background: rgba(108, 117, 125, 0.2) !important;
+    color: var(--dark) !important;
+}
+
+.category-item.active .category-count {
+    background: rgba(44, 62, 80, 0.3) !important;
+    color: var(--primary) !important;
+}
+
+/* Кнопки категорий в фильтрах */
+.btn-category {
+    background: transparent !important;
+    border: 1px solid var(--primary) !important;
+    color: var(--dark) !important;
+}
+
+.btn-category:hover {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
+}
+
+/* Популярные категории */
+.popular-categories {
+    background: transparent !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(44, 62, 80, 0.1) !important;
+}
+
+.popular-categories h4 {
+    color: var(--primary) !important;
+}
+
+/* Категории в мобильных фильтрах */
+.mobile-filters-body .categories-list {
+    background: transparent !important;
+    border: 1px solid rgba(44, 62, 80, 0.1) !important;
+}
+
+.mobile-filters-body .category-item {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(44, 62, 80, 0.1) !important;
+    color: var(--dark) !important;
+}
+
+.mobile-filters-body .category-item:hover {
+    background: rgba(44, 62, 80, 0.05) !important;
+}
+
+.mobile-filters-body .category-item.active {
+    background: rgba(44, 62, 80, 0.1) !important;
+    color: var(--primary) !important;
 }

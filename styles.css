@@ -1,33 +1,33 @@
 /* Подключение шрифтов */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap');
 
-/* Обновленная современная цветовая палитра с серыми тонами */
+/* Обновленная цветовая палитра для сайта инструментов */
 :root {
-  --primary: #2C3E50; /* Темный серо-синий - основной цвет */
-  --primary-light: #34495E;
-  --primary-dark: #1A252F;
-  --secondary: #7F8C8D; /* Серый - современный акцент */
-  --secondary-light: #95A5A6;
-  --secondary-dark: #616A6B;
-  --accent: #3498DB; /* Синий - для интерактивных элементов */
-  --accent-light: #5DADE2;
-  --accent-dark: #2980B9;
-  --tech-blue: #2C3E50; /* Темный серо-синий */
-  --tech-green: #27AE60; /* Зеленый для успеха */
-  --warning: #F39C12; /* Оранжевый для предупреждений */
-  --danger: #E74C3C; /* Красный для ошибок */
-  --success: #27AE60; /* Зеленый для успеха */
-  --light: #F8F9FA; /* Светлый серый фон */
-  --dark: #2C3E50; /* Темный для текста */
-  --gray: #7F8C8D;
-  --gray-light: #BDC3C7;
-  --gray-lighter: #ECF0F1;
-  --gray-dark: #34495E; /* Новый темный серый */
+  --primary: #1E3A8A; /* Темно-синий для инструментов */
+  --primary-light: #3B82F6;
+  --primary-dark: #1E40AF;
+  --secondary: #F97316; /* Оранжевый акцент для инструментов */
+  --secondary-light: #FB923C;
+  --secondary-dark: #EA580C;
+  --accent: #0EA5E9; /* Яркий синий */
+  --accent-light: #38BDF8;
+  --accent-dark: #0284C7;
+  --tech-blue: #1E3A8A;
+  --tech-green: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --success: #10B981;
+  --light: #F8FAFC;
+  --dark: #1F2937;
+  --gray: #6B7280;
+  --gray-light: #D1D5DB;
+  --gray-lighter: #F3F4F6;
+  --gray-dark: #374151;
   --white: #FFFFFF;
   --surface: #FFFFFF;
   --surface-2: #F8F9FA;
-  --shadow: 0 4px 6px -1px rgba(44, 62, 80, 0.1), 0 2px 4px -1px rgba(44, 62, 80, 0.06);
-  --shadow-hover: 0 20px 25px -5px rgba(44, 62, 80, 0.1), 0 10px 10px -5px rgba(44, 62, 80, 0.04);
+  --shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.1), 0 2px 4px -1px rgba(30, 58, 138, 0.06);
+  --shadow-hover: 0 20px 25px -5px rgba(30, 58, 138, 0.1), 0 10px 10px -5px rgba(30, 58, 138, 0.04);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --border-radius: 12px;
   --border-radius-lg: 16px;
@@ -50,11 +50,11 @@ body {
   line-height: 1.6;
   color: var(--dark);
   background: linear-gradient(135deg, 
-    #F8F9FA 0%, 
-    #ECF0F1 25%, 
-    #F8F9FA 50%, 
-    #ECF0F1 75%, 
-    #F8F9FA 100%);
+    #F8FAFC 0%, 
+    #F1F5F9 25%, 
+    #F8FAFC 50%, 
+    #F1F5F9 75%, 
+    #F8FAFC 100%);
   background-attachment: fixed;
   background-size: cover;
   min-height: 100vh;
@@ -76,7 +76,7 @@ h1 {
   background: linear-gradient(45deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 2px 2px 4px rgba(44, 62, 80, 0.05);
+  text-shadow: 2px 2px 4px rgba(30, 58, 138, 0.05);
 }
 
 h2 {
@@ -91,17 +91,17 @@ h3 {
   color: var(--primary);
 }
 
-/* ШАПКА - ЦВЕТНАЯ ДЛЯ САЙТА ЭЛЕКТРОНИКИ */
+/* ШАПКА - ЦВЕТНАЯ ДЛЯ САЙТА ИНСТРУМЕНТОВ */
 header {
   background: linear-gradient(135deg, 
-    #FF6B6B 0%, 
-    #FF8E53 15%, 
-    #FFD166 30%, 
-    #06D6A0 45%, 
-    #118AB2 60%, 
-    #073B4C 75%, 
-    #7209B7 90%, 
-    #3A0CA3 100%);
+    #F97316 0%, 
+    #FB923C 15%, 
+    #FBBF24 30%, 
+    #3B82F6 45%, 
+    #1D4ED8 60%, 
+    #1E3A8A 75%, 
+    #831843 90%, 
+    #500724 100%);
   color: var(--white);
   padding: 1rem;
   box-shadow: var(--shadow);
@@ -109,7 +109,7 @@ header {
   top: 0;
   z-index: 1000;
   transition: var(--transition);
-  border-bottom: 4px solid #FFD166;
+  border-bottom: 4px solid #FBBF24;
   animation: gradientShift 15s ease infinite;
   background-size: 400% 400%;
 }
@@ -127,8 +127,8 @@ header {
 }
 
 header:hover {
-  border-bottom-color: #06D6A0;
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  border-bottom-color: #3B82F6;
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
   animation-duration: 10s;
 }
 
@@ -172,8 +172,8 @@ header:hover {
 
 .search-container-mobile input:focus {
   outline: none;
-  border-color: #3498DB;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .logo {
@@ -204,24 +204,24 @@ header:hover {
 
 @keyframes rainbowBorder {
   0% {
-    border-color: #FF6B6B;
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    border-color: #F97316;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
   }
   25% {
-    border-color: #FFD166;
-    box-shadow: 0 0 20px rgba(255, 209, 102, 0.5);
+    border-color: #FBBF24;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
   }
   50% {
-    border-color: #06D6A0;
-    box-shadow: 0 0 20px rgba(6, 214, 160, 0.5);
+    border-color: #3B82F6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   }
   75% {
-    border-color: #118AB2;
-    box-shadow: 0 0 20px rgba(17, 138, 178, 0.5);
+    border-color: #1D4ED8;
+    box-shadow: 0 0 20px rgba(29, 78, 216, 0.5);
   }
   100% {
-    border-color: #FF6B6B;
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    border-color: #F97316;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
   }
 }
 
@@ -255,11 +255,11 @@ header:hover {
   letter-spacing: 0.5px;
   font-weight: 800;
   background: linear-gradient(45deg, 
-    #FFD166 0%, 
-    #06D6A0 25%, 
-    #118AB2 50%, 
-    #7209B7 75%, 
-    #FF6B6B 100%);
+    #FBBF24 0%, 
+    #3B82F6 25%, 
+    #1D4ED8 50%, 
+    #831843 75%, 
+    #F97316 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -297,14 +297,14 @@ header:hover {
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
 }
 
 .btn-mobile-filters:hover {
   background: rgba(255, 255, 255, 0.35);
   border-color: rgba(255, 255, 255, 0.6);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
 }
 
 /* Элементы управления справа */
@@ -323,8 +323,8 @@ header:hover {
   font-size: 0.7rem;
   top: -5px;
   right: -5px;
-  background: #F39C12;
-  box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+  background: #F59E0B;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
 }
 
 /* ИЗМЕНЕНИЕ: Показываем текст на маленьких кнопках */
@@ -367,10 +367,10 @@ header:hover {
 
 .search-container input:focus {
   outline: none;
-  border-color: #06D6A0;
+  border-color: #3B82F6;
   box-shadow: 
-    0 0 0 3px rgba(6, 214, 160, 0.1),
-    0 0 20px rgba(6, 214, 160, 0.3);
+    0 0 0 3px rgba(59, 130, 246, 0.1),
+    0 0 20px rgba(59, 130, 246, 0.3);
 }
 
 .search-container:focus-within {
@@ -403,7 +403,7 @@ select {
 
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Кнопки */
@@ -437,17 +437,17 @@ select:focus {
   color: var(--white);
   border: 1px solid rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(6, 214, 160, 0.3);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .btn-admin:hover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.25) 100%);
   border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 6px 20px rgba(6, 214, 160, 0.4);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .btn-cart {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(255, 209, 102, 0.9) 25%, rgba(6, 214, 160, 0.9) 50%, rgba(17, 138, 178, 0.9) 75%, rgba(115, 9, 183, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.9) 0%, rgba(251, 191, 36, 0.9) 25%, rgba(59, 130, 246, 0.9) 50%, rgba(29, 78, 216, 0.9) 75%, rgba(131, 24, 67, 0.9) 100%);
   color: var(--white);
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -468,8 +468,8 @@ select:focus {
 }
 
 .btn-cart:hover {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 1) 0%, rgba(255, 209, 102, 1) 25%, rgba(6, 214, 160, 1) 50%, rgba(17, 138, 178, 1) 75%, rgba(115, 9, 183, 1) 100%);
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 1) 0%, rgba(251, 191, 36, 1) 25%, rgba(59, 130, 246, 1) 50%, rgba(29, 78, 216, 1) 75%, rgba(131, 24, 67, 1) 100%);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.5);
   animation-duration: 1.5s;
 }
 
@@ -477,7 +477,7 @@ select:focus {
   position: absolute;
   top: -8px;
   right: -8px;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
   color: var(--white);
   border-radius: 50%;
   width: 22px;
@@ -488,18 +488,18 @@ select:focus {
   font-size: 0.8rem;
   font-weight: bold;
   animation: bounce 1s infinite alternate;
-  box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.7);
   border: 2px solid white;
 }
 
 @keyframes bounce {
   from { 
     transform: scale(1); 
-    box-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.7);
   }
   to { 
     transform: scale(1.1); 
-    box-shadow: 0 0 20px rgba(255, 107, 107, 1);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 1);
   }
 }
 
@@ -513,12 +513,12 @@ select:focus {
 }
 
 .btn-buy {
-  background: linear-gradient(135deg, var(--success) 0%, #27AE60 100%);
+  background: linear-gradient(135deg, var(--success) 0%, #10B981 100%);
   color: var(--white);
 }
 
 .btn-buy:hover {
-  background: linear-gradient(135deg, #27AE60 0%, #219653 100%);
+  background: linear-gradient(135deg, #10B981 0%, #0D9669 100%);
 }
 
 .btn-favorite {
@@ -535,7 +535,7 @@ select:focus {
 }
 
 .btn-favorite:hover {
-  background: rgba(44, 62, 80, 0.1);
+  background: rgba(30, 58, 138, 0.1);
   color: var(--secondary);
 }
 
@@ -611,7 +611,7 @@ main {
 .filter-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .price-range {
@@ -806,7 +806,7 @@ main {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #F39C12;
+  background: #F59E0B;
   color: var(--white);
   padding: 0.3rem 0.6rem;
   border-radius: var(--border-radius);
@@ -942,11 +942,11 @@ aside h3 {
 /* О магазине */
 .about-section {
   background: linear-gradient(135deg, #ffffff 0%, var(--gray-lighter) 50%, #ffffff 100%);
-  color: #2C3E50;
+  color: #1F2937;
   padding: 2.5rem 0;
   margin: 2rem 0;
-  border: 1px solid #BDC3C7;
-  box-shadow: 0 4px 6px -1px rgba(44, 62, 80, 0.1);
+  border: 1px solid #D1D5DB;
+  box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.1);
 }
 
 .about-section h1 {
@@ -973,7 +973,7 @@ aside h3 {
 }
 
 .about-section p {
-  color: #2C3E50;
+  color: #1F2937;
   margin-bottom: 1rem;
   line-height: 1.6;
 }
@@ -986,7 +986,7 @@ aside h3 {
 .about-section li {
   margin-bottom: 0.8rem;
   line-height: 1.6;
-  color: #2C3E50;
+  color: #1F2937;
 }
 
 .about-section strong {
@@ -1005,16 +1005,16 @@ aside h3 {
   padding: 1.5rem;
   border-radius: var(--border-radius);
   border-left: 4px solid var(--tech-blue);
-  color: #2C3E50;
+  color: #1F2937;
   margin: 1.5rem 0;
 }
 
 .about-section .container {
-  color: #2C3E50;
+  color: #1F2937;
 }
 
 .about-section article {
-  color: #2C3E50;
+  color: #1F2937;
   margin-bottom: 1.5rem;
 }
 
@@ -1031,14 +1031,14 @@ aside h3 {
   padding: 0 1.5rem;
 }
 
-/* ФУТЕР - СДЕЛАЕМ ЕГО СЕРЫМ И СОВРЕМЕННЫМ */
+/* ФУТЕР - СИНИЙ ГРАДИЕНТ ДЛЯ САЙТА ИНСТРУМЕНТОВ */
 footer {
   background: linear-gradient(135deg, 
-    #2C3E50 0%, 
-    #34495E 25%, 
-    #7F8C8D 50%, 
-    #95A5A6 75%, 
-    #BDC3C7 100%);
+    #1E3A8A 0%, 
+    #3B82F6 25%, 
+    #6B7280 50%, 
+    #9CA3AF 75%, 
+    #D1D5DB 100%);
   color: var(--white);
   padding: 3rem 1.5rem 2rem;
   text-align: center;
@@ -1111,7 +1111,7 @@ footer {
   color: var(--gray-lighter);
   text-align: center;
   font-size: 0.9rem;
-  background: rgba(44, 62, 80, 0.3);
+  background: rgba(30, 58, 138, 0.3);
   padding: 1.5rem;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
@@ -1148,7 +1148,7 @@ footer {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
+  box-shadow: 0 10px 30px rgba(30, 58, 138, 0.2);
   animation: modalFadeIn 0.3s ease;
   color: var(--dark);
   border: 1px solid var(--gray-lighter);
@@ -1387,7 +1387,7 @@ footer {
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .form-row {
@@ -1536,27 +1536,27 @@ footer {
 }
 
 .status-new {
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(14, 165, 233, 0.1);
   color: var(--accent);
 }
 
 .status-processing {
-  background: rgba(243, 156, 18, 0.1);
-  color: #F39C12;
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
 }
 
 .status-shipped {
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(14, 165, 233, 0.1);
   color: var(--accent);
 }
 
 .status-delivered {
-  background: rgba(39, 174, 96, 0.1);
-  color: #27AE60;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
 }
 
 .status-cancelled {
-  background: rgba(231, 76, 60, 0.1);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--danger);
 }
 
@@ -1820,7 +1820,7 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 /* Стили для информации о доставке */
 .delivery-notice {
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(14, 165, 233, 0.1);
   padding: 1rem;
   border-radius: var(--border-radius);
   margin: 1rem 0;
@@ -2543,10 +2543,10 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 .search-suggestion:hover {
   background: linear-gradient(90deg, 
-    rgba(255, 107, 107, 0.1) 0%, 
-    rgba(6, 214, 160, 0.1) 100%);
+    rgba(249, 115, 22, 0.1) 0%, 
+    rgba(59, 130, 246, 0.1) 100%);
   color: var(--primary);
-  border-left: 3px solid #FF6B6B;
+  border-left: 3px solid #F97316;
 }
 
 .search-suggestion i {
@@ -2679,7 +2679,7 @@ button:focus, input:focus, select:focus, textarea:focus {
     left: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, #3498DB, #F39C12);
+    background: linear-gradient(90deg, #3B82F6, #F59E0B);
     border-radius: 2px;
 }
 
@@ -2729,12 +2729,12 @@ button:focus, input:focus, select:focus, textarea:focus {
 
 /* Стили для кнопки ТТН */
 .btn-ttn {
-  background: linear-gradient(135deg, var(--tech-blue) 0%, #2C3E50 100%);
+  background: linear-gradient(135deg, var(--tech-blue) 0%, #1E3A8A 100%);
   color: white;
 }
 
 .btn-ttn:hover {
-  background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
+  background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
 }
 
 /* Стили для ссылки отслеживания */
@@ -3262,7 +3262,7 @@ body.search-suggestions-open {
 /* Стили для мобильных фильтров */
 .btn-mobile-filters {
     display: inline-block !important;
-    background: rgba(52, 152, 219, 0.8);
+    background: rgba(59, 130, 246, 0.8);
     color: white;
     border: none;
     padding: 10px;
@@ -3452,9 +3452,9 @@ body.search-suggestions-open {
     color: #ffffff !important;
     font-weight: 700;
     text-shadow: 
-        0 0 5px rgba(52, 152, 219, 0.8),
-        0 0 10px rgba(52, 152, 219, 0.6),
-        0 0 15px rgba(52, 152, 219, 0.4) !important;
+        0 0 5px rgba(59, 130, 246, 0.8),
+        0 0 10px rgba(59, 130, 246, 0.6),
+        0 0 15px rgba(59, 130, 246, 0.4) !important;
     -webkit-text-stroke: 1px rgba(255, 255, 255, 0.5) !important;
     background: none !important;
     -webkit-background-clip: initial !important;
@@ -3873,12 +3873,12 @@ main {
 }
 
 .status-new {
-    background: rgba(52, 152, 219, 0.1);
+    background: rgba(14, 165, 233, 0.1);
     color: var(--accent);
 }
 
 .status-processing {
-    background: rgba(243, 156, 18, 0.1);
+    background: rgba(245, 158, 11, 0.1);
     color: var(--warning);
 }
 
@@ -3909,7 +3909,7 @@ main {
 }
 
 .order-ttn-info {
-    background: rgba(52, 152, 219, 0.1);
+    background: rgba(59, 130, 246, 0.1);
     padding: 10px;
     border-radius: 6px;
     margin: 10px 0;
@@ -4259,7 +4259,7 @@ main {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
+  box-shadow: 0 10px 30px rgba(30, 58, 138, 0.2);
   animation: modalFadeIn 0.3s ease;
   color: var(--dark);
   border: 1px solid var(--gray-lighter);
@@ -4491,14 +4491,14 @@ main {
 }
 
 .gender-btn:hover {
-    background: rgba(44, 62, 80, 0.1);
+    background: rgba(30, 58, 138, 0.1);
     transform: translateY(-2px);
 }
 
 .gender-btn.active {
     background: var(--primary);
     color: white;
-    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -4538,14 +4538,14 @@ main {
     background: var(--primary-light);
     color: var(--white);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(44, 62, 80, 0.2);
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.2);
 }
 
 .sport-type-btn.active {
     background: var(--primary);
     color: var(--white);
     border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
 }
 
 /* Адаптивность для фильтра видов спорта */
@@ -4696,7 +4696,7 @@ main {
 .filters {
     background: transparent !important;
     backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(44, 62, 80, 0.1) !important;
+    border: 1px solid rgba(30, 58, 138, 0.1) !important;
 }
 
 /* Кнопки фильтров в мобильной версии */
@@ -4743,7 +4743,7 @@ main {
 
 .pagination button:hover,
 .pagination button.active {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
 }
 
@@ -4756,7 +4756,7 @@ main {
 
 .view-btn.active,
 .view-btn:hover {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
 }
 
@@ -4770,7 +4770,7 @@ main {
 
 .gender-btn.active,
 .sport-type-btn.active {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
 }
 
@@ -4807,7 +4807,7 @@ main {
 }
 
 .category-item.active {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
     border-color: var(--primary) !important;
 }
@@ -4818,7 +4818,7 @@ main {
 }
 
 .category-item.active .category-count {
-    background: rgba(44, 62, 80, 0.3) !important;
+    background: rgba(30, 58, 138, 0.3) !important;
     color: var(--primary) !important;
 }
 
@@ -4830,7 +4830,7 @@ main {
 }
 
 .btn-category:hover {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
 }
 
@@ -4838,7 +4838,7 @@ main {
 .popular-categories {
     background: transparent !important;
     backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(44, 62, 80, 0.1) !important;
+    border: 1px solid rgba(30, 58, 138, 0.1) !important;
 }
 
 .popular-categories h4 {
@@ -4848,20 +4848,20 @@ main {
 /* Категории в мобильных фильтрах */
 .mobile-filters-body .categories-list {
     background: transparent !important;
-    border: 1px solid rgba(44, 62, 80, 0.1) !important;
+    border: 1px solid rgba(30, 58, 138, 0.1) !important;
 }
 
 .mobile-filters-body .category-item {
     background: transparent !important;
-    border-bottom: 1px solid rgba(44, 62, 80, 0.1) !important;
+    border-bottom: 1px solid rgba(30, 58, 138, 0.1) !important;
     color: var(--dark) !important;
 }
 
 .mobile-filters-body .category-item:hover {
-    background: rgba(44, 62, 80, 0.05) !important;
+    background: rgba(30, 58, 138, 0.05) !important;
 }
 
 .mobile-filters-body .category-item.active {
-    background: rgba(44, 62, 80, 0.1) !important;
+    background: rgba(30, 58, 138, 0.1) !important;
     color: var(--primary) !important;
 }

@@ -87,6 +87,79 @@
     .contact-info .fa-facebook { color: #1877F2; }
     .contact-info .fa-instagram { color: #E4405F; }
 
+    /* Стили для контактов только с иконками */
+    .contact-icons-only {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .contact-icons-only a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .contact-icons-only a:hover {
+        transform: translateY(-3px) scale(1.1);
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .contact-icons-only .fa-2x {
+        font-size: 1.5rem;
+    }
+    
+    /* Сохраняем специфичные цвета для иконок */
+    .contact-icons-only .fa-whatsapp { color: #25D366; }
+    .contact-icons-only .fa-viber { color: #7360F2; }
+    .contact-icons-only .fa-telegram { color: #0088cc; }
+    .contact-icons-only .fa-facebook { color: #1877F2; }
+    .contact-icons-only .fa-instagram { color: #E4405F; }
+    
+    .contact-icons-only a:hover .fa-whatsapp { color: #1ebe5d; }
+    .contact-icons-only a:hover .fa-viber { color: #8a7cf5; }
+    .contact-icons-only a:hover .fa-telegram { color: #2a9ae0; }
+    .contact-icons-only a:hover .fa-facebook { color: #3a8df5; }
+    .contact-icons-only a:hover .fa-instagram { color: #f5608c; }
+    
+    /* Адаптивность для иконок контактов */
+    @media (max-width: 768px) {
+        .contact-icons-only a {
+            width: 35px;
+            height: 35px;
+        }
+        
+        .contact-icons-only .fa-2x {
+            font-size: 1.3rem;
+        }
+        
+        .contact-icons-only {
+            gap: 10px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .contact-icons-only a {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .contact-icons-only .fa-2x {
+            font-size: 1.2rem;
+        }
+        
+        .contact-icons-only div {
+            gap: 15px !important;
+        }
+    }
+
     /* КОМПАКТНЫЕ КАРТОЧКИ КАТЕГОРИЙ С ПОДСКАЗКАМИ КЛИКАБЕЛЬНОСТИ */
     .category-cards {
         display: flex;
@@ -1265,15 +1338,25 @@
         
         <div class="footer-section">
             <h4>Контакти</h4>
-            <div class="contact-info">
-                <div style="display: flex; gap: 15px; margin-bottom: 8px;">
-                    <div><i class="fab fa-whatsapp" aria-hidden="true"></i> <a href="https://wa.me/380684296978" target="_blank" rel="noopener">WhatsApp</a></div>
-                    <div><i class="fab fa-viber" aria-hidden="true"></i> <a href="viber://chat?number=+380684296978" target="_blank" rel="noopener">Viber</a></div>
-                    <div><i class="fab fa-telegram" aria-hidden="true"></i> <a href="https://t.me/Voanarhes" target="_blank" rel="noopener">Telegram</a></div>
+            <div class="contact-icons-only">
+                <div style="display: flex; gap: 20px; margin-bottom: 8px; justify-content: center;">
+                    <a href="https://wa.me/380684296978" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp">
+                        <i class="fab fa-whatsapp fa-2x" aria-hidden="true"></i>
+                    </a>
+                    <a href="viber://chat?number=+380684296978" target="_blank" rel="noopener" aria-label="Viber" title="Viber">
+                        <i class="fab fa-viber fa-2x" aria-hidden="true"></i>
+                    </a>
+                    <a href="https://t.me/Voanarhes" target="_blank" rel="noopener" aria-label="Telegram" title="Telegram">
+                        <i class="fab fa-telegram fa-2x" aria-hidden="true"></i>
+                    </a>
                 </div>
-                <div style="display: flex; gap: 15px;">
-                    <div><i class="fab fa-facebook" aria-hidden="true"></i> <a href="https://www.facebook.com/profile.php?id=61581477000247" target="_blank" rel="noopener">Facebook</a></div>
-                    <div><i class="fab fa-instagram" aria-hidden="true"></i> <a href="https://www.instagram.com/instruforge?igsh=ZmRvN2tmZ2oxcGI1" target="_blank" rel="noopener">Instagram</a></div>
+                <div style="display: flex; gap: 20px; justify-content: center;">
+                    <a href="https://www.facebook.com/profile.php?id=61581477000247" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+                        <i class="fab fa-facebook fa-2x" aria-hidden="true"></i>
+                    </a>
+                    <a href="https://www.instagram.com/instruforge?igsh=ZmRvN2tmZ2oxcGI1" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+                        <i class="fab fa-instagram fa-2x" aria-hidden="true"></i>
+                    </a>
                 </div>
             </div>
         </div>
